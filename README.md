@@ -2,7 +2,7 @@
 
 ![](documentation-and-images/ADA-wallet-for-Salesforce-logo.png)
 
-ADA Wallet for Salesforce is an open source solution for using the Cardano Network to send payments, track payments, and otherwise manage a Cardano wallet 100% in Salesforce. This plugs into Ada for Salesforce, the transaction app, or can be run on its own.
+ADA Wallet for Salesforce is an open source solution for using the Cardano Network to send payments, track payments, and otherwise manage a Cardano wallet 100% in Salesforce. This plugs into [ADA for Salesforce](https://cardano.ideascale.com/c/idea/126990), the transaction app, or can be run on its own.
 
 ## Copyright and License
 
