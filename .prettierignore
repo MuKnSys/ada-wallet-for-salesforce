@@ -5,7 +5,14 @@
 **/staticresources/**
 .localdevserver
 .sfdx
-.sf
 .vscode
 
 coverage/
+permissionsets/
+
+objects/
+tabs/
+applications/
+contentassets/
+labels/
+**.xml
