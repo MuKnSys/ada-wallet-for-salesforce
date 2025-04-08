@@ -4,16 +4,16 @@
         <headerColor>#0070D2</headerColor>        
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
     </brand>
-    <description>Salesforce Cardano Wallets application.</description>
+    <description>Salesforce ADA Wallets application.</description>
     <formFactors>Small</formFactors>
     <formFactors>Large</formFactors>
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
     <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
-    <label>Cardano Wallets</label>
+    <label>Ada Wallets</label>
     <navType>Standard</navType>
-    <tabs>WalletSet__c</tabs>
+    <tabs>Wallet_Set__c</tabs>
     <tabs>Wallet__c</tabs>
     <uiType>Lightning</uiType>
 </CustomApplication>

@@ -1,0 +1,87 @@
+<template>
+    <lightning-card title="Create New Wallet Set" icon-name="standard:account">
+        <div class="slds-p-around_medium">
+            <!-- Step 1: Wallet Name -->
+            <template lwc:if={step1}>
+                <lightning-input 
+                    label="Wallet Name" 
+                    value={walletName} 
+                    onchange={handleWalletNameChange}
+                    required
+                    class="slds-m-bottom_medium">
+                </lightning-input>
+                <lightning-button 
+                    label="Next" 
+                    variant="brand" 
+                    onclick={handleNextFromStep1}
+                    disabled={isNextDisabled}>
+                </lightning-button>
+            </template>
+
+            <!-- Step 2: Seed Phrase Display -->
+            <template lwc:if={step2}>
+                <div class="seed-container">
+                    <h2 class="slds-text-heading_small">Your Seed Phrase</h2>
+                    <p class="warning-text">Store this safely - you won't see it again!</p>
+                    <div class="seed-grid">
+                        <template for:each={seedPhrase} for:item="item">
+                            <div key={item.word} class="seed-word">
+                                {item.displayIndex}. {item.word}
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <lightning-button 
+                        label="Download as Text" 
+                        variant="neutral" 
+                        onclick={downloadSeedPhrase}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Upload to Data Cloud" 
+                        variant="neutral" 
+                        onclick={uploadToDataCloud}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Store in Org" 
+                        variant="neutral" 
+                        onclick={storeInOrg}>
+                    </lightning-button>
+                    <lightning-button 
+                        label="Next" 
+                        variant="brand" 
+                        onclick={handleNextFromStep2}>
+                    </lightning-button>
+                </div>
+            </template>
+
+            <!-- Step 3: Seed Phrase Verification -->
+            <template lwc:if={step3}>
+                <div class="verification-container">
+                    <h2 class="slds-text-heading_small">Verify Your Seed Phrase</h2>
+                    <div class="input-grid">
+                        <template for:each={verificationInputs} for:item="input" for:index="idx">
+                            <lightning-input 
+                                key={input.label}
+                                label={input.label}
+                                value={input.value}
+                                onchange={handleVerificationChange}
+                                data-index={idx}
+                                class="verification-input">
+                            </lightning-input>
+                        </template>
+                    </div>
+                    <template if:true={errorMessage}>
+                        <div class="error-message">{errorMessage}</div>
+                    </template>
+                    <lightning-button 
+                        label="Submit" 
+                        variant="brand" 
+                        onclick={handleSubmit}
+                        disabled={isSubmitDisabled}>
+                    </lightning-button>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

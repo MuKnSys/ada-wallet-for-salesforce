@@ -4,7 +4,7 @@
     <columns>NAME</columns>    
     <columns>Address__c</columns>
     <columns>State__c</columns>    
-    <columns>WalletSet__c</columns>
+    <columns>Wallet_Set__c</columns>
     <filterScope>Everything</filterScope>
     <label>All</label>
 </ListView>
