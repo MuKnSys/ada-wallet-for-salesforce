@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Logger_Enabled__c</fullName>
+    <description>Identifies of Logger is enabled</description>
+    <defaultValue>false</defaultValue>
+    <externalId>false</externalId>
+    <label>Is Logger Enabled?</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
