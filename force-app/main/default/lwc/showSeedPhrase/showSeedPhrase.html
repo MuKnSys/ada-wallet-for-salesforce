@@ -1,0 +1,20 @@
+<template>
+    <lightning-card icon-name="custom:custom63" title="Seed Phrase and Private Key" class="slds-m-around_medium">
+        <div class="slds-p-around_medium">
+            <h2 class="slds-text-heading_medium slds-m-bottom_small">Seed Phrase</h2>
+            <lightning-button label="Show Seed Phrase" onclick={showSeedPhrase} variant="brand"></lightning-button>
+            <lightning-button label="Clear" onclick={clearSeedPhrase} class="slds-m-left_small" variant="neutral"></lightning-button>
+            <template if:true={seedPhrase}>
+                <p class="slds-text-body_regular slds-m-top_small">{seedPhrase}</p>
+            </template>
+            <hr class="slds-m-top_medium slds-m-bottom_medium" />
+
+            <h2 class="slds-text-heading_medium slds-m-bottom_small">Cardano Private Key</h2>
+            <lightning-button label="Show Cardano Private Key" onclick={showCardanoPrivateKey} variant="brand"></lightning-button>
+            <lightning-button label="Clear" onclick={clearCardanoPrivateKey} class="slds-m-left_small" variant="neutral"></lightning-button>
+            <template if:true={cardanoPrivateKey}>
+                <p class="slds-text-body_regular slds-m-top_small">{cardanoPrivateKey}</p>
+            </template>
+        </div>
+    </lightning-card>
+</template>

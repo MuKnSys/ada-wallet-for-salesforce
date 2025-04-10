@@ -3,9 +3,9 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import bipLibrary from '@salesforce/resourceUrl/bip39';
-import createWalletSet from '@salesforce/apex/WalletSetController.createWalletSet';
+import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
 
-export default class GenerateSeedPhrase1 extends NavigationMixin(LightningElement) {
+export default class GenerateSeedPhrase extends NavigationMixin(LightningElement) {
     @track step1 = true;
     @track step2 = false;
     @track step3 = false;
@@ -178,8 +178,6 @@ export default class GenerateSeedPhrase1 extends NavigationMixin(LightningElemen
                     index: WalletSet_Node.index,
                     parentFingerprint: WalletSet_Node.parentFingerprint
                 }, null, 2);                
-
-                // Log the WalletSet object                
 
                 // Call Apex to create the Wallet_Set__c record, including Root_Private_Key__c and Root_Public_Key__c
                 const recordId = await createWalletSet({

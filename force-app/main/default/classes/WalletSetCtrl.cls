@@ -1,16 +1,19 @@
-public with sharing class WalletSetController {
+public with sharing class WalletSetCtrl {
     @AuraEnabled
     public static Id createWalletSet(String walletName, String seedPhrase, String rootPrivateKey, String rootPublicKey) {
         try {
             Wallet_Set__c walletSet = new Wallet_Set__c();
             walletSet.Wallet_Name__c = walletName;
-            walletSet.Seed_Phrase__c = seedPhrase;
-            walletSet.Root_Private_Key__c = rootPrivateKey;
+            walletSet.Seed_Phrase__c = DataEncryptor.encrypt(seedPhrase);
+            walletSet.Root_Private_Key__c = DataEncryptor.encrypt(rootPrivateKey);
             walletSet.Root_Public_Key__c = rootPublicKey;
             insert walletSet;
+            Logger.logInfo('Wallet Set was created by ' + UserInfo.getName() + ' (Id: ' + UserInfo.getUserId() + ') with ID: ' + walletSet.Id);
             return walletSet.Id;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating Wallet Set: ' + e.getMessage());
+        } finally {
+            Logger.commitLogs();
         }
     }
 

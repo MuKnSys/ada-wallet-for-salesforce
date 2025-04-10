@@ -4,9 +4,55 @@
         <application>Ada_Wallet</application>
         <visible>true</visible>
     </applicationVisibilities>
+    <applicationVisibilities>
+        <application>Ada_Wallet_Setup</application>
+        <visible>true</visible>
+    </applicationVisibilities>
+    <classAccesses>
+        <apexClass>AdaWalletsSetupCtrl</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>WalletSetCtrl</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>    
+    <customSettingAccesses>
+        <enabled>true</enabled>
+        <name>AdaSettings__c</name>
+    </customSettingAccesses>
     <description>Admin access to the ADA Wallet application.</description>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Log__c.Logged_at__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Log__c.Message__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Log__c.Running_User__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Log__c.Severity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet_Set__c.Wallet_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>    
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet_Set__c.Root_Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
-    <label>ADA Wallet Admin</label>
+    <label>ADA Wallet Admin</label>    
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
@@ -25,26 +71,10 @@
         <object>Wallet__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Wallet_Set__c.Wallet_Name__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Wallet_Set__c.Seed_Phrase__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Wallet_Set__c.Root_Private_Key__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Wallet_Set__c.Root_Public_Key__c</field>
-        <readable>true</readable>
-    </fieldPermissions>    
+    <tabSettings>
+        <tab>Ada_Wallet_Setup</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>    
     <tabSettings>
         <tab>Wallet_Set__c</tab>
         <visibility>Visible</visibility>
