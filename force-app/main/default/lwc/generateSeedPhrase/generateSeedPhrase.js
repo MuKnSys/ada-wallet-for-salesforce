@@ -102,17 +102,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
-    }
-
-    uploadToDataCloud() {
-        // Placeholder for Data Cloud integration
-        this.showToast('Success', 'Seed phrase uploaded to Data Cloud', 'success');
-    }
-
-    storeInOrg() {
-        // Placeholder for org storage
-        this.showToast('Success', 'Seed phrase stored in organization', 'success');
-    }
+    }    
 
     handleNextFromStep2() {
         // Create verification inputs and prefill with the generated seed phrase words

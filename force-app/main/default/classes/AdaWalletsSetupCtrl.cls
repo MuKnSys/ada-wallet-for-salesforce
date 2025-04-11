@@ -12,7 +12,7 @@ public with sharing class AdaWalletsSetupCtrl {
     @AuraEnabled
     public static SetupData generatePrivateKey() {
         try {
-            String privateKey = EncodingUtil.convertToHex(Crypto.generateAesKey(256));
+            String privateKey = EncodingUtil.convertToHex(Crypto.generateAesKey(128));
             AdaWalletsService.setPrivateKey(privateKey);
             return getSetup();
         } catch (Exception e) {

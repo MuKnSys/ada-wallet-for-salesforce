@@ -36,17 +36,7 @@
                         label="Download as Text" 
                         variant="neutral" 
                         onclick={downloadSeedPhrase}>
-                    </lightning-button>
-                    <lightning-button 
-                        label="Upload to Data Cloud" 
-                        variant="neutral" 
-                        onclick={uploadToDataCloud}>
-                    </lightning-button>
-                    <lightning-button 
-                        label="Store in Org" 
-                        variant="neutral" 
-                        onclick={storeInOrg}>
-                    </lightning-button>
+                    </lightning-button>                    
                     <lightning-button 
                         label="Next" 
                         variant="brand" 
@@ -74,12 +64,14 @@
                     <template if:true={errorMessage}>
                         <div class="error-message">{errorMessage}</div>
                     </template>
-                    <lightning-button 
-                        label="Submit" 
-                        variant="brand" 
-                        onclick={handleSubmit}
-                        disabled={isSubmitDisabled}>
+                    <div class="button-group">
+                        <lightning-button 
+                            label="Submit" 
+                            variant="brand" 
+                            onclick={handleSubmit}
+                            disabled={isSubmitDisabled}>
                     </lightning-button>
+                    </div>                    
                 </div>
             </template>
         </div>

@@ -3,13 +3,13 @@ public with sharing class DataEncryptor {
 
     public static String encrypt(String plainText) {        
         Blob data = Blob.valueOf(plainText);
-        Blob encrypted = Crypto.encryptWithManagedIV('AES256', key, data);        
+        Blob encrypted = Crypto.encryptWithManagedIV('AES128', key, data);        
         return EncodingUtil.base64Encode(encrypted);
     }
 
     public static String decrypt(String encryptedText) {        
         Blob encrypted = EncodingUtil.base64Decode(encryptedText);
-        Blob decrypted = Crypto.decryptWithManagedIV('AES256', key, encrypted);
+        Blob decrypted = Crypto.decryptWithManagedIV('AES128', key, encrypted);
         return decrypted.toString();
     }
 }

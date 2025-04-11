@@ -4,17 +4,21 @@
         <apexClass>ShowSeedPhraseCtrl</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>See_seed_phrase</name>
+    </customPermissions>
     <description>Access to the ADA Wallet Seed phrase and private key.</description>
-    <hasActivationRequired>false</hasActivationRequired>
-    <label>ADA Wallet Seed Phrase</label>    
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Wallet_Set__c.Root_Private_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Wallet_Set__c.Seed_Phrase__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Wallet_Set__c.Root_Private_Key__c</field>
-        <readable>true</readable>
-    </fieldPermissions>   
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>ADA Wallet Seed Phrase</label>
 </PermissionSet>
