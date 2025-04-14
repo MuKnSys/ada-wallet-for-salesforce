@@ -11,11 +11,6 @@
     <description>Access to the ADA Wallet Seed phrase and private key.</description>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Wallet_Set__c.Root_Private_Key__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
         <field>Wallet_Set__c.Seed_Phrase__c</field>
         <readable>true</readable>
     </fieldPermissions>

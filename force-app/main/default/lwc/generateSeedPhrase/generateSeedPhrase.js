@@ -155,27 +155,19 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     .deriveHardened(1852)
                     .deriveHardened(1815);                
 
-                // Set extended private and public keys                
-                WalletSet.xprv = WalletSet_Node.toBase58();                
-                WalletSet.xpub = WalletSet_Node.neutered().toBase58();                
-
                 // Serialize node details to JSON                
                 WalletSet.node = JSON.stringify({
-                    xprv: WalletSet.xprv,
-                    xpub: WalletSet.xpub,
                     chainCode: WalletSet_Node.chainCode.toString('hex'),
                     depth: WalletSet_Node.depth,
                     index: WalletSet_Node.index,
                     parentFingerprint: WalletSet_Node.parentFingerprint
                 }, null, 2);                
 
-                // Call Apex to create the Wallet_Set__c record, including Root_Private_Key__c and Root_Public_Key__c
+                // Call Apex to create the Wallet_Set__c record
                 const recordId = await createWalletSet({
                     walletName: this.walletName,
-                    seedPhrase: seedPhraseString,
-                    rootPrivateKey: WalletSet.xprv, // Pass xprv as Root_Private_Key__c
-                    rootPublicKey: WalletSet.xpub   // Pass xpub as Root_Public_Key__c
-                });                
+                    seedPhrase: seedPhraseString
+                });
 
                 // Validate the recordId
                 if (!recordId || typeof recordId !== 'string' || !recordId.startsWith('a')) {
