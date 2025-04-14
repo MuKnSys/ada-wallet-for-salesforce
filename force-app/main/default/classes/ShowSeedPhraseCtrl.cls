@@ -11,17 +11,4 @@ public with sharing class ShowSeedPhraseCtrl {
             Logger.commitLogs();
         }
     }
-
-    @AuraEnabled
-    public static String getCardanoPrivateKey(Id walletSetId) {
-        try {
-            Wallet_Set__c walletSet = WalletSetSelector.getWalletSetById(walletSetId);
-            Logger.logInfo('Private key was retrieved by ' + UserInfo.getName() + ' (Id: ' + UserInfo.getUserId() + ') for Wallet set with ID: ' + walletSet.Id);
-            return DataEncryptor.decrypt(walletSet.Root_Private_Key__c);            
-        } catch (Exception e) {
-            throw new AuraHandledException('Error creating Wallet Set: ' + e.getMessage());
-        } finally {
-            Logger.commitLogs();
-        }
-    }    
 }
