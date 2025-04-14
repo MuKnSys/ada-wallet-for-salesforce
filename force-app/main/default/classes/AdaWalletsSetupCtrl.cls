@@ -3,11 +3,21 @@ public with sharing class AdaWalletsSetupCtrl {
     public static SetupData getSetup() {
         try {
             return new SetupData()                
-                .withPrivateKey(AdaWalletsService.getPrivateKey());
+                .withPrivateKey(AdaWalletsService.getPrivateKey())
+                .withBlockfrostProjectId(AdaWalletsService.getBlockfrostProjectId());
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
-    }    
+    }
+
+    @AuraEnabled
+    public static void saveBlockfrostProjectId(String blockfrostProjectId) {
+        try {            
+            AdaWalletsService.setBlockfrostProjectId(blockfrostProjectId);
+        } catch (Exception e) {            
+            throw new AuraHandledException('Failed to save Blockfrost project Id: ' + e.getMessage());
+        }
+    }
 
     @AuraEnabled
     public static SetupData generatePrivateKey() {
@@ -22,12 +32,19 @@ public with sharing class AdaWalletsSetupCtrl {
 
     public class SetupData {        
         @AuraEnabled
-        public String privateKey { get; set; }        
+        public String privateKey { get; set; }
+        @AuraEnabled
+        public String blockfrostProjectId { get; set; }
 
         public SetupData withPrivateKey(String value) {
             privateKey = enrich(value);
             return this;
-        }        
+        }
+
+        public SetupData withBlockfrostProjectId(String value) {
+            blockfrostProjectId = enrich(value);
+            return this;
+        }
 
         private String enrich(String value) {
             return value == null ? '' : value;
