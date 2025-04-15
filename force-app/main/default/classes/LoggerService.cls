@@ -18,4 +18,8 @@ public without sharing class LoggerService {
 
         upsert as system loggerSettings;
     }
+
+    public Boolean isLoggingEnabled() {
+        return loggerSettings.Is_Logger_Enabled__c;
+    }
 }

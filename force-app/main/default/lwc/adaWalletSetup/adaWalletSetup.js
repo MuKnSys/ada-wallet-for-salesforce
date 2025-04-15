@@ -9,7 +9,7 @@ import generatePrivateKey from '@salesforce/apex/AdaWalletsSetupCtrl.generatePri
 import enableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.enableLogging';
 import disableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.disableLogging';
 import saveBlockfrostProjectId from '@salesforce/apex/AdaWalletsSetupCtrl.saveBlockfrostProjectId';
-import getBlockfrostConfig from '@salesforce/apex/BlockfrostService.getBlockfrostConfig';
+import testBlockfrostConfig from '@salesforce/apex/AdaWalletsSetupCtrl.testBlockfrostConfig';
 
 export default class AdaWalletSetup extends LightningElement {
     isLoading = true;
@@ -122,7 +122,7 @@ export default class AdaWalletSetup extends LightningElement {
         this.isLoading = true;
         this.testResult = '';
         try {
-            const result = await getBlockfrostConfig();
+            const result = await testBlockfrostConfig();
             this.testResult = JSON.stringify(JSON.parse(result), null, 2);
             this.showToast(this.labels.CORE.Success, 'Blockfrost configuration tested successfully', TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {
