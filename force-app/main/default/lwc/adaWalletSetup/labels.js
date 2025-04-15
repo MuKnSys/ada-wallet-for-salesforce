@@ -58,8 +58,7 @@ export const labels = {
         Title: AdaWalletsSetup_LoggingTitle,
         Info: AdaWalletsSetup_LoggingInfo,
         EnableLogging: AdaWalletsSetup_LoggingEnableLogging,
-        DisableLogging: AdaWalletsSetup_LoggingDisableLogging,
-        SetupSuccess: AdaWalletsSetup_LoggingSetupSuccess,
+        DisableLogging: AdaWalletsSetup_LoggingDisableLogging,        
         EnableSuccess: AdaWalletsSetup_LoggingEnableSuccess,
         DisableSuccess: AdaWalletsSetup_LoggingDisableSuccess
     },

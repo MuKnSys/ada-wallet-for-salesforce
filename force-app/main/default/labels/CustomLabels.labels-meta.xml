@@ -5,7 +5,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Header</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Header</shortDescription>
         <value>Blockfrost</value>
     </labels>
     <labels>
@@ -13,7 +13,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Info</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Info</shortDescription>
         <value>Enter your Blockfrost Project ID for Cardano API integration:</value>
     </labels>
     <labels>
@@ -21,7 +21,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Project Id Header</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Project Id Header</shortDescription>
         <value>Project ID Set</value>
     </labels>
     <labels>
@@ -29,7 +29,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Project Id Input Header</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Project Id Input Header</shortDescription>
         <value>Blockfrost Project ID</value>
     </labels>    
     <labels>
@@ -37,7 +37,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Save Configuration</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Save Configuration</shortDescription>
         <value>Save Configuration</value>
     </labels>
     <labels>
@@ -45,7 +45,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Remove Configuration</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Remove Configuration</shortDescription>
         <value>Remove</value>
     </labels>
     <labels>
@@ -53,7 +53,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Test Configuration Header</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Header</shortDescription>
         <value>Test Blockfrost Configuration</value>
     </labels>
     <labels>
@@ -61,7 +61,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Test Configuration Info</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Info</shortDescription>
         <value>Test your Blockfrost configuration:</value>
     </labels>
     <labels>
@@ -69,7 +69,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Test Configuration Button Label</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Button Label</shortDescription>
         <value>Test Configuration</value>
     </labels>
     <labels>
@@ -77,15 +77,23 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Blockfrost Test Configuration Result</shortDescription>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Result</shortDescription>
         <value>Test Result:</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostGetConfigAPIError</fullName>
+        <categories>apex, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup EntityPublicKey API Error</shortDescription>
+        <value>Error retrieveing the Blockfrost configuration.</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_LoggingDisableLogging</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Disable Logging</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Disable Logging</shortDescription>
         <value>Disable logging</value>
     </labels>
     <labels>
@@ -93,7 +101,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Disable Success</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Disable Success</shortDescription>
         <value>Logging disabled.</value>
     </labels>
     <labels>
@@ -101,7 +109,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Enable Logging</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Enable Logging</shortDescription>
         <value>Enable logging</value>
     </labels>
     <labels>
@@ -109,7 +117,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Enabled Success</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Enabled Success</shortDescription>
         <value>Logging enabled.</value>
     </labels>
     <labels>
@@ -117,7 +125,7 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Header</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Header</shortDescription>
         <value>Logging</value>
     </labels>
     <labels>
@@ -125,23 +133,15 @@
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Info</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Info</shortDescription>
         <value>Recommended. You can enable error logging which may help troubleshoot problems.</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_LoggingSetupSuccess</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>Logging Setup Success</shortDescription>
-        <value>Success</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_LoggingTitle</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Logging Title</shortDescription>
+        <shortDescription>AdaWalletsSetup Logging Title</shortDescription>
         <value>Setup Logging</value>
     </labels>
     <labels>
