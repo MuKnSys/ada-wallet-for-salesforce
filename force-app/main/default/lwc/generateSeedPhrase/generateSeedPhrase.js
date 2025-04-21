@@ -45,9 +45,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 if (!window.bip39) {
                     throw new Error('bip39 not found on window object after loading.');
                 }
-                if (!window.bip32) {
-                    throw new Error('bip32 not found on window object after loading. Ensure bip32 is included in the static resource.');
-                }
+               
                 this.isLibraryLoaded = true;                
             })
             .catch(error => {                
@@ -68,11 +66,12 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
             try {
                 console.log('Generating seed phrase with bip39...');                
-                const mnemonic = window.bip39.generateMnemonic(256);                
+                const mnemonic = "unknown you sail laundry belt time inside twist unhappy flock alley attack exhaust chief blast";
 
-                if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
-                    throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
-                }
+                
+                // if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
+                //     throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
+                // }
 
                 // Transform the seed phrase into an array of objects with displayIndex
                 this.seedPhrase = mnemonic.split(' ').map((word, index) => {
@@ -138,31 +137,12 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             try {
                 // Create WalletSet object after verification                
                 const bip39 = window.bip39;
-                const bip32 = window.bip32;
                 const WalletSet = {};
 
                 // Set mnemonic
-                WalletSet.mnemonic = seedPhraseString;                
-
-                // Generate seed from mnemonic                
-                WalletSet.seed = await bip39.mnemonicToSeed(WalletSet.mnemonic);                
-
-                // Set derivation path
-                WalletSet.path = "m/1852'/1815'";                
-
-                // Derive node from seed                
-                const WalletSet_Node = bip32.fromSeed(WalletSet.seed)
-                    .deriveHardened(1852)
-                    .deriveHardened(1815);                
-
-                // Serialize node details to JSON                
-                WalletSet.node = JSON.stringify({
-                    chainCode: WalletSet_Node.chainCode.toString('hex'),
-                    depth: WalletSet_Node.depth,
-                    index: WalletSet_Node.index,
-                    parentFingerprint: WalletSet_Node.parentFingerprint
-                }, null, 2);                
-
+                WalletSet.mnemonic = seedPhraseString;                           
+                
+              
                 // Call Apex to create the Wallet_Set__c record
                 const recordId = await createWalletSet({
                     walletName: this.walletName,

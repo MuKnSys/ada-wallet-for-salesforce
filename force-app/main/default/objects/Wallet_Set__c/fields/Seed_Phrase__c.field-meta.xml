@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Seed_Phrase__c</fullName>
-    <caseSensitive>false</caseSensitive>
     <description>The Seed Phrase to Generate Wallets</description>
-    <externalId>false</externalId>
     <label>Seed Phrase</label>
-    <length>255</length>
+    <type>LongTextArea</type>
+    <length>512</length>
+    <visibleLines>5</visibleLines>
     <required>false</required>
     <trackTrending>false</trackTrending>
-    <type>Text</type>
-    <unique>true</unique>
 </CustomField>

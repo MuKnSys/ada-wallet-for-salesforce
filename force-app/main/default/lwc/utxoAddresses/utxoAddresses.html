@@ -1,0 +1,74 @@
+<template>
+    <lightning-card title="" variant="narrow">
+        <div class="slds-p-around_medium">
+            <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
+                <div class="slds-col">
+                    <h2 class="slds-text-heading_small">
+                        UTXO Addresses ({currentTabLabel}: {currentTabCount})
+                    </h2>
+                </div>
+                <div class="slds-col">
+                    <template if:true={hasSeedPhrasePermission}>
+                        <lightning-button
+                            label="Generate New Address"
+                            variant="brand"
+                            onclick={generateAddress}
+                            class="slds-float_right"
+                        ></lightning-button>
+                    </template>
+                </div>
+            </div>
+            <div class="slds-m-bottom_small">
+                <lightning-input
+                    type="text"
+                    label="Filter Addresses"
+                    placeholder="Filter by Name, Path, or Address..."
+                    onchange={handleFilterChange}
+                    value={filterText}
+                ></lightning-input>
+            </div>
+            <template if:true={error}>
+                <lightning-alert variant="error" title="Error">
+                    {error}
+                </lightning-alert>
+            </template>
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading addresses..."></lightning-spinner>
+            </template>
+            <template if:false={error}>
+                <lightning-tabset active-tab-value={activeTab}>
+                    <lightning-tab label="External" value="external" onactive={handleExternalTabActive}>
+                        <lightning-datatable
+                            key-field="Id"
+                            data={displayedExternalAddresses}
+                            columns={columns}
+                            onrowaction={handleRowAction}
+                            suppress-bottom-bar
+                            class="slds-table_header-fixed_container"
+                        ></lightning-datatable>
+                        <div class="slds-align_absolute-center slds-p-vertical_small">
+                            <template if:true={externalAddresses.length}>
+                                <a href="#" onclick={handleViewAll}>View All</a>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                    <lightning-tab label="Internal" value="internal" onactive={handleInternalTabActive}>
+                        <lightning-datatable
+                            key-field="Id"
+                            data={displayedInternalAddresses}
+                            columns={columns}
+                            onrowaction={handleRowAction}
+                            suppress-bottom-bar
+                            class="slds-table_header-fixed_container"
+                        ></lightning-datatable>
+                        <div class="slds-align_absolute-center slds-p-vertical_small">
+                            <template if:true={internalAddresses.length}>
+                                <a href="#" onclick={handleViewAll}>View All</a>
+                            </template>
+                        </div>
+                    </lightning-tab>
+                </lightning-tabset>
+            </template>
+        </div>
+    </lightning-card>
+</template>

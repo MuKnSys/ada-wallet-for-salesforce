@@ -1,0 +1,48 @@
+<template>
+    <lightning-card title="Create New Wallet" icon-name="standard:account">
+        <div class="slds-p-around_medium">
+            <lightning-record-picker
+                label="Wallet Set"
+                placeholder="Select a Wallet Set"
+                object-api-name="Wallet_Set__c"
+                value={selectedWalletSetId}
+                onchange={handleWalletSetChange}
+                filter={defaultFilter}
+                required
+                class="slds-m-bottom_small"
+                error-message={pickerErrorMessage}
+            ></lightning-record-picker>
+            <lightning-input
+                label="Wallet Name"
+                value={walletName}
+                onchange={handleWalletNameChange}
+                required
+                class="slds-m-bottom_small"
+                message-when-value-missing="Wallet Name is required"
+            ></lightning-input>
+            <lightning-input
+                label="Account Index"
+                type="number"
+                value={accountIndex}
+                onchange={handleAccountIndexChange}
+                min="0"
+                required
+                class="slds-m-bottom_small"
+                message-when-value-missing="Account Index is required"
+                message-when-type-mismatch="Account Index must be a number"
+                message-when-range-underflow="Account Index must be non-negative"
+                error-message={accountIndexErrorMessage}
+            ></lightning-input>
+            <lightning-button
+                label={buttonLabel}
+                variant="brand"
+                onclick={handleCreate}
+                disabled={isCreateDisabled}
+                class="slds-m-bottom_small"
+            ></lightning-button>
+            <template if:true={errorMessage}>
+                <div class="slds-text-color_error slds-m-top_small">{errorMessage}</div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,28 @@
+/* Ensure the card doesn't overflow and fits on the page */
+:host lightning-card {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Style for the seed phrase text to handle long phrases */
+.seed-phrase-text {
+    white-space: pre-wrap; /* Preserve spaces and allow wrapping */
+    font-family: monospace; /* Use monospace font for seed phrase */
+    font-size: 14px; /* Slightly smaller font for readability */
+    line-height: 1.5; /* Better spacing between lines */
+    background-color: #f4f4f4; /* Light background for contrast */
+    padding: 8px; /* Padding for better appearance */
+    border-radius: 4px; /* Rounded corners */
+    border: 1px solid #d8dde6; /* Subtle border */
+}
+
+/* Ensure the card content is responsive */
+.slds-p-around_medium {
+    box-sizing: border-box;
+}
+
+/* Add spacing between buttons and content */
+.slds-m-bottom_medium {
+    display: flex;
+    gap: 8px; /* Space between buttons */
+}

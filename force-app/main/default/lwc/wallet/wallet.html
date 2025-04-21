@@ -1,0 +1,113 @@
+<template>
+    <lightning-card class="wallet-card">
+        <div class="wallet-header">
+            <h2 slot="title" class="wallet-title">ADA Wallet</h2>
+        </div>
+        <div class="wallet-content">
+            <template if:true={isLoading}>
+                <div class="loading-container">
+                    <lightning-spinner alternative-text="Loading wallet data..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+            <template if:false={isLoading}>
+                <!-- Balance Section -->
+                <div class="balance-section">
+                    <div class="wallet-balance-label">Balance</div>
+                    <div class="wallet-balance-amount">
+                        <template if:true={balance}>
+                            {balance} <span class="currency">ADA</span>
+                        </template>
+                        <template if:false={balance}>
+                            <span class="not-available">Not available</span>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Payment Address Section -->
+                <div class="address-section">
+                    <div class="wallet-address-label">Payment Address</div>
+                    <div class="wallet-address">{paymentAddress}</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <lightning-button label="Send" variant="neutral" onclick={openSendModal} class="action-button"></lightning-button>
+                    <lightning-button label="Receive" variant="brand" onclick={openReceiveModal} disabled={isAddressInvalid} class="action-button"></lightning-button>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+
+    <!-- Receive Modal -->
+    <template if:true={showReceive}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-receive" aria-modal="true" class="slds-modal slds-fade-in-open receive-modal">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close close-button" title="Close" onclick={closeReceiveModal}>
+                        <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-receive" class="slds-modal__title receive-title">Receive ADA</h2>
+                </header>
+                <div class="slds-modal__content receive-content">
+                    <div class="receive-grid">
+                        <div class="address-container">
+                            <p class="address-label">Your Payment Address:</p>
+                            <div class="address-box">{paymentAddress}</div>
+                        </div>
+                        <div class="qr-container">
+                            <template if:false={qrCodeError}>
+                                <div class="qr-code-canvas"></div>
+                            </template>
+                            <template if:true={qrCodeError}>
+                                <p class="qr-error">Unable to generate QR code.</p>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <lightning-button label="Copy Address" variant="brand" onclick={copyToClipboard} class="modal-button"></lightning-button>
+                        <lightning-button label="Download QR Code" variant="neutral" onclick={shareLink} class="modal-button"></lightning-button>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Close" onclick={closeReceiveModal} class="close-button"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- Send Modal -->
+    <template if:true={showSend}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-send" aria-modal="true" class="slds-modal slds-fade-in-open send-modal">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close close-button" title="Close" onclick={closeSendModal}>
+                        <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-send" class="slds-modal__title send-title">Send ADA</h2>
+                </header>
+                <div class="slds-modal__content send-content">
+                    <div class="send-form">
+                        <div class="form-field">
+                            <label class="form-label" for="send-amount">Amount (ADA)</label>
+                            <input type="number" id="send-amount" class="form-input" placeholder="Enter amount in ADA" step="0.000001" min="0" />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="send-address">Recipient Address</label>
+                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address"></textarea>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <lightning-button label="Send" variant="brand" class="modal-button send-button"></lightning-button>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Close" onclick={closeSendModal} class="close-button"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

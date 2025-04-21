@@ -1,0 +1,306 @@
+/* Wallet Card */
+.wallet-card {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin: 1rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Wallet Header */
+.wallet-header {
+    background: #2e7d32;
+    padding: 0.5rem;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.wallet-title {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Wallet Content */
+.wallet-content {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+/* Loading Spinner */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+/* Balance Section */
+.balance-section {
+    margin-bottom: 1.5rem;
+}
+
+.wallet-balance-label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.wallet-balance-amount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+.currency {
+    font-size: 1rem;
+    color: #666;
+}
+
+.not-available {
+    font-size: 1rem;
+    color: #d32f2f;
+}
+
+/* Address Section */
+.address-section {
+    margin-bottom: 1.5rem;
+}
+
+.wallet-address-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.wallet-address {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #333;
+    word-break: break-all;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+}
+
+/* Action Buttons (Main Card) */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.action-button {
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.action-button:hover {
+    transform: scale(1.05);
+}
+
+/* Receive Modal */
+.receive-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.receive-modal .slds-modal__container {
+    width: 600px;
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+.receive-modal .slds-modal__header {
+    background: #2e7d32;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.receive-title {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.close-button lightning-icon {
+    fill: #ffffff;
+}
+
+.receive-content {
+    padding: 1.5rem;
+    color: #333;
+}
+
+.receive-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.address-container {
+    flex: 1;
+}
+
+.address-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.address-box {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #333;
+    padding: 0.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    word-break: break-all;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.qr-container {
+    flex: 0 0 auto;
+    text-align: center;
+}
+
+.qr-code-canvas {
+    display: inline-block;
+    padding: 0.5rem;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.qr-error {
+    color: #d32f2f;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.action-buttons .modal-button {
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.action-buttons .modal-button:hover {
+    transform: scale(1.05);
+}
+
+.receive-modal .slds-modal__footer {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* Send Modal */
+.send-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.send-modal .slds-modal__container {
+    width: 500px;
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+.send-modal .slds-modal__header {
+    background: #2e7d32;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.send-title {
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.send-content {
+    padding: 1.5rem;
+    color: #333;
+    background: #ffffff;
+}
+
+.send-form {
+    margin-bottom: 1.5rem;
+}
+
+.form-field {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #333;
+    background: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
+}
+
+.form-textarea {
+    height: 80px;
+    resize: vertical;
+    font-family: 'Courier New', monospace;
+}
+
+.send-button {
+    background: #2e7d32;
+    color: #ffffff;
+    transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.send-button:hover {
+    transform: scale(1.05);
+    background: #27632a;
+}
+
+.send-modal .slds-modal__footer {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.close-button {
+    background: #f5f5f5;
+    color: #333;
+    transition: background-color 0.3s ease;
+}
+
+.close-button:hover {
+    background: #e0e0e0;
+}
+
+/* Modal Backdrop */
+.slds-backdrop_open {
+    background: rgba(0, 0, 0, 0.5);
+}
