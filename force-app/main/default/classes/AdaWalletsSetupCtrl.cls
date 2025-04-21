@@ -30,6 +30,15 @@ public with sharing class AdaWalletsSetupCtrl {
         }
     }
 
+    @AuraEnabled
+    public static String testBlockfrostConfig() {
+        try {
+            return BlockfrostService.getBlockfrostConfig();
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
     public class SetupData {        
         @AuraEnabled
         public String privateKey { get; set; }

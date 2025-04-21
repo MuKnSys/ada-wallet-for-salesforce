@@ -9,7 +9,7 @@ import generatePrivateKey from '@salesforce/apex/AdaWalletsSetupCtrl.generatePri
 import enableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.enableLogging';
 import disableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.disableLogging';
 import saveBlockfrostProjectId from '@salesforce/apex/AdaWalletsSetupCtrl.saveBlockfrostProjectId';
-import testBlockfrostConfig from '@salesforce/apex/BlockfrostConnector.testBlockfrostConfig';
+import testBlockfrostConfig from '@salesforce/apex/AdaWalletsSetupCtrl.testBlockfrostConfig';
 
 export default class AdaWalletSetup extends LightningElement {
     isLoading = true;
@@ -69,7 +69,8 @@ export default class AdaWalletSetup extends LightningElement {
             this.dataChanged = false;
             this.testResult = '';
         } catch (error) {
-            this.showToast('Error', 'Failed to load settings: ' + error.body?.message || error.message, 'error');
+            const errorMessage = 'Failed to load settings: ' + error.body ? error.body.message : error.message;
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
         }        
@@ -85,16 +86,11 @@ export default class AdaWalletSetup extends LightningElement {
             await saveBlockfrostProjectId({
                 blockfrostProjectId: this.blockfrostProjectId
             });
-            this.showMessage = true;
-            this.message = 'Blockfrost Project ID saved successfully';
-            this.messageVariant = 'success';
-            this.showToast('Success', 'Settings saved successfully', 'success');
+            this.showToast(this.labels.CORE.Success, 'Blockfrost Project ID saved successfully', TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
             await this.loadSetup();
         } catch (error) {
-            this.showMessage = true;            
-            this.message = 'Error saving settings: ' + error.body?.message || error.message;
-            this.messageVariant = 'error';
-            this.showToast('Error', 'Failed to save settings: ' + error.body?.message || error.message, 'error');
+            const errorMessage = 'Failed to save settings: ' + error.body ? error.body.message : error.message;
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
             this.dataChanged = false;            
@@ -111,17 +107,11 @@ export default class AdaWalletSetup extends LightningElement {
             await saveBlockfrostProjectId({
                 blockfrostProjectId: null
             });
-            this.showMessage = true;
-            this.message = 'Blockfrost Project ID removed successfully';
-            this.messageVariant = 'success';
-            this.showToast('Success', 'Settings removed successfully', 'success');
-            await this.loadSetup(); // Refresh to show input again
-        } catch (error) {            
-            this.message = error.message;
-            this.showMessage = true;
-            this.message = 'Error removing settings: ' + error.body?.message || error.message;
-            this.messageVariant = 'error';
-            this.showToast('Error', 'Failed to remove settings: ' + error.body?.message || error.message, 'error');
+            this.showToast(this.labels.CORE.Success, 'Settings removed successfully', TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
+            await this.loadSetup();
+        } catch (error) {
+            const errorMessage = 'Failed to remove settings: ' + error.body ? error.body.message : error.message;
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
             this.dataChanged = false;            
@@ -134,16 +124,11 @@ export default class AdaWalletSetup extends LightningElement {
         try {
             const result = await testBlockfrostConfig();
             this.testResult = JSON.stringify(JSON.parse(result), null, 2);
-            this.showMessage = true;
-            this.message = 'Blockfrost configuration tested successfully';
-            this.messageVariant = 'success';
-            this.showToast('Success', 'Configuration test passed', 'success');
+            this.showToast(this.labels.CORE.Success, 'Blockfrost configuration tested successfully', TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {
             this.testResult = 'Test failed: ' + (error.body?.message || error.message);
-            this.showMessage = true;
-            this.message = 'Error testing configuration';
-            this.messageVariant = 'error';
-            this.showToast('Error', 'Failed to test configuration: ' + (error.body?.message || error.message), 'error');
+            const errorMessage ='Failed to test configuration: ' + error.body ? error.body.message : error.message;
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;            
         }
@@ -154,8 +139,8 @@ export default class AdaWalletSetup extends LightningElement {
         try {
             await this.loadSetup();
         } catch (error) {
-            const erroMessage = error.body ? error.body.message : error.message;
-            this.showToast(erroMessage);
+            const errorMessage = error.body ? error.body.message : error.message;
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
         }
@@ -166,11 +151,10 @@ export default class AdaWalletSetup extends LightningElement {
         try {
             const result = await generatePrivateKey();
             this.processSetupData(result);
-
             this.showToast(this.labels.CORE.Success, this.labels.CORE.Success_Info, TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {
-            const erroMessage = error.body ? error.body.message : error.message;
-            this.showToast(erroMessage);
+            const errorMessage = error.body ? error.body.message : error.message;
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
         }
@@ -180,15 +164,10 @@ export default class AdaWalletSetup extends LightningElement {
         this.isLoading = true;
         try {
             await enableLogging();
-            this.showToast(
-                this.labels.LOGGING.SetupSuccess,
-                this.labels.LOGGING.EnableSuccess,
-                TOAST_VARIANT.SUCCESS,
-                TOAST_MODE.SUCCESS
-            );
+            this.showToast(this.labels.CORE.Success, this.labels.LOGGING.EnableSuccess, TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {
             const errorMessage = error.body ? error.body.message : error.message;
-            showToast(this, 'Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
         }
@@ -198,15 +177,10 @@ export default class AdaWalletSetup extends LightningElement {
         this.isLoading = true;
         try {
             await disableLogging();
-            this.showToast(
-                this.labels.LOGGING.SetupSuccess,
-                this.labels.LOGGING.DisableSuccess,
-                TOAST_VARIANT.SUCCESS,
-                TOAST_MODE.SUCCESS
-            );
+            this.showToast(this.labels.CORE.Success, this.labels.LOGGING.DisableSuccess, TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {
             const errorMessage = error.body ? error.body.message : error.message;
-            showToast(this, 'Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
         }
@@ -217,13 +191,13 @@ export default class AdaWalletSetup extends LightningElement {
             await this.loadSetup();
         } catch (error) {
             const errorMessage = error.body ? error.body.message : error.message;
-            this.showToast(errorMessage);
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;
         }
     }
 
-    showToast(title, message, type = TOAST_VARIANT.ERROR, mode = TOAST_MODE.ERROR) {
+    showToast(title, message, type, mode) {
         this.dispatchEvent(
             new ShowToastEvent({
                 title: title,
