@@ -6,14 +6,14 @@ import { refreshApex } from '@salesforce/apex';
 import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
 import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissions';
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
-import getWalletById from '@salesforce/apex/WalletSelector.getWalletById';
+import getWallet from '@salesforce/apex/UTXOController.getWallet';
 import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
 import isAddressUsed from '@salesforce/apex/BlockfrostConnector.isAddressUsed';
-import getWalletSetById from '@salesforce/apex/WalletSetSelector.getWalletSetById';
+import getWalletSetWithSeedPhrase from '@salesforce/apex/WalletSetSelector.getWalletSetWithSeedPhrase';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId; // Wallet__c record ID
@@ -196,13 +196,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             console.log(`UtxoAddresses [${new Date().toISOString()}]: Ensuring UTXO addresses for Wallet__c ID: ${this.recordId}`);
 
             // Fetch wallet details to get Wallet_Set__c and Account_Index__c
-            const wallet = await getWalletById({ walletId: this.recordId });
+            const wallet = await getWallet({ walletId: this.recordId });
             if (!wallet || !wallet.Wallet_Set__c || wallet.Account_Index__c == null) {
                 throw new Error('Invalid wallet data: Missing Wallet Set or Account Index');
             }
 
             // Fetch Wallet Set to get the mnemonic
-            const walletSet = await getWalletSetById({ walletSetId: wallet.Wallet_Set__c });
+            const walletSet = await getWalletSetWithSeedPhrase({ walletSetId: wallet.Wallet_Set__c });
             const mnemonic = await decrypt({ encryptedText: walletSet.Seed_Phrase__c });
 
             if (!mnemonic) {
@@ -517,7 +517,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
             // Fetch Wallet__c record to get the encrypted Account_Private_Key__c
             console.log(`UtxoAddresses [${new Date().toISOString()}]: Fetching Wallet__c record for ID: ${this.recordId}`);
-            const wallet = await getWalletById({ walletId: this.recordId });
+            const wallet = await getWallet({ walletId: this.recordId });
             console.log(`UtxoAddresses [${new Date().toISOString()}]: Wallet__c record retrieved:`, JSON.stringify(wallet, null, 2));
 
             if (!wallet || !wallet.Account_Private_Key__c) {
