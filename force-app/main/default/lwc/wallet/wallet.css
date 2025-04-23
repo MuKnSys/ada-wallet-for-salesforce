@@ -94,6 +94,7 @@
     justify-content: center;
     gap: 1rem;
     flex-wrap: wrap;
+    margin-bottom: 1.5rem;
 }
 
 .action-button {
@@ -102,6 +103,128 @@
 
 .action-button:hover {
     transform: scale(1.05);
+}
+
+/* Tabs Section */
+.tabs-section {
+    margin-top: 1rem;
+}
+
+.tabs-section .slds-tabs_scoped__nav {
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tabs-section .slds-tabs_scoped__link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.5rem 1rem;
+}
+
+.tabs-section .slds-tabs_scoped__item.slds-is-active .slds-tabs_scoped__link {
+    color: #2e7d32;
+    border-bottom: 2px solid #2e7d32;
+}
+
+/* Assets Section */
+.assets-content {
+    padding: 1rem 0;
+}
+
+.asset-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #f9f9f9;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.asset-item:hover {
+    background: #f1f1f1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.asset-icon {
+    margin-right: 1rem;
+}
+
+.asset-icon-img {
+    background: #e0e0e0;
+    border-radius: 50%;
+    padding: 0.25rem;
+}
+
+.asset-details {
+    flex: 1;
+    text-align: left;
+}
+
+.asset-name {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.asset-symbol {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.asset-amount {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #2e7d32;
+}
+
+.no-assets {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Transactions Section */
+.transactions-content {
+    padding: 1rem 0;
+}
+
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.transactions-table th,
+.transactions-table td {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.transactions-table th {
+    background: #f5f5f5;
+    font-weight: 600;
+    color: #333;
+}
+
+.transactions-table td {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.transactions-table .slds-text-color_success {
+    color: #2e7d32;
+}
+
+.transactions-table .slds-text-color_warning {
+    color: #ff9800;
+}
+
+.no-transactions {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    padding: 1rem;
 }
 
 /* Receive Modal */
@@ -303,4 +426,29 @@
 /* Modal Backdrop */
 .slds-backdrop_open {
     background: rgba(0, 0, 0, 0.5);
+}
+
+.error-message {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.amount-input-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.max-button {
+    margin-top: 8px;
+}
+
+.fee-info {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #555;
+}
+
+.fee-info p {
+    margin: 0;
 }

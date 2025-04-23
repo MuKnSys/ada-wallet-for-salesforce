@@ -34,6 +34,71 @@
                     <lightning-button label="Send" variant="neutral" onclick={openSendModal} class="action-button"></lightning-button>
                     <lightning-button label="Receive" variant="brand" onclick={openReceiveModal} disabled={isAddressInvalid} class="action-button"></lightning-button>
                 </div>
+
+                <!-- Tabs for Assets and Transactions -->
+                <div class="tabs-section">
+                    <lightning-tabset variant="scoped">
+                        <!-- Assets Tab -->
+                        <lightning-tab label="Assets" value="assets">
+                            <div class="assets-content">
+                                <template for:each={assets} for:item="asset">
+                                    <div key={asset.id} class="asset-item">
+                                        <div class="asset-icon">
+                                            <lightning-icon icon-name={asset.icon} size="small" class="asset-icon-img"></lightning-icon>
+                                        </div>
+                                        <div class="asset-details">
+                                            <div class="asset-name">{asset.name}</div>
+                                            <div class="asset-symbol">{asset.symbol}</div>
+                                        </div>
+                                        <div class="asset-amount">{asset.amount}</div>
+                                    </div>
+                                </template>
+                                <template if:false={assets}>
+                                    <p class="no-assets">No assets available</p>
+                                </template>
+                            </div>
+                        </lightning-tab>
+
+                        <!-- Transactions Tab -->
+                        <lightning-tab label="Transactions" value="transactions">
+                            <div class="transactions-content">
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered transactions-table">
+                                    <thead>
+                                        <tr class="slds-line-height_reset">
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Date">Date</div>
+                                            </th>
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Type">Type</div>
+                                            </th>
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Amount">Amount</div>
+                                            </th>
+                                            <th class="slds-text-title_caps" scope="col">
+                                                <div class="slds-truncate" title="Status">Status</div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={transactions} for:item="transaction">
+                                            <tr key={transaction.id}>
+                                                <td>{transaction.date}</td>
+                                                <td>{transaction.type}</td>
+                                                <td>{transaction.amount}</td>
+                                                <td>
+                                                    <span class={transaction.statusClass}>{transaction.status}</span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                                <template if:false={transactions}>
+                                    <p class="no-transactions">No transactions available</p>
+                                </template>
+                            </div>
+                        </lightning-tab>
+                    </lightning-tabset>
+                </div>
             </template>
         </div>
     </lightning-card>
@@ -92,15 +157,25 @@
                     <div class="send-form">
                         <div class="form-field">
                             <label class="form-label" for="send-amount">Amount (ADA)</label>
-                            <input type="number" id="send-amount" class="form-input" placeholder="Enter amount in ADA" step="0.000001" min="0" />
+                            <div class="amount-input-container">
+                                <input type="number" id="send-amount" data-id="send-amount" class="form-input" placeholder="Enter amount in ADA" step="0.000001" min="0" onchange={handleAmountChange} />
+                                <lightning-button label="Max" variant="neutral" onclick={handleMaxAmount} class="max-button" disabled={isMaxButtonDisabled}></lightning-button>
+                            </div>
+                            <div class="fee-info">
+                                <p>Fee: {calculatedFee} ADA</p>
+                                <p>Total (Amount + Fee): {totalAmount} ADA</p>
+                            </div>
                         </div>
                         <div class="form-field">
                             <label class="form-label" for="send-address">Recipient Address</label>
-                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address"></textarea>
+                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address" onchange={handleAddressChange}></textarea>
                         </div>
+                        <template if:true={errorMessage}>
+                            <div class="error-message slds-text-color_destructive">{errorMessage}</div>
+                        </template>
                     </div>
                     <div class="action-buttons">
-                        <lightning-button label="Send" variant="brand" class="modal-button send-button"></lightning-button>
+                        <lightning-button label="Send" variant="brand" onclick={handleSend} disabled={isSendButtonDisabled} class="modal-button send-button"></lightning-button>
                     </div>
                 </div>
                 <footer class="slds-modal__footer">
