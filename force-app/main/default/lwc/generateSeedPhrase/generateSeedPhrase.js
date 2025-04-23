@@ -45,7 +45,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 if (!window.bip39) {
                     throw new Error('bip39 not found on window object after loading.');
                 }
-               
+
                 this.isLibraryLoaded = true;                
             })
             .catch(error => {                

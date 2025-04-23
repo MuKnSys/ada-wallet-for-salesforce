@@ -73,11 +73,11 @@ public with sharing class WalletCtrl {
             if (String.isBlank(walletSetId)) {
                 throw new AuraHandledException('Wallet Set ID is required');
             }
-            Wallet_Set__c walletSet = WalletSetSelector.getWalletSetById(walletSetId);
+            Wallet_Set__c walletSet = WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
             if (walletSet.Seed_Phrase__c == null) {
                 throw new AuraHandledException('Seed Phrase is missing for the Wallet Set');
             }
-            if (!hasAccessToDecrypt()) {
+            if (!EncryptedDataService.hasAccessToDecrypt()) {
                 throw new AuraHandledException('Access denied to decrypt seed phrase');
             }
             String decryptedSeedPhrase = DataEncryptor.decrypt(walletSet.Seed_Phrase__c);
@@ -96,18 +96,12 @@ public with sharing class WalletCtrl {
             if (String.isBlank(walletId)) {
                 throw new AuraHandledException('Wallet ID is required');
             }
-            List<Wallet__c> wallets = [
-                SELECT Id, Wallet_Set__c, Account_Index__c
-                FROM Wallet__c
-                WHERE Id = :walletId
-                WITH SECURITY_ENFORCED
-                LIMIT 1
-            ];
-            if (wallets.isEmpty()) {
+            Wallet__c wallet = WalletSelector.getWalletById(walletId);
+            if (wallet == null) {
                 throw new AuraHandledException('Wallet not found for ID: ' + walletId);
             }
             Logger.logInfo('Retrieved wallet for ID: ' + walletId + ' by User: ' + UserInfo.getName());
-            return wallets[0];
+            return wallet;
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving wallet: ' + e.getMessage());
         } finally {
@@ -174,23 +168,10 @@ public with sharing class WalletCtrl {
             }
 
             // Fetch Wallet_Set__c Name for error message
-            Wallet_Set__c walletSet = [
-                SELECT Name
-                FROM Wallet_Set__c
-                WHERE Id = :walletSetId
-                WITH SECURITY_ENFORCED
-                LIMIT 1
-            ];
+            Wallet_Set__c walletSet = WalletSetSelector.getWalletSetById(walletSetId);
 
             // Check if the index is already used
-            List<Wallet__c> wallets = [
-                SELECT Id
-                FROM Wallet__c
-                WHERE Wallet_Set__c = :walletSetId
-                AND Account_Index__c = :accountIndex
-                WITH SECURITY_ENFORCED
-                LIMIT 1
-            ];
+            List<Wallet__c> wallets = WalletSelector.getWalletByWalletSetAndAccountIndex(walletSetId, accountIndex);
 
             if (!wallets.isEmpty()) {
                 String errorMessage = 'Account ' + accountIndex + ' already exists for Wallet Set ' + walletSet.Name + '. Try a different wallet set or Account Index.';
@@ -206,14 +187,5 @@ public with sharing class WalletCtrl {
         } finally {
             Logger.commitLogs();
         }
-    }
-
-    private static Boolean hasAccessToDecrypt() {        
-        Set<Id> psIds = new Set<Id>();
-        for (PermissionSetAssignment psa : [SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()]) {
-            psIds.add(psa.PermissionSetId);
-        }
-        List<PermissionSet> permissionSets = [SELECT Id FROM PermissionSet WHERE Name = 'EncryptedDataAccess' LIMIT 1];
-        return !permissionSets.isEmpty() && psIds.contains(permissionSets[0].Id);
     }
 }

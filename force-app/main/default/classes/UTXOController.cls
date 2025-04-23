@@ -9,6 +9,24 @@ public with sharing class UTXOController {
     }
 
     @AuraEnabled
+    public static Wallet__c getWallet(String walletId) {
+        try {            
+            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
+                throw new AuraHandledException('Invalid Wallet ID');
+            }
+                        
+            Wallet__c wallet = WalletSelector.getWalletById(walletId);
+            if (wallet == null) {
+                throw new AuraHandledException('Wallet not found for ID: ' + walletId);
+            }
+            
+            return wallet;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error retrieving wallet: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void createUTXOAddresses(String walletId, List<UTXOAddress> receivingAddresses, List<UTXOAddress> changeAddresses) {
         try {
             // Validate inputs
@@ -71,13 +89,7 @@ public with sharing class UTXOController {
             if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
                 throw new AuraHandledException('Invalid Wallet ID');
             }
-            return [
-                SELECT Id, Name, Address__c, Public_Key__c, Path__c, Staking_Key_Hash__c, Index__c, Type__c
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId
-                WITH SECURITY_ENFORCED
-                ORDER BY Name ASC
-            ];
+            return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
         }
@@ -113,15 +125,7 @@ public with sharing class UTXOController {
             }
 
             // Query UTXO_Address__c records for the given Wallet__c and Type__c
-            List<UTXO_Address__c> utxoAddresses = [
-                SELECT Index__c
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId
-                AND Type__c = :type
-                WITH SECURITY_ENFORCED
-                ORDER BY Index__c DESC
-                LIMIT 1
-            ];
+            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getUTXOAddressesByWalletIdAndType(walletId, type);
 
             // If no records are found, start at index 0
             if (utxoAddresses.isEmpty()) {

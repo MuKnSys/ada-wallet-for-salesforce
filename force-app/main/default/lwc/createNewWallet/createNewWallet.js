@@ -1,11 +1,13 @@
-import { LightningElement, track, api } from 'lwc';
+import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
+
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
+
 import createWallet from '@salesforce/apex/WalletCtrl.createWallet';
-import getWalletSetById from '@salesforce/apex/WalletSetSelector.getWalletSetById';
+import getWalletSetWithSeedPhrase from '@salesforce/apex/WalletSetSelector.getWalletSetWithSeedPhrase';
 import createUTXOAddresses from '@salesforce/apex/UTXOController.createUTXOAddresses';
 import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
 import isAddressUsed from '@salesforce/apex/BlockfrostConnector.isAddressUsed';
@@ -166,6 +168,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         try {
             await this.createWallet();
             this.showToast('Success', `Wallet "${this.walletName}" created successfully`, 'success');
+            this.resetForm();
         } catch (error) {
             this.errorMessage = 'Wallet creation failed: ' + (error.message || error);
             this.showToast('Error', this.errorMessage, 'error');
@@ -193,7 +196,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         let mnemonic;
         try {
-            const walletSet = await getWalletSetById({ walletSetId: this.selectedWalletSetId });
+            const walletSet = await getWalletSetWithSeedPhrase({ walletSetId: this.selectedWalletSetId });
             mnemonic = await decrypt({ encryptedText: walletSet.Seed_Phrase__c });
 
             if (!mnemonic) {
@@ -381,8 +384,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             } catch (error) {
                 throw new Error('Failed to save UTxO addresses: ' + (error.body?.message || error.message));
             }
-
-            this.resetForm();
 
             this[NavigationMixin.Navigate]({
                 type: 'standard__recordPage',

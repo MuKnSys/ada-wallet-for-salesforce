@@ -1,5 +1,6 @@
 <template>
     <lightning-card title="Create New Wallet" icon-name="standard:account">
+        <lightning-spinner lwc:if={isLoading}></lightning-spinner>
         <div class="slds-p-around_medium">
             <lightning-record-picker
                 label="Wallet Set"
