@@ -1,5 +1,0 @@
-<apex:page standardController="Wallet_Set__c">
-    <h2>Create a New Wallet Set</h2>
-    <p>Wallet Name: {!Wallet_Set__c.Name}</p> <!-- You can display data or handle form input here -->
-    <lightning-button label="Save" onclick="saveRecord();" />
-</apex:page>

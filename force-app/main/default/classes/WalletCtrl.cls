@@ -171,9 +171,9 @@ public with sharing class WalletCtrl {
             Wallet_Set__c walletSet = WalletSetSelector.getWalletSetById(walletSetId);
 
             // Check if the index is already used
-            Wallet__c wallet = WalletSelector.getWalletByWalletSetAndAccountIndex(walletSetId, accountIndex);
+            List<Wallet__c> wallets = WalletSelector.getWalletByWalletSetAndAccountIndex(walletSetId, accountIndex);
 
-            if (wallet != null) {
+            if (!wallets.isEmpty()) {
                 String errorMessage = 'Account ' + accountIndex + ' already exists for Wallet Set ' + walletSet.Name + '. Try a different wallet set or Account Index.';
                 Logger.logInfo('Validation failed for Wallet Set: ' + walletSetId + ', Account Index: ' + accountIndex + ': ' + errorMessage);
                 return errorMessage;

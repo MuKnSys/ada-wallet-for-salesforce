@@ -45,7 +45,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 if (!window.bip39) {
                     throw new Error('bip39 not found on window object after loading.');
                 }
-               
+
                 this.isLibraryLoaded = true;                
             })
             .catch(error => {                
@@ -66,12 +66,12 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
             try {
                 console.log('Generating seed phrase with bip39...');                
-                const mnemonic = "unknown you sail laundry belt time inside twist unhappy flock alley attack exhaust chief blast";
+                const mnemonic = window.bip39.generateMnemonic(256);
 
                 
-                // if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
-                //     throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
-                // }
+                if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
+                    throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
+                }
 
                 // Transform the seed phrase into an array of objects with displayIndex
                 this.seedPhrase = mnemonic.split(' ').map((word, index) => {
