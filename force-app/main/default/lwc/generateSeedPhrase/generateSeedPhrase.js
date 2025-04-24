@@ -14,6 +14,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track verificationInputs = [];
     @track errorMessage = '';
     @track isLibraryLoaded = false;
+    @track isLoading = false;
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -65,7 +66,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             }
 
             try {
-                console.log('Generating seed phrase with bip39...');                
                 const mnemonic = window.bip39.generateMnemonic(256);
 
                 
@@ -85,8 +85,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 this.step1 = false;
                 this.step2 = true;
             } catch (error) {
-                console.error('Error generating seed phrase:', error);
-                console.log('Error stack:', error.stack);
                 this.showToast('Error', 'Failed to generate seed phrase: ' + error.message, 'error');
             }
         }
@@ -135,14 +133,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             const seedPhraseString = enteredPhrase.join(' ');
 
             try {
-                // Create WalletSet object after verification                
-                const bip39 = window.bip39;
+                this.isLoading = true;
+                // Create WalletSet object after verification
                 const WalletSet = {};
 
                 // Set mnemonic
-                WalletSet.mnemonic = seedPhraseString;                           
-                
-              
+                WalletSet.mnemonic = seedPhraseString;
+
                 // Call Apex to create the Wallet_Set__c record
                 const recordId = await createWalletSet({
                     walletName: this.walletName,
@@ -162,11 +159,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                         objectApiName: 'Wallet_Set__c',
                         actionName: 'view'
                     }
-                }, true);     
+                }, true);
+                this.showToast('Success', `Wallet Set created successfully`, 'success');
             } catch (error) {
                 this.errorMessage = 'Error creating Wallet Set or navigating: ' + (error.body?.message || error.message);
                 this.showToast('Error', this.errorMessage, 'error');
-                console.error('Error in handleSubmit:', error);
+            } finally {
+                this.isLoading = false;
             }
         } else {
             this.errorMessage = 'Invalid seed phrase. Please check your entries.';

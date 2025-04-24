@@ -140,7 +140,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.displayedInternalAddresses = this.internalAddresses.slice(0, this.displayLimit);
             this.updateTabState(this.activeTab);
             this.error = undefined;
-            // After initial load, check and derive addresses if needed
             this.ensureUTXOAddresses();
         } else if (error) {
             this.error = error.body?.message || 'Unknown error';
@@ -149,13 +148,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.displayedExternalAddresses = [];
             this.displayedInternalAddresses = [];
             this.currentTabCount = 0;
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error Loading Addresses',
-                    message: this.error,
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error Loading Addresses', this.error, 'error');
         }
         this.isLoading = false;
     }
@@ -209,13 +202,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Refresh the UTXO addresses after derivation
             await refreshApex(this.wiredAddressesResult);
         } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error Ensuring UTXO Addresses',
-                    message: error.message || 'Unknown error',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error Ensuring UTXO Addresses', error.message || 'Unknown error', 'error');
         }
     }
 
@@ -496,21 +483,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             await refreshApex(this.wiredAddressesResult);
 
             // Show a toast notification with the new address
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'New UTXO Address Generated',
-                    message: `New ${type === '0' ? 'receiving' : 'change'} address for index ${nextIndex}: ${bech32Address}`,
-                    variant: 'success'
-                })
+            this.showToast(
+                'New UTXO Address Generated',
+                `New ${type === '0' ? 'receiving' : 'change'} address for index ${nextIndex}: ${bech32Address}`,
+                'success'
             );
         } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error Generating Address',
-                    message: error.message || 'Unknown error',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error Generating Address', error.message || 'Unknown error', 'error');
         } finally {
             this.isLoading = false;
         }

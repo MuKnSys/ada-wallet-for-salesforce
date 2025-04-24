@@ -45,13 +45,7 @@ export default class Wallet extends LightningElement {
             await loadScript(this, qrcodeLibrary);
             this.isQrCodeLibraryLoaded = true;
         } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Failed to load QR Code library.',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', 'Failed to load QR Code library.', 'error');
         }
     }
 
@@ -69,13 +63,7 @@ export default class Wallet extends LightningElement {
                 this.fetchWalletBalance()
             ]);
         } catch (error) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: error.body?.message || error.message || 'Unknown error initializing wallet',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', error.body?.message || error.message || 'Unknown error initializing wallet', 'error');
         } finally {
             this.isLoading = false;
         }
@@ -87,13 +75,7 @@ export default class Wallet extends LightningElement {
             if (!this.recordId || !/^[a-zA-Z0-9]{15,18}$/.test(this.recordId)) {
                 this.paymentAddress = 'Not available: Invalid Wallet ID';
                 this.isAddressInvalid = true;
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error',
-                        message: 'Invalid Wallet ID for payment address.',
-                        variant: 'error'
-                    })
-                );
+                this.showToast('Error', 'Invalid Wallet ID for payment address.', 'error');
                 return;
             }
             
@@ -102,13 +84,7 @@ export default class Wallet extends LightningElement {
         } catch (error) {
             this.paymentAddress = 'Not available: Unable to fetch payment address';
             this.isAddressInvalid = true;
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: error.body?.message || error.message || 'Unknown error fetching payment address',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', error.body?.message || error.message || 'Unknown error fetching payment address', 'error');
         }
     }
 
@@ -127,24 +103,12 @@ export default class Wallet extends LightningElement {
             let errorMessage = error.body?.message || error.message || 'Unknown error fetching wallet balance';
             if (errorMessage.includes('Blockfrost Project ID is not set or found')) {
                 this.balance = null;
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error',
-                        message: 'Blockfrost Project ID is not configured. Please contact your administrator.',
-                        variant: 'error'
-                    })
-                );
+                this.showToast('Error', 'Blockfrost Project ID is not configured. Please contact your administrator.', 'error');
             } else if (this.balanceRetryCount < this.maxBalanceRetries) {
                 setTimeout(() => this.fetchWalletBalance(), 2000);
             } else {
                 this.balance = null;
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error',
-                        message: errorMessage + ' after retries',
-                        variant: 'error'
-                    })
-                );
+                this.showToast('Error', `${errorMessage} after retries`, 'error');
             }
         }
     }
@@ -152,13 +116,7 @@ export default class Wallet extends LightningElement {
     generateQrCode() {
         if (!this.isQrCodeLibraryLoaded || !this.paymentAddress || this.isAddressInvalid) {
             this.qrCodeError = true;
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Cannot generate QR code: Invalid address or library not loaded.',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', 'Cannot generate QR code: Invalid address or library not loaded.', 'error');
             return;
         }
 
@@ -180,25 +138,13 @@ export default class Wallet extends LightningElement {
             }
         } catch (error) {
             this.qrCodeError = true;
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Failed to generate QR code.',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', 'Failed to generate QR code.', 'error');
         }
     }
 
     openReceiveModal() {
         if (this.isAddressInvalid) {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Cannot open Receive modal: No valid payment address available.',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', 'Cannot open Receive modal: No valid payment address available.', 'error');
         } else {
             this.showReceive = true;
         }
@@ -219,30 +165,12 @@ export default class Wallet extends LightningElement {
     copyToClipboard() {
         if (this.paymentAddress && !this.isAddressInvalid) {
             navigator.clipboard.writeText(this.paymentAddress).then(() => {
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Success',
-                        message: 'Address copied to clipboard',
-                        variant: 'success'
-                    })
-                );
+                this.showToast('Success', 'Address copied to clipboard', 'success');
             }).catch(error => {
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error',
-                        message: 'Failed to copy address to clipboard',
-                        variant: 'error'
-                    })
-                );
+                this.showToast('Error', 'Failed to copy address to clipboard', 'error');
             });
         } else {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'No valid address to copy',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', 'No valid address to copy', 'error');
         }
     }
 
@@ -256,22 +184,20 @@ export default class Wallet extends LightningElement {
                 link.download = 'qr-code.png';
                 link.click();
             } else {
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error',
-                        message: 'QR code not generated yet.',
-                        variant: 'error'
-                    })
-                );
+                this.showToast('Error', 'QR code not generated yet.', 'error');
             }
         } else {
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'No valid address to share',
-                    variant: 'error'
-                })
-            );
+            this.showToast('Error', 'No valid address to share', 'error');
         }
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(
+            new ShowToastEvent({
+                title,
+                message,
+                variant
+            })
+        );
     }
 }
