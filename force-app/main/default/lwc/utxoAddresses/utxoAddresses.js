@@ -3,20 +3,23 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
+
+import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
+import bip39Library from '@salesforce/resourceUrl/bip39';
+
+import getWallet from '@salesforce/apex/UTXOController.getWallet';
+import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
+
 import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
 import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissions';
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
-import getWallet from '@salesforce/apex/UTXOController.getWallet';
-import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
-import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
-import bip39Library from '@salesforce/resourceUrl/bip39';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
-import isAddressUsed from '@salesforce/apex/BlockfrostConnector.isAddressUsed';
-import getWalletSetWithSeedPhrase from '@salesforce/apex/WalletSetSelector.getWalletSetWithSeedPhrase';
+import checkIsAddressUsed from '@salesforce/apex/UTXOController.checkIsAddressUsed';
+import getWalletSetWithSeedPhrase from '@salesforce/apex/UTXOController.getWalletSetWithSeedPhrase';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
-    @api recordId; // Wallet__c record ID
+    @api recordId;
     @track externalAddresses = [];
     @track internalAddresses = [];
     @track displayedExternalAddresses = [];
@@ -66,15 +69,11 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     ];
 
     connectedCallback() {
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Component mounted, initial activeTab: ${this.activeTab}`);
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Initial hasSeedPhrasePermission: ${this.hasSeedPhrasePermission}`);
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Record ID: ${this.recordId}`);
         this.loadLibraries();
     }
 
     async loadLibraries() {
         if (this.isLibraryLoaded) {
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: loadLibraries - already loaded, skipping`);
             return;
         }
 
@@ -83,44 +82,28 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             { name: 'bip39', url: bip39Library }
         ];
 
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Scripts array:`, scripts);
-
         try {
             const loadResults = await Promise.all(
                 scripts.map(async script => {
-                    console.log(`UtxoAddresses [${new Date().toISOString()}]: Initiating load for ${script.name}`, script);
                     const result = await loadScript(this, script.url)
                         .then(() => {
-                            console.log(`UtxoAddresses [${new Date().toISOString()}]: ${script.name} loaded successfully`);
                             return { name: script.name, loaded: true, url: script.url };
                         })
                         .catch(error => {
-                            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error loading ${script.name}`, error);
                             return { name: script.name, loaded: false, url: script.url, error };
                         });
                     return result;
                 })
             );
-
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: loadResults:`, loadResults);
-
             const failed = loadResults.filter(r => !r.loaded);
             if (failed.length) {
-                console.error(`UtxoAddresses [${new Date().toISOString()}]: Some libraries failed to load`, failed);
                 throw new Error('Failed to load: ' + failed.map(f => f.name).join(', '));
             }
-
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: All libraries loaded, verifying window objects`);
-            console.log(`window.cardanoSerialization:`, typeof window.cardanoSerialization, window.cardanoSerialization);
-            console.log(`window.bip39:`, typeof window.bip39, window.bip39);
-
             if (!window.cardanoSerialization || !window.bip39) {
                 throw new Error('Required libraries (cardanoSerialization or bip39) not properly initialized');
             }
-
             this.isLibraryLoaded = true;
         } catch (error) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Unexpected error in loadLibraries`, error);
             this.error = 'Library loading failed: ' + (error.message || error);
             this.showToast('Error', this.error, 'error');
             setTimeout(() => this.loadLibraries(), 2000);
@@ -131,11 +114,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     wiredPermissions({ error, data }) {
         if (data) {
             this.hasSeedPhrasePermission = data.includes('Ada_Wallet_Seed_Phrase');
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: User has Ada_Wallet_Seed_Phrase permission (wired): ${this.hasSeedPhrasePermission}`);
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Permissions received: ${JSON.stringify(data)}`);
             this.dummyState = !this.dummyState;
         } else if (error) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error fetching permissions:`, error);
             this.hasSeedPhrasePermission = false;
             this.dummyState = !this.dummyState;
         }
@@ -143,11 +123,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
     @wire(getUTXOAddresses, { walletId: '$recordId' })
     wiredAddresses(result) {
-        this.wiredAddressesResult = result; // Store the result for refreshing
+        this.wiredAddressesResult = result;
         this.isLoading = true;
         const { error, data } = result;
         if (data) {
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Data loaded: ${data.length} records`);
             const addresses = data.map(addr => ({
                 ...addr,
                 recordLink: `/lightning/r/UTXO_Address__c/${addr.Id}/view`,
@@ -157,12 +136,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             }));
             this.externalAddresses = addresses.filter(addr => addr.Type__c === '0');
             this.internalAddresses = addresses.filter(addr => addr.Type__c === '1');
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: All External addresses: ${this.externalAddresses.length}`);
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: All Internal addresses: ${this.internalAddresses.length}`);
             this.displayedExternalAddresses = this.externalAddresses.slice(0, this.displayLimit);
             this.displayedInternalAddresses = this.internalAddresses.slice(0, this.displayLimit);
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Displayed External addresses: ${this.displayedExternalAddresses.length}`);
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Displayed Internal addresses: ${this.displayedInternalAddresses.length}`);
             this.updateTabState(this.activeTab);
             this.error = undefined;
             // After initial load, check and derive addresses if needed
@@ -174,7 +149,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.displayedExternalAddresses = [];
             this.displayedInternalAddresses = [];
             this.currentTabCount = 0;
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error loading addresses: ${this.error}`);
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Error Loading Addresses',
@@ -188,13 +162,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
     async ensureUTXOAddresses() {
         if (!this.isLibraryLoaded) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Libraries not loaded, cannot ensure UTXO addresses`);
             return;
         }
 
         try {
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Ensuring UTXO addresses for Wallet__c ID: ${this.recordId}`);
-
             // Fetch wallet details to get Wallet_Set__c and Account_Index__c
             const wallet = await getWallet({ walletId: this.recordId });
             if (!wallet || !wallet.Wallet_Set__c || wallet.Account_Index__c == null) {
@@ -236,10 +207,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             await this.ensureConsecutiveUnusedAddresses(accountKey, network, '1', this.internalAddresses);
 
             // Refresh the UTXO addresses after derivation
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Refreshing UTXO addresses after ensuring consecutive unused`);
             await refreshApex(this.wiredAddressesResult);
         } catch (error) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error in ensureUTXOAddresses:`, error);
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Error Ensuring UTXO Addresses',
@@ -259,9 +228,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         let consecutiveUnused = 0;
         let currentIndex = 0;
         let maxIndex = sortedAddresses.length > 0 ? parseInt(sortedAddresses[sortedAddresses.length - 1].Index__c, 10) : -1;
-    
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Checking existing ${typeLabel} addresses for 20 consecutive unused, maxIndex: ${maxIndex}`);
-    
+
         // First, check existing addresses for consecutive unused sequence
         if (sortedAddresses.length > 0) {
             for (let i = 0; i <= maxIndex; i++) {
@@ -269,26 +236,22 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 if (!addr) {
                     // If the address doesn't exist at this index, treat it as unused
                     consecutiveUnused++;
-                    console.log(`UtxoAddresses [${new Date().toISOString()}]: Index ${i} missing for ${typeLabel}, treating as unused, consecutiveUnused: ${consecutiveUnused}`);
                 } else {
                     let isUsed;
                     try {
-                        isUsed = await isAddressUsed({ address: addr.Address__c });
+                        isUsed = await checkIsAddressUsed({ address: addr.Address__c });
                     } catch (error) {
                         throw new Error(`Failed to check address usage for ${typeLabel} address at index ${i}: ${error.body?.message || error.message}`);
                     }
     
                     if (isUsed) {
                         consecutiveUnused = 0;
-                        console.log(`UtxoAddresses [${new Date().toISOString()}]: Index ${i} for ${typeLabel} is used, resetting consecutiveUnused to 0`);
                     } else {
                         consecutiveUnused++;
-                        console.log(`UtxoAddresses [${new Date().toISOString()}]: Index ${i} for ${typeLabel} is unused, consecutiveUnused: ${consecutiveUnused}`);
                     }
                 }
     
                 if (consecutiveUnused >= 20) {
-                    console.log(`UtxoAddresses [${new Date().toISOString()}]: Found 20 consecutive unused ${typeLabel} addresses in existing set, stopping derivation`);
                     return;
                 }
             }
@@ -296,8 +259,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     
         // If we don't have 20 consecutive unused addresses, start deriving from the next index
         currentIndex = maxIndex + 1 >= 0 ? maxIndex + 1 : 0;
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Less than 20 consecutive unused ${typeLabel} addresses found, starting derivation from index ${currentIndex}`);
-    
         while (consecutiveUnused < 20) {
             // Derive the address for the current index
             const utxoPrivateKey = accountKey
@@ -325,17 +286,15 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Check if the address is used
             let isUsed;
             try {
-                isUsed = await isAddressUsed({ address: bech32Address });
+                isUsed = await checkIsAddressUsed({ address: bech32Address });
             } catch (error) {
                 throw new Error(`Failed to check address usage for ${typeLabel} address at index ${currentIndex}: ${error.body?.message || error.message}`);
             }
     
             if (isUsed) {
                 consecutiveUnused = 0;
-                console.log(`UtxoAddresses [${new Date().toISOString()}]: Derived ${typeLabel} address at index ${currentIndex} is used, resetting consecutiveUnused to 0`);
             } else {
                 consecutiveUnused++;
-                console.log(`UtxoAddresses [${new Date().toISOString()}]: Derived ${typeLabel} address at index ${currentIndex} is unused, consecutiveUnused: ${consecutiveUnused}`);
             }
     
             // Save the new address
@@ -359,9 +318,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                         changeAddress: newAddress
                     });
                 }
-                console.log(`UtxoAddresses [${new Date().toISOString()}]: Added ${typeLabel} address at index ${currentIndex}: ${bech32Address}`);
             } catch (error) {
-                console.error(`UtxoAddresses [${new Date().toISOString()}]: Failed to save ${typeLabel} address at index ${currentIndex}:`, error);
                 throw new Error(`Failed to save ${typeLabel} address: ${error.body?.message || error.message}`);
             }
     
@@ -379,38 +336,30 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     }
 
     handleExternalTabActive() {
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: External tab activated`);
         this.activeTab = 'external';
         this.updateTabState('external');
         this.applyFilter();
     }
 
     handleInternalTabActive() {
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Internal tab activated`);
         this.activeTab = 'internal';
         this.updateTabState('internal');
         this.applyFilter();
     }
 
     updateTabState(tab) {
-        try {
-            if (tab === 'external') {
-                this.currentTabLabel = 'External';
-                this.currentTabCount = this.externalAddresses.length; // Use full list for count
-            } else if (tab === 'internal') {
-                this.currentTabLabel = 'Internal';
-                this.currentTabCount = this.internalAddresses.length; // Use full list for count
-            }
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Updated state - activeTab: ${this.activeTab}, label: ${this.currentTabLabel}, count: ${this.currentTabCount}`);
-            this.dummyState = !this.dummyState;
-        } catch (err) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error in updateTabState:`, err);
+        if (tab === 'external') {
+            this.currentTabLabel = 'External';
+            this.currentTabCount = this.externalAddresses.length; // Use full list for count
+        } else if (tab === 'internal') {
+            this.currentTabLabel = 'Internal';
+            this.currentTabCount = this.internalAddresses.length; // Use full list for count
         }
+        this.dummyState = !this.dummyState;
     }
 
     handleFilterChange(event) {
         this.filterText = event.target.value.toLowerCase();
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Filter text updated: ${this.filterText}`);
         this.applyFilter();
     }
 
@@ -435,9 +384,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         // Apply the display limit after filtering
         this.displayedExternalAddresses = filteredExternal.slice(0, this.displayLimit);
         this.displayedInternalAddresses = filteredInternal.slice(0, this.displayLimit);
-
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Filtered - External addresses (limited to ${this.displayLimit}): ${this.displayedExternalAddresses.length}`);
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Filtered - Internal addresses (limited to ${this.displayLimit}): ${this.displayedInternalAddresses.length}`);
+        
         this.updateTabState(this.activeTab);
     }
 
@@ -472,63 +419,26 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     }
 
     async generateAddress() {
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: generateAddress - Method invoked`);
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Wallet__c ID (recordId): ${this.recordId}`);
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: hasSeedPhrasePermission: ${this.hasSeedPhrasePermission}`);
-
-        // Validate recordId
-        if (!this.recordId || !/^[a-zA-Z0-9]{15,18}$/.test(this.recordId)) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Invalid or missing recordId: ${this.recordId}`);
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Invalid Wallet ID. Please ensure you are on a valid Wallet record.',
-                    variant: 'error'
-                })
-            );
-            return;
-        }
-
-        // Validate library loading
-        if (!this.isLibraryLoaded) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Cardano Serialization Library not loaded`);
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: 'Cardano Serialization Library not loaded. Please try again.',
-                    variant: 'error'
-                })
-            );
-            return;
-        }
-
         this.isLoading = true;
         try {
             const CardanoWasm = window.cardanoSerialization;
 
             // Determine the type based on the active tab
             const type = this.activeTab === 'external' ? '0' : '1'; // '0' for receiving (External), '1' for change (Internal)
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Generating address with Type: ${type} (Active Tab: ${this.activeTab})`);
-
+            
             // Get the next index for the specified type
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Fetching next index for Wallet__c ID: ${this.recordId}, Type: ${type}`);
             const nextIndex = await getNextUTXOIndex({ walletId: this.recordId, type: type });
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Apex call successful, nextIndex received: ${nextIndex}`);
 
             // Fetch Wallet__c record to get the encrypted Account_Private_Key__c
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Fetching Wallet__c record for ID: ${this.recordId}`);
             const wallet = await getWallet({ walletId: this.recordId });
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Wallet__c record retrieved:`, JSON.stringify(wallet, null, 2));
 
             if (!wallet || !wallet.Account_Private_Key__c) {
                 throw new Error('Wallet record or Account Private Key not found');
             }
 
             // Decrypt the Account_Private_Key__c
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Decrypting Account_Private_Key__c`);
             const accountPrivateKeyBech32 = await decrypt({ encryptedText: wallet.Account_Private_Key__c });
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Account Private Key decrypted (Bech32 format, masked for security)`);
-
+            
             // Convert the Bech32 private key to a Bip32PrivateKey
             const accountPrivateKey = CardanoWasm.Bip32PrivateKey.from_bech32(accountPrivateKeyBech32);
 
@@ -561,9 +471,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             );
             const bech32Address = baseAddress.to_address().to_bech32();
 
-            // Print only the new UTXO address
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: New UTXO Address for Index ${nextIndex} (Type: ${type}): ${bech32Address}`);
-
             // Save the new address to the database based on the type
             const newAddress = {
                 index: nextIndex,
@@ -586,7 +493,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             }
 
             // Refresh the UTXO addresses to update the counts and lists
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: Refreshing UTXO addresses after generating new address`);
             await refreshApex(this.wiredAddressesResult);
 
             // Show a toast notification with the new address
@@ -598,8 +504,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 })
             );
         } catch (error) {
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error in generateAddress:`, error);
-            console.error(`UtxoAddresses [${new Date().toISOString()}]: Error details:`, JSON.stringify(error, null, 2));
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Error Generating Address',
@@ -609,7 +513,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             );
         } finally {
             this.isLoading = false;
-            console.log(`UtxoAddresses [${new Date().toISOString()}]: generateAddress - Completed, isLoading: ${this.isLoading}`);
         }
     }
 
@@ -617,10 +520,5 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         this.dispatchEvent(
             new ShowToastEvent({ title, message, variant })
         );
-    }
-
-    renderedCallback() {
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Rendered, hasSeedPhrasePermission: ${this.hasSeedPhrasePermission}`);
-        console.log(`UtxoAddresses [${new Date().toISOString()}]: Current tab state - activeTab: ${this.activeTab}, label: ${this.currentTabLabel}, count: ${this.currentTabCount}`);
     }
 }

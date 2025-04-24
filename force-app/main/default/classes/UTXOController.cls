@@ -8,19 +8,28 @@ public with sharing class UTXOController {
         @AuraEnabled public String stakePath { get; set; }
     }
 
+    @AuraEnabled(cacheable=true)
+    public static Boolean checkIsAddressUsed(String address) {
+        try {            
+            return BlockfrostService.isAddressUsed(address);
+        } catch (Exception e) {            
+            throw new AuraHandledException('Failed to check is address used: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static Wallet_Set__c getWalletSetWithSeedPhrase(Id walletSetId) {
+        try {            
+            return WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
+        } catch (Exception e) {            
+            throw new AuraHandledException('Failed to check is address used: ' + e.getMessage());
+        }
+    }
+
     @AuraEnabled
     public static Wallet__c getWallet(String walletId) {
-        try {            
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-                        
-            Wallet__c wallet = WalletSelector.getWalletById(walletId);
-            if (wallet == null) {
-                throw new AuraHandledException('Wallet not found for ID: ' + walletId);
-            }
-            
-            return wallet;
+        try {
+            return WalletSelector.getWalletById(walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving wallet: ' + e.getMessage());
         }
@@ -76,7 +85,6 @@ public with sharing class UTXOController {
             if (!utxoRecords.isEmpty()) {
                 SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, utxoRecords);
                 insert decision.getRecords();
-                System.debug('UTXOController: Created ' + utxoRecords.size() + ' UTXO_Address__c records for Wallet__c ' + walletId);
             }
         } catch (Exception e) {
             throw new AuraHandledException('Error creating UTxO addresses: ' + e.getMessage());
@@ -89,7 +97,7 @@ public with sharing class UTXOController {
             if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
                 throw new AuraHandledException('Invalid Wallet ID');
             }
-            return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId);
+            return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId, null);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
         }
@@ -125,7 +133,7 @@ public with sharing class UTXOController {
             }
 
             // Query UTXO_Address__c records for the given Wallet__c and Type__c
-            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getUTXOAddressesByWalletIdAndType(walletId, type);
+            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getLastUTXOAddressByType(walletId, type);
 
             // If no records are found, start at index 0
             if (utxoAddresses.isEmpty()) {
@@ -171,7 +179,6 @@ public with sharing class UTXOController {
             // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
             insert decision.getRecords();
-            System.debug('UTXOController: Created 1 receiving UTXO_Address__c record for Wallet__c ' + walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error adding receiving UTXO address: ' + e.getMessage());
         }
@@ -207,7 +214,6 @@ public with sharing class UTXOController {
             // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
             insert decision.getRecords();
-            System.debug('UTXOController: Created 1 change UTXO_Address__c record for Wallet__c ' + walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error adding change UTXO address: ' + e.getMessage());
         }

@@ -43,6 +43,31 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>UTXO_Address__c.Index__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Address__c.Path__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Address__c.Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Address__c.Staking_Key_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Address__c.Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Wallet__c.Account_Index__c</field>
         <readable>true</readable>
     </fieldPermissions>    
@@ -52,7 +77,16 @@
         <readable>true</readable>
     </fieldPermissions>    
     <hasActivationRequired>false</hasActivationRequired>
-    <label>ADA Wallet Admin</label>    
+    <label>ADA Wallet Admin</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>UTXO_Address__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>

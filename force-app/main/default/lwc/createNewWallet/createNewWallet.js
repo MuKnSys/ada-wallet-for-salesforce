@@ -6,13 +6,13 @@ import { NavigationMixin } from 'lightning/navigation';
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
 
-import createWallet from '@salesforce/apex/WalletCtrl.createWallet';
-import getWalletSetWithSeedPhrase from '@salesforce/apex/WalletSetSelector.getWalletSetWithSeedPhrase';
+import getWalletSetWithSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getWalletSetWithSeedPhrase';
 import createUTXOAddresses from '@salesforce/apex/UTXOController.createUTXOAddresses';
 import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
-import isAddressUsed from '@salesforce/apex/BlockfrostConnector.isAddressUsed';
-import getNextAccountIndex from '@salesforce/apex/WalletCtrl.getNextAccountIndex';
-import isIndexValid from '@salesforce/apex/WalletCtrl.isIndexValid';
+import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
+import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
+import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
+import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track isLibraryLoaded = false;
@@ -267,7 +267,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
             let isUsed;
             try {
-                isUsed = await isAddressUsed({ address: bech32Address });
+                isUsed = await checkIsAddressUsed({ address: bech32Address });
             } catch (error) {
                 throw new Error('Failed to check address usage for receiving address at index ' + index + ': ' + (error.body?.message || error.message));
             }
@@ -309,7 +309,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
             let isUsed;
             try {
-                isUsed = await isAddressUsed({ address: changeBech32Address });
+                isUsed = await checkIsAddressUsed({ address: changeBech32Address });
             } catch (error) {
                 throw new Error('Failed to check address usage for change address at index ' + index + ': ' + (error.body?.message || error.message));
             }

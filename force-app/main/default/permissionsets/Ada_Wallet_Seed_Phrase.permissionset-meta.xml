@@ -10,6 +10,16 @@
     </customPermissions>
     <description>Access to the ADA Wallet Seed phrase.</description>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet__c.Account_Private_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet__c.Account_Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>Wallet_Set__c.Seed_Phrase__c</field>
         <readable>true</readable>

@@ -22,7 +22,6 @@ import AdaWalletsSetup_LoggingTitle from '@salesforce/label/c.AdaWalletsSetup_Lo
 import AdaWalletsSetup_LoggingInfo from '@salesforce/label/c.AdaWalletsSetup_LoggingInfo';
 import AdaWalletsSetup_LoggingEnableLogging from '@salesforce/label/c.AdaWalletsSetup_LoggingEnableLogging';
 import AdaWalletsSetup_LoggingDisableLogging from '@salesforce/label/c.AdaWalletsSetup_LoggingDisableLogging';
-import AdaWalletsSetup_LoggingSetupSuccess from '@salesforce/label/c.AdaWalletsSetup_LoggingSetupSuccess';
 import AdaWalletsSetup_LoggingEnableSuccess from '@salesforce/label/c.AdaWalletsSetup_LoggingEnableSuccess';
 import AdaWalletsSetup_LoggingDisableSuccess from '@salesforce/label/c.AdaWalletsSetup_LoggingDisableSuccess';
 
