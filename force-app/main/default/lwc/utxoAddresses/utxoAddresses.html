@@ -48,7 +48,8 @@
                         ></lightning-datatable>
                         <div class="slds-align_absolute-center slds-p-vertical_small">
                             <template lwc:if={hasExternalAddresses}>
-                                <a href="#" onclick={handleViewAll}>View All</a>
+                                <button lwc:if={viewLess} onclick={handleViewAll}>View All</button>
+                                <button lwc:else onclick={handleViewLess}>View Less</button>
                             </template>
                         </div>
                     </lightning-tab>
@@ -63,7 +64,8 @@
                         ></lightning-datatable>
                         <div class="slds-align_absolute-center slds-p-vertical_small">
                             <template lwc:if={hasInternalAddresses}>
-                                <a href="#" onclick={handleViewAll}>View All</a>
+                                <button lwc:if={viewLess} onclick={handleViewAll}>View All</button>
+                                <button lwc:else onclick={handleViewLess}>View Less</button>
                             </template>
                         </div>
                     </lightning-tab>

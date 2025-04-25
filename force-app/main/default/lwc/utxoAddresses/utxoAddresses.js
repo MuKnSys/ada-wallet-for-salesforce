@@ -35,6 +35,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @track isLibraryLoaded = false;
     displayLimit = 5; // Limit to 5 addresses per tab
     wiredAddressesResult; // To store the wired result for refresh
+    viewLess = true;
 
     // Datatable columns
     columns = [
@@ -396,19 +397,16 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         }
     }
 
-    handleViewAll(event) {
-        event.preventDefault();
-        this[NavigationMixin.Navigate]({
-            type: 'standard__component',
-            attributes: {
-                componentName: 'force__dynamicRelatedListViewAll'
-            },
-            state: {
-                'force__flexipageId': 'Wallet_Record_Page1',
-                'force__cmpId': 'lst_dynamicRelatedList',
-                'force__recordId': this.recordId
-            }
-        });
+    handleViewAll() {
+        this.displayLimit = 1000;
+        this.applyFilter();
+        this.viewLess = false;
+    }
+
+    handleViewLess() {
+        this.displayLimit = 5;
+        this.applyFilter();
+        this.viewLess = true;
     }
 
     async generateAddress() {
