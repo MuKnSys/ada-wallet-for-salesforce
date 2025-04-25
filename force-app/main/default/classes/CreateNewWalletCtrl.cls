@@ -2,89 +2,21 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static Id createWallet(String walletSetId, String walletName, String address, String accountPrivateKey, String accountPublicKey, Integer accountIndex) {
         try {
-            // Validate input
-            if (String.isBlank(walletSetId)) {
-                throw new AuraHandledException('Wallet Set ID is required');
-            }
-            if (String.isBlank(walletName)) {
-                throw new AuraHandledException('Wallet Name is required');
-            }
-            if (String.isBlank(address)) {
-                throw new AuraHandledException('Wallet Address is required');
-            }
-            if (String.isBlank(accountPrivateKey)) {
-                throw new AuraHandledException('Account Private Key is required');
-            }
-            if (String.isBlank(accountPublicKey)) {
-                throw new AuraHandledException('Account Public Key is required');
-            }
-            if (accountIndex == null || accountIndex < 0) {
-                throw new AuraHandledException('Account Index must be a non-negative integer');
-            }
-
-            // Create new Wallet__c record
-            Wallet__c newWallet = new Wallet__c();
-            newWallet.Wallet_Set__c = walletSetId;
-            newWallet.Name = walletName;
-            newWallet.Address__c = address;
-            newWallet.Account_Private_Key__c = DataEncryptor.encrypt(accountPrivateKey);
-            newWallet.Account_Public_Key__c = DataEncryptor.encrypt(accountPublicKey);
-            newWallet.Account_Index__c = accountIndex;
-
-            // Insert the record
+            Wallet__c newWallet = new Wallet__c(
+                Wallet_Set__c = walletSetId,
+                Name = walletName,
+                Address__c = address,
+                Account_Private_Key__c = accountPrivateKey,
+                Account_Public_Key__c = accountPublicKey,
+                Account_Index__c = accountIndex
+            );
             insert newWallet;
-
-            // Log for debugging
+            
             Logger.logInfo('Wallet created: ' + newWallet.Name + ' for Wallet Set: ' + walletSetId + ' with Account Index: ' + accountIndex + ' by User: ' + UserInfo.getName());
 
             return newWallet.Id;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating Wallet: ' + e.getMessage());
-        } finally {
-            Logger.commitLogs();
-        }
-    }
-
-    @AuraEnabled
-    public static String decryptSeedPhrase(String encryptedSeedPhrase) {
-        try {
-            // Validate input
-            if (String.isBlank(encryptedSeedPhrase)) {
-                throw new AuraHandledException('Encrypted Seed Phrase is required');
-            }
-
-            // Decrypt using DataEncryptor
-            String decryptedSeedPhrase = DataEncryptor.decrypt(encryptedSeedPhrase);
-
-            // Log for debugging
-            Logger.logInfo('Seed Phrase decrypted for Wallet Set by ' + UserInfo.getName() + ' (Id: ' + UserInfo.getUserId() + ')');
-
-            return decryptedSeedPhrase;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error decrypting Seed Phrase: ' + e.getMessage());
-        } finally {
-            Logger.commitLogs();
-        }
-    }
-
-    @AuraEnabled
-    public static String getDecryptedWalletSetSeedPhrase(Id walletSetId) {
-        try {
-            if (String.isBlank(walletSetId)) {
-                throw new AuraHandledException('Wallet Set ID is required');
-            }
-            Wallet_Set__c walletSet = WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
-            if (walletSet.Seed_Phrase__c == null) {
-                throw new AuraHandledException('Seed Phrase is missing for the Wallet Set');
-            }
-            if (!EncryptedDataService.hasAccessToDecrypt()) {
-                throw new AuraHandledException('Access denied to decrypt seed phrase');
-            }
-            String decryptedSeedPhrase = DataEncryptor.decrypt(walletSet.Seed_Phrase__c);
-            Logger.logInfo('Seed Phrase decrypted for Wallet Set: ' + walletSetId + ' by User: ' + UserInfo.getName());
-            return decryptedSeedPhrase;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving and decrypting seed phrase: ' + e.getMessage());
         } finally {
             Logger.commitLogs();
         }
@@ -112,21 +44,8 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static Integer getNextAccountIndex(String walletSetId) {
         try {
-            // Validate input
-            if (String.isBlank(walletSetId)) {
-                throw new AuraHandledException('Wallet Set ID is required');
-            }
-
-            // Query all Wallet__c records for the Wallet_Set__c to get used indices
-            List<Wallet__c> wallets = [
-                SELECT Account_Index__c
-                FROM Wallet__c
-                WHERE Wallet_Set__c = :walletSetId
-                AND Account_Index__c != NULL
-                WITH SECURITY_ENFORCED
-                ORDER BY Account_Index__c ASC
-            ];
-
+            List<Wallet__c> wallets = walletSelector.getWalletsByWalletSetId(walletSetId);
+            
             // If no wallets exist, default to 0
             if (wallets.isEmpty()) {
                 Logger.logInfo('No wallets found for Wallet Set: ' + walletSetId + ', defaulting to Account Index 0');
@@ -159,14 +78,6 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static String isIndexValid(String walletSetId, Integer accountIndex) {
         try {
-            // Validate input
-            if (String.isBlank(walletSetId)) {
-                throw new AuraHandledException('Wallet Set ID is required');
-            }
-            if (accountIndex == null || accountIndex < 0) {
-                throw new AuraHandledException('Account Index must be a non-negative integer');
-            }
-
             // Fetch Wallet_Set__c Name for error message
             Wallet_Set__c walletSet = WalletSetSelector.getWalletSetById(walletSetId);
 
@@ -194,7 +105,7 @@ public with sharing class CreateNewWalletCtrl {
         try {            
             return BlockfrostService.isAddressUsed(address);
         } catch (Exception e) {            
-            throw new AuraHandledException('Failed to check is address used: ' + e.getMessage());
+            throw new AuraHandledException('Failed to check if address is used: ' + e.getMessage());
         }
     }
 
@@ -204,6 +115,15 @@ public with sharing class CreateNewWalletCtrl {
             return WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
         } catch (Exception e) {            
             throw new AuraHandledException('Failed to check is address used: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static String getDecryptedSeedPhrase(Id walletSetId) {
+        try {            
+            return EncryptedDataService.getDecryptedSeedPhrase(walletSetId);
+        } catch (Exception e) {            
+            throw new AuraHandledException('Failed to get seed phrase: ' + e.getMessage());
         }
     }
 }

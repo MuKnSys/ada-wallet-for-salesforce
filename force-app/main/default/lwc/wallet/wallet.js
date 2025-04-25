@@ -32,28 +32,24 @@ export default class Wallet extends LightningElement {
         }
     }
 
-    connectedCallback() {
-        this.loadQrCodeLibrary();
+    async renderedCallback() {
+        if (!this.isQrCodeLibraryLoaded) {            
+            await this.loadQrCodeLibrary();
+        }
+
+        if (this.showReceive && this.isQrCodeLibraryLoaded && this.paymentAddress && !this.isAddressInvalid && !this.qrCodeError) {
+            this.generateQrCode();
+        }
     }
 
     async loadQrCodeLibrary() {
-        if (this.isQrCodeLibraryLoaded) {
-            return;
-        }
-
         try {
             await loadScript(this, qrcodeLibrary);
             this.isQrCodeLibraryLoaded = true;
         } catch (error) {
             this.showToast('Error', 'Failed to load QR Code library.', 'error');
         }
-    }
-
-    renderedCallback() {
-        if (this.showReceive && this.isQrCodeLibraryLoaded && this.paymentAddress && !this.isAddressInvalid && !this.qrCodeError) {
-            this.generateQrCode();
-        }
-    }
+    }    
 
     async initializeWallet() {
         this.isLoading = true;
@@ -72,13 +68,6 @@ export default class Wallet extends LightningElement {
     async fetchPaymentAddress() {
         this.isAddressInvalid = false;
         try {
-            if (!this.recordId || !/^[a-zA-Z0-9]{15,18}$/.test(this.recordId)) {
-                this.paymentAddress = 'Not available: Invalid Wallet ID';
-                this.isAddressInvalid = true;
-                this.showToast('Error', 'Invalid Wallet ID for payment address.', 'error');
-                return;
-            }
-            
             this.paymentAddress = await getPaymentAddress({ walletId: this.recordId });
             this.qrCodeError = false;
         } catch (error) {

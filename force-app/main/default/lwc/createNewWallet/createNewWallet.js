@@ -6,42 +6,46 @@ import { NavigationMixin } from 'lightning/navigation';
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
 
-import getWalletSetWithSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getWalletSetWithSeedPhrase';
 import createUTXOAddresses from '@salesforce/apex/UTXOController.createUTXOAddresses';
-import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
+import getDecryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getDecryptedSeedPhrase';
 import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
-    @track isLibraryLoaded = false;
+    @track librariesLoaded = false;
     @track selectedWalletSetId = '';
     @track walletName = '';
     @track accountIndex = '0';
     @track errorMessage = '';
     @track pickerErrorMessage = '';
     @track accountIndexErrorMessage = '';
-    @track isCreateDisabled = true;
     @track isLoading = false;
+
+    get isCreateDisabled() {
+        return !(
+            this.selectedWalletSetId &&
+            this.walletName.trim() &&
+            this.accountIndex &&
+            !isNaN(this.accountIndex) &&
+            !this.accountIndexErrorMessage &&
+            this.librariesLoaded &&
+            !this.isLoading
+        );
+    }
 
     get buttonLabel() {
         return this.isLoading ? 'Creating...' : 'Create Wallet';
     }
 
-    constructor() {
-        super();
-    }
-
-    connectedCallback() {
-        this.loadLibraries();
+    renderedCallback() {
+        if (!this.librariesLoaded) {            
+            this.loadLibraries();
+        }
     }
 
     async loadLibraries() {
-        if (this.isLibraryLoaded) {
-            return;
-        }
-
         const scripts = [
             { name: 'cardanoSerialization', url: `${cardanoLibrary}/cardanoSerialization/bundle.js` },
             { name: 'bip39', url: bip39Library }
@@ -66,8 +70,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 throw new Error('Failed to load: ' + failed.map(f => f.name).join(', '));
             }
 
-            this.isLibraryLoaded = true;
-            this.updateCreateButtonState();
+            this.librariesLoaded = true;
 
         } catch (error) {
             this.errorMessage = 'Library loading failed: ' + (error.message || error);
@@ -102,13 +105,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 this.accountIndexErrorMessage = '';
             }
         }
-        
-        this.updateCreateButtonState();
     }
 
     async handleWalletNameChange(event) {
         this.walletName = event.target.value || '';
-        this.updateCreateButtonState();
     }
 
     async handleAccountIndexChange(event) {
@@ -128,40 +128,16 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 this.showToast('Error', this.accountIndexErrorMessage, 'error');
             }
         }
-
-        this.updateCreateButtonState();
-    }
-
-    updateCreateButtonState() {
-        this.isCreateDisabled = !(
-            this.selectedWalletSetId &&
-            this.walletName.trim() &&
-            this.accountIndex &&
-            !isNaN(this.accountIndex) &&
-            !this.accountIndexErrorMessage &&
-            this.isLibraryLoaded &&
-            !this.isLoading
-        );
-    }
-
-    get defaultFilter() {
-        return {
-            criteria: []
-        };
     }
 
     async handleCreate() {
         this.errorMessage = '';
         this.isLoading = true;
-        this.updateCreateButtonState();
 
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        if (!this.isLibraryLoaded) {
+        if (!this.librariesLoaded) {
             this.errorMessage = 'Libraries not loaded. Please try again.';
             this.showToast('Error', this.errorMessage, 'error');
             this.isLoading = false;
-            this.updateCreateButtonState();
             return;
         }
 
@@ -174,15 +150,59 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.showToast('Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;
-            this.updateCreateButtonState();
         }
     }
 
-    async createWallet() {
-        if (!this.selectedWalletSetId || !this.walletName || isNaN(this.accountIndex)) {
-            throw new Error('Missing required inputs: Wallet Set ID, Wallet Name, or valid Account Index');
+    async generateAddresses(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash) {
+        const addresses = [];
+        let consecutiveUnused = 0;
+        let index = 0;
+
+        while (consecutiveUnused < 20) {
+            const privateKey = accountKey
+                .derive(derivationPath)
+                .derive(index);
+                
+            const publicKey = privateKey.to_public();
+            const keyHash = publicKey.to_raw_key().hash();
+            const cred = window.cardanoSerialization.Credential.from_keyhash(keyHash);
+
+            const baseAddress = window.cardanoSerialization.BaseAddress.new(
+                network.network_id(),
+                cred,
+                stakeCred
+            );
+            const bech32Address = baseAddress.to_address().to_bech32();
+
+            let isUsed;
+            try {
+                isUsed = await checkIsAddressUsed({ address: bech32Address });
+            } catch (error) {
+                const addressType = derivationPath === 0 ? 'receiving' : 'change';
+                throw new Error(`Failed to check address usage for ${addressType} address at index ${index}: ${error.body?.message || error.message}`);
+            }
+
+            if (isUsed) {
+                consecutiveUnused = 0;
+            } else {
+                consecutiveUnused++;
+            }
+
+            addresses.push({
+                index: index,
+                publicKey: publicKey.to_bech32(),
+                address: bech32Address,
+                stakingKeyHash: stakeKeyHash.to_hex(),
+                path: `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${index}`
+            });
+
+            index++;
         }
 
+        return addresses;
+    }
+
+    async createWallet() {
         // Validate account index before proceeding
         const accountIndexNum = parseInt(this.accountIndex, 10);
         try {
@@ -196,8 +216,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         let mnemonic;
         try {
-            const walletSet = await getWalletSetWithSeedPhrase({ walletSetId: this.selectedWalletSetId });
-            mnemonic = await decrypt({ encryptedText: walletSet.Seed_Phrase__c });
+            mnemonic = await getDecryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });            
 
             if (!mnemonic) {
                 throw new Error('Seed phrase is empty or null');
@@ -243,93 +262,27 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         const stakeKeyHash = stakePublicKey.hash();
         const stakeCred = window.cardanoSerialization.Credential.from_keyhash(stakeKeyHash);
 
-        const utxoKeysAndAddresses = [];
-        const changeKeysAndAddresses = [];
         const network = window.cardanoSerialization.NetworkInfo.mainnet();
 
-        // Derive receiving addresses until 20 consecutive unused addresses
-        let consecutiveUnused = 0;
-        let index = 0;
-        while (consecutiveUnused < 20) {
-            const utxoPrivateKey = accountKey
-                .derive(0)
-                .derive(index);
-            const utxoPublicKey = utxoPrivateKey.to_public();
-            const utxoKeyHash = utxoPublicKey.to_raw_key().hash();
-            const utxoCred = window.cardanoSerialization.Credential.from_keyhash(utxoKeyHash);
+        // Generate receiving addresses
+        const utxoKeysAndAddresses = await this.generateAddresses(
+            accountKey,
+            0, // derivation path for receiving addresses
+            accountIndexNum,
+            stakeCred,
+            network,
+            stakeKeyHash
+        );
 
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                utxoCred,
-                stakeCred
-            );
-            const bech32Address = baseAddress.to_address().to_bech32();
-
-            let isUsed;
-            try {
-                isUsed = await checkIsAddressUsed({ address: bech32Address });
-            } catch (error) {
-                throw new Error('Failed to check address usage for receiving address at index ' + index + ': ' + (error.body?.message || error.message));
-            }
-
-            if (isUsed) {
-                consecutiveUnused = 0;
-            } else {
-                consecutiveUnused++;
-            }
-
-            utxoKeysAndAddresses.push({
-                index: index,
-                publicKey: utxoPublicKey.to_bech32(),
-                address: bech32Address,
-                stakingKeyHash: stakeKeyHash.to_hex(),
-                path: `m/1852'/1815'/${accountIndexNum}'/0/${index}`
-            });
-
-            index++;
-        }
-
-        // Derive change addresses until 20 consecutive unused addresses
-        consecutiveUnused = 0;
-        index = 0;
-        while (consecutiveUnused < 20) {
-            const changePrivateKey = accountKey
-                .derive(1)
-                .derive(index);
-            const changePublicKey = changePrivateKey.to_public();
-            const changeKeyHash = changePublicKey.to_raw_key().hash();
-            const changeCred = window.cardanoSerialization.Credential.from_keyhash(changeKeyHash);
-
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                changeCred,
-                stakeCred
-            );
-            const changeBech32Address = baseAddress.to_address().to_bech32();
-
-            let isUsed;
-            try {
-                isUsed = await checkIsAddressUsed({ address: changeBech32Address });
-            } catch (error) {
-                throw new Error('Failed to check address usage for change address at index ' + index + ': ' + (error.body?.message || error.message));
-            }
-
-            if (isUsed) {
-                consecutiveUnused = 0;
-            } else {
-                consecutiveUnused++;
-            }
-
-            changeKeysAndAddresses.push({
-                index: index,
-                publicKey: changePublicKey.to_bech32(),
-                address: changeBech32Address,
-                stakingKeyHash: stakeKeyHash.to_hex(),
-                path: `m/1852'/1815'/${accountIndexNum}'/1/${index}`
-            });
-
-            index++;
-        }
+        // Generate change addresses
+        const changeKeysAndAddresses = await this.generateAddresses(
+            accountKey,
+            1, // derivation path for change addresses
+            accountIndexNum,
+            stakeCred,
+            network,
+            stakeKeyHash
+        );
 
         try {
             const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
@@ -353,8 +306,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                     accountIndex: accountIndexNum
                 });
 
-                if (!recordId || typeof recordId !== 'string' || !/^[a-zA-Z0-9]{15,18}$/.test(recordId)) {
-                    throw new Error('Invalid record ID returned from Apex: ' + recordId);
+                if (!recordId) {
+                    throw new Error('Error creating wallet record');
                 }
             } catch (error) {
                 throw new Error('Failed to save wallet: ' + (error.body?.message || error.message));
@@ -405,7 +358,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.errorMessage = '';
         this.pickerErrorMessage = '';
         this.accountIndexErrorMessage = '';
-        this.isCreateDisabled = true;
     }
 
     showToast(title, message, variant) {

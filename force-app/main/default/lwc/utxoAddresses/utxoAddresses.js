@@ -68,15 +68,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         }
     ];
 
-    connectedCallback() {
-        this.loadLibraries();
+    renderedCallback() {
+        if (!this.isLibraryLoaded) {            
+            this.loadLibraries();
+        }
     }
 
     async loadLibraries() {
-        if (this.isLibraryLoaded) {
-            return;
-        }
-
         const scripts = [
             { name: 'cardanoSerialization', url: `${cardanoLibrary}/cardanoSerialization/bundle.js` },
             { name: 'bip39', url: bip39Library }

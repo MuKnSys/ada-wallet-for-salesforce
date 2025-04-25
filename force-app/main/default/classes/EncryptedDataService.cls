@@ -15,7 +15,7 @@ public with sharing class EncryptedDataService {
             psIds.add(psa.PermissionSetId);
         }
         
-        Id requiredPsId = [SELECT Id FROM PermissionSet WHERE Name = 'EncryptedDataAccess' LIMIT 1].Id;
+        Id requiredPsId = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Seed_Phrase' LIMIT 1].Id;
 
         return requiredPsId != null && psIds.contains(requiredPsId);
     }

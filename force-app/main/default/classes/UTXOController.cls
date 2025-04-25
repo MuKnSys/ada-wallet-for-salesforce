@@ -38,10 +38,6 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static void createUTXOAddresses(String walletId, List<UTXOAddress> receivingAddresses, List<UTXOAddress> changeAddresses) {
         try {
-            // Validate inputs
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
             if (receivingAddresses == null || changeAddresses == null) {
                 throw new AuraHandledException('Address lists cannot be null');
             }

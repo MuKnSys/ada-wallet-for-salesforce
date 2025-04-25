@@ -6,11 +6,6 @@ public with sharing class WalletCtrl {
     @AuraEnabled(cacheable=true)
     public static String getPaymentAddress(String walletId) {
         try {
-            // Validate input
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-
             // Query UTXO_Address__c records for the given Wallet__c with Type__c = '0' (receiving)
             List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getUTXOAddressesByWalletIdAndTypeOrdered(walletId, TYPE_RECEIVING);
 

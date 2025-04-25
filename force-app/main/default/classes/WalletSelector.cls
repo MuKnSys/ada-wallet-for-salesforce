@@ -14,4 +14,15 @@ public with sharing class WalletSelector {
             AND Id NOT IN :walletIds
             WITH SECURITY_ENFORCED];
     }
+
+    public static List<Wallet__c> getWalletsByWalletSetId(Id walletSetId) {
+        return [
+            SELECT Account_Index__c
+            FROM Wallet__c
+            WHERE Wallet_Set__c = :walletSetId
+            AND Account_Index__c != NULL
+            WITH SECURITY_ENFORCED
+            ORDER BY Account_Index__c ASC
+        ];
+    }
 }
