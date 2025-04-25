@@ -67,6 +67,14 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             type: 'text'
         }
     ];
+    
+    get hasExternalAddresses() {
+        return this.externalAddresses?.length > 0;
+    }
+
+    get hasInternalAddresses() {
+        return this.internalAddresses?.length > 0;
+    }
 
     renderedCallback() {
         if (!this.isLibraryLoaded) {            

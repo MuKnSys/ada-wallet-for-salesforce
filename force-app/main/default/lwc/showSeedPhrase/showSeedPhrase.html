@@ -8,7 +8,7 @@
                 <lightning-button label="Hide" onclick={clearSeedPhrase} class="slds-m-left_small" variant="neutral"></lightning-button>
             </div>
             <!-- Seed Phrase Display -->
-            <template if:true={seedPhrase}>
+            <template lwc:if={hasSeedPhrase}>
                 <p class="slds-text-body_regular slds-m-top_small seed-phrase-text">{seedPhrase}</p>
             </template>
         </div>

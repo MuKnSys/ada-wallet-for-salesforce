@@ -4,20 +4,20 @@
             <h2 slot="title" class="wallet-title">ADA Wallet</h2>
         </div>
         <div class="wallet-content">
-            <template if:true={isLoading}>
+            <template lwc:if={isLoading}>
                 <div class="loading-container">
                     <lightning-spinner alternative-text="Loading wallet data..." size="medium"></lightning-spinner>
                 </div>
             </template>
-            <template if:false={isLoading}>
+            <template lwc:else>
                 <!-- Balance Section -->
                 <div class="balance-section">
                     <div class="wallet-balance-label">Balance</div>
                     <div class="wallet-balance-amount">
-                        <template if:true={balance}>
+                        <template lwc:if={balance}>
                             {balance} <span class="currency">ADA</span>
                         </template>
-                        <template if:false={balance}>
+                        <template lwc:else>
                             <span class="not-available">Not available</span>
                         </template>
                     </div>
@@ -104,7 +104,7 @@
     </lightning-card>
 
     <!-- Receive Modal -->
-    <template if:true={showReceive}>
+    <template lwc:if={showReceive}>
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-receive" aria-modal="true" class="slds-modal slds-fade-in-open receive-modal">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
@@ -121,11 +121,11 @@
                             <div class="address-box">{paymentAddress}</div>
                         </div>
                         <div class="qr-container">
-                            <template if:false={qrCodeError}>
-                                <div class="qr-code-canvas"></div>
-                            </template>
-                            <template if:true={qrCodeError}>
+                            <template lwc:if={qrCodeError}>
                                 <p class="qr-error">Unable to generate QR code.</p>
+                            </template>
+                            <template lwc:else>
+                                <div class="qr-code-canvas"></div>
                             </template>
                         </div>
                     </div>
@@ -143,7 +143,7 @@
     </template>
 
     <!-- Send Modal -->
-    <template if:true={showSend}>
+    <template lwc:if={showSend}>
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-send" aria-modal="true" class="slds-modal slds-fade-in-open send-modal">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
@@ -170,7 +170,7 @@
                             <label class="form-label" for="send-address">Recipient Address</label>
                             <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address" onchange={handleAddressChange}></textarea>
                         </div>
-                        <template if:true={errorMessage}>
+                        <template lwc:if={errorMessage}>
                             <div class="error-message slds-text-color_destructive">{errorMessage}</div>
                         </template>
                     </div>

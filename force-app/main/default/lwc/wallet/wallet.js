@@ -83,7 +83,7 @@ export default class Wallet extends LightningElement {
             const totalBalance = result.totalBalance || {};
             let adaBalance = 0;
             if (totalBalance.lovelace) {
-                adaBalance = totalBalance.lovelace / 1000000; // Convert lovel reis to ADA
+                adaBalance = totalBalance.lovelace / 1000000; // Convert lovelace to ADA
             }
             this.balance = adaBalance.toFixed(6); // Display with 6 decimal places
             this.balanceRetryCount = 0; // Reset retry count on success

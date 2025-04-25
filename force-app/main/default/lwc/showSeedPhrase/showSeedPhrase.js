@@ -42,4 +42,8 @@ export default class ShowSeedPhrase extends LightningElement {
             })
         );
     }
+
+    get hasSeedPhrase() {
+        return this.seedPhrase?.trim().length > 0;
+    }
 }

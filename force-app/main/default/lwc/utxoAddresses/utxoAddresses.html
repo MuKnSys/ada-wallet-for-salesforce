@@ -8,7 +8,7 @@
                     </h2>
                 </div>
                 <div class="slds-col">
-                    <template if:true={hasSeedPhrasePermission}>
+                    <template lwc:if={hasSeedPhrasePermission}>
                         <lightning-button
                             label="Generate New Address"
                             variant="brand"
@@ -27,15 +27,15 @@
                     value={filterText}
                 ></lightning-input>
             </div>
-            <template if:true={error}>
+            <template lwc:if={isLoading}>
+                <lightning-spinner alternative-text="Loading addresses..."></lightning-spinner>
+            </template>
+            <template lwc:if={error}>
                 <lightning-alert variant="error" title="Error">
                     {error}
                 </lightning-alert>
             </template>
-            <template if:true={isLoading}>
-                <lightning-spinner alternative-text="Loading addresses..."></lightning-spinner>
-            </template>
-            <template if:false={error}>
+            <template lwc:else>
                 <lightning-tabset active-tab-value={activeTab}>
                     <lightning-tab label="External" value="external" onactive={handleExternalTabActive}>
                         <lightning-datatable
@@ -47,7 +47,7 @@
                             class="slds-table_header-fixed_container"
                         ></lightning-datatable>
                         <div class="slds-align_absolute-center slds-p-vertical_small">
-                            <template if:true={externalAddresses.length}>
+                            <template lwc:if={hasExternalAddresses}>
                                 <a href="#" onclick={handleViewAll}>View All</a>
                             </template>
                         </div>
@@ -62,7 +62,7 @@
                             class="slds-table_header-fixed_container"
                         ></lightning-datatable>
                         <div class="slds-align_absolute-center slds-p-vertical_small">
-                            <template if:true={internalAddresses.length}>
+                            <template lwc:if={hasInternalAddresses}>
                                 <a href="#" onclick={handleViewAll}>View All</a>
                             </template>
                         </div>

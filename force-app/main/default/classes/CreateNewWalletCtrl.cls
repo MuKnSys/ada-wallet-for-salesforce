@@ -6,8 +6,8 @@ public with sharing class CreateNewWalletCtrl {
                 Wallet_Set__c = walletSetId,
                 Name = walletName,
                 Address__c = address,
-                Account_Private_Key__c = accountPrivateKey,
-                Account_Public_Key__c = accountPublicKey,
+                Account_Private_Key__c = DataEncryptor.encrypt(accountPrivateKey),
+                Account_Public_Key__c = DataEncryptor.encrypt(accountPublicKey),
                 Account_Index__c = accountIndex
             );
             insert newWallet;
