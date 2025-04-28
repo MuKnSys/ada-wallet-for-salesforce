@@ -110,15 +110,6 @@ public with sharing class CreateNewWalletCtrl {
     }
 
     @AuraEnabled(cacheable=true)
-    public static Wallet_Set__c getWalletSetWithSeedPhrase(Id walletSetId) {
-        try {            
-            return WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
-        } catch (Exception e) {            
-            throw new AuraHandledException('Failed to check is address used: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
     public static String getDecryptedSeedPhrase(Id walletSetId) {
         try {            
             return EncryptedDataService.getDecryptedSeedPhrase(walletSetId);

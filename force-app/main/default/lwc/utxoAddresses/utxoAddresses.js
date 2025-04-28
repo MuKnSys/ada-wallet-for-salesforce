@@ -16,7 +16,7 @@ import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
 import checkIsAddressUsed from '@salesforce/apex/UTXOController.checkIsAddressUsed';
-import getWalletSetWithSeedPhrase from '@salesforce/apex/UTXOController.getWalletSetWithSeedPhrase';
+import getDecryptedSeedPhrase from '@salesforce/apex/UTXOController.getDecryptedSeedPhrase';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -171,10 +171,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             if (!wallet || !wallet.Wallet_Set__c || wallet.Account_Index__c == null) {
                 throw new Error('Invalid wallet data: Missing Wallet Set or Account Index');
             }
-
-            // Fetch Wallet Set to get the mnemonic
-            const walletSet = await getWalletSetWithSeedPhrase({ walletSetId: wallet.Wallet_Set__c });
-            const mnemonic = await decrypt({ encryptedText: walletSet.Seed_Phrase__c });
+            
+            const mnemonic = await getDecryptedSeedPhrase({ walletSetId: wallet.Wallet_Set__c });
 
             if (!mnemonic) {
                 throw new Error('Seed phrase is empty or null');

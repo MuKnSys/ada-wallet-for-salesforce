@@ -18,11 +18,11 @@ public with sharing class UTXOController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static Wallet_Set__c getWalletSetWithSeedPhrase(Id walletSetId) {
+    public static String getDecryptedSeedPhrase(Id walletSetId) {
         try {            
-            return WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
+            return EncryptedDataService.getDecryptedSeedPhrase(walletSetId);
         } catch (Exception e) {            
-            throw new AuraHandledException('Failed to check is address used: ' + e.getMessage());
+            throw new AuraHandledException('Failed to get seed phrase: ' + e.getMessage());
         }
     }
 
