@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostHeader</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Header</shortDescription>
+        <value>Blockfrost</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostInfo</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Info</shortDescription>
+        <value>Enter your Blockfrost Project ID for Cardano API integration:</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostProjectIdHeader</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Project Id Header</shortDescription>
+        <value>Project ID Set</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostProjectIdInputHeader</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Project Id Input Header</shortDescription>
+        <value>Blockfrost Project ID</value>
+    </labels>    
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostSaveConfiguration</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Save Configuration</shortDescription>
+        <value>Save Configuration</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostRemoveConfiguration</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Remove Configuration</shortDescription>
+        <value>Remove</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationHeader</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Header</shortDescription>
+        <value>Test Blockfrost Configuration</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationInfo</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Info</shortDescription>
+        <value>Test your Blockfrost configuration:</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationButtonLabel</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Button Label</shortDescription>
+        <value>Test Configuration</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationResult</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Result</shortDescription>
+        <value>Test Result:</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostGetConfigAPIError</fullName>
+        <categories>apex, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup EntityPublicKey API Error</shortDescription>
+        <value>Error retrieveing the Blockfrost configuration.</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingDisableLogging</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Disable Logging</shortDescription>
+        <value>Disable logging</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingDisableSuccess</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Disable Success</shortDescription>
+        <value>Logging disabled.</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingEnableLogging</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Enable Logging</shortDescription>
+        <value>Enable logging</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingEnableSuccess</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Enabled Success</shortDescription>
+        <value>Logging enabled.</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingHeader</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Header</shortDescription>
+        <value>Logging</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingInfo</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Info</shortDescription>
+        <value>Recommended. You can enable error logging which may help troubleshoot problems.</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_LoggingTitle</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Logging Title</shortDescription>
+        <value>Setup Logging</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_PrivateKey_Info</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Private Key Info</shortDescription>
+        <value>A private key is your ultimate security ally! It ensures your Seed phrase stays protected by encrypting it. In this step, we&apos;ll retrieve the private key and securely store it, locking in your data&apos;s safety with precision. Let&apos;s get started!</value>
+    </labels>    
+    <labels>
+        <fullName>AdaWalletsSetup_PrivateKey_Sub_Header</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Private Key Sub Header</shortDescription>
+        <value>Private Key</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_PrivateKey_Button</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Private Key Button</shortDescription>
+        <value>Generate Private Key</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Config_Header</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Config Header</shortDescription>
+        <value>Ada Wallets Setup</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Container</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Container</shortDescription>
+        <value>Container</value>
+    </labels>    
+    <labels>
+        <fullName>AdaWalletsSetup_Header_1</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Header 1</shortDescription>
+        <value>Ada Wallets</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Header_1_Info</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Header 1 Info</shortDescription>
+        <value>Welcome to Web3! Whether you&apos;re a blockchain pro or new to decentralization, Circle&apos;s Web3 Services Console empowers you to build seamless, secure experiences with Developer-Controlled Wallets. Enjoy advanced security through MPC technology, effortless integration of digital currencies and NFTs, and cross-chain compatibility with Ethereum, Polygon, and Avalanche. Built-in transaction logs, user monitoring, and error reporting ensure reliable operations, while pay-as-you-go pricing lets you start instantly with no upfront costs. Embrace the future of Web3 with unmatched control, security, and simplicity!</value>
+    </labels>    
+    <labels>
+        <fullName>AdaWalletsSetup_Success</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Success</shortDescription>
+        <value>Success</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Success_Info</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Success Info</shortDescription>
+        <value>Saved Ada Wallets settings</value>
+    </labels>   
+</CustomLabels>

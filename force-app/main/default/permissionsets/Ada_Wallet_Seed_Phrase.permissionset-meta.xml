@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>ShowSeedPhraseCtrl</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ShowWalletKeysCtrl</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>See_seed_phrase</name>
+    </customPermissions>
+    <description>Access to the ADA Wallet Seed phrase and wallet keys.</description>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet__c.Account_Private_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet__c.Account_Public_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Wallet_Set__c.Seed_Phrase__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>ADA Wallet Seed Phrase And Wallet Keys</label>
+</PermissionSet>

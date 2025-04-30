@@ -1,0 +1,199 @@
+<template>
+    <lightning-card hide-header label={labels.CORE.Container}>
+        <lightning-spinner lwc:if={isLoading}></lightning-spinner>
+        <div class="color slds-var-m-around_large">
+            <div class="slds-var-p-left_medium slds-var-p-right_medium">
+                <div class="slds-text-heading_large slds-var-p-bottom_medium">
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-col slds-size_11-of-12">
+                            <!-- <img src={logo} class="logo" /> -->
+                            <b>{labels.CORE.Header_1}</b>
+                        </div>
+                        <div class="slds-col slds-size_1-of-12">                            
+                            <lightning-icon
+                                class="refresh"
+                                title="Refresh"
+                                icon-name="utility:refresh"
+                                size="small"
+                                onclick={handleRefresh}
+                            >
+                            </lightning-icon>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-text-heading_small slds-var-m-bottom_medium">
+                    <lightning-formatted-rich-text
+                        class="slds-var-p-right_xx-small"
+                        value={labels.CORE.Header_1_Info}
+                    >
+                    </lightning-formatted-rich-text>
+                </div>
+            </div>
+
+            <lightning-card
+                title={labels.CONFIG.Header}
+                icon-name="standard:sales_path"
+            >
+                <lightning-accordion
+                    allow-multiple-sections-open                    
+                >
+                    <!-- Private Key -->
+                    <lightning-accordion-section
+                        name={steps.n1}
+                        label={labels.PRIVATE_KEY.Sub_Header}
+                        class="slds-var-m-left_xx-large"
+                    >
+                        <div
+                            class="slds-var-p-left_large slds-var-m-top_medium"
+                        >
+                            <lightning-formatted-rich-text
+                                class="slds-var-p-right_xx-small"
+                                value={labels.PRIVATE_KEY.Info}
+                            >
+                            </lightning-formatted-rich-text>
+                        </div>
+                        <div
+                            class="slds-grid slds-wrap slds-var-p-left_large slds-var-p-top_medium"
+                            lwc:if={privateKeyCompleted}
+                        >
+                            <lightning-icon
+                                icon-name="action:approval"
+                                size="x-small"
+                            ></lightning-icon>
+                            <lightning-formatted-rich-text
+                                value={labels.CORE.Success}
+                                class="slds-var-p-left_small slds-text-heading_small"
+                            >
+                            </lightning-formatted-rich-text>
+                        </div>
+                        <div
+                            class="slds-grid slds-wrap slds-var-p-left_large slds-var-p-top_medium"
+                            lwc:else
+                        >
+                            <div class="slds-col">
+                                <lightning-button
+                                    variant="brand-outline"
+                                    label={labels.PRIVATE_KEY.Button}
+                                    onclick={handlePrivateKey}
+                                >
+                                </lightning-button>
+                            </div>
+                        </div>
+                    </lightning-accordion-section>
+
+                    <!-- Logging -->
+                    <lightning-accordion-section
+                        name={steps.n2}
+                        label={labels.LOGGING.Title}
+                        class="slds-var-m-left_xx-large"
+                    >
+                        <div class="slds-var-p-left_large slds-var-m-top_medium">
+                            <lightning-formatted-rich-text
+                                class="slds-var-p-right_xx-small"
+                                value={labels.LOGGING.Info}
+                            >
+                            </lightning-formatted-rich-text>
+                        </div>
+                        <div class="slds-grid slds-wrap slds-var-p-left_large slds-var-p-top_medium">
+                            <div class="slds-col">
+                                <p class="slds-var-p-bottom_medium">
+                                    <lightning-button
+                                        variant="brand-outline"
+                                        label={labels.LOGGING.EnableLogging}
+                                        onclick={handleEnableLogging}
+                                    >
+                                    </lightning-button>
+                                </p>
+                                <p class="slds-var-p-bottom_medium">
+                                    <lightning-button
+                                        variant="brand-outline"
+                                        label={labels.LOGGING.DisableLogging}
+                                        onclick={handleDisableLogging}
+                                    >
+                                    </lightning-button>
+                                </p>
+                            </div>
+                        </div>
+                    </lightning-accordion-section>
+
+                    <!-- Blockfrost Project ID Configuration -->
+                    <lightning-accordion-section
+                        name={steps.n3}
+                        label={labels.BLOCKFROST.Header}
+                        class="slds-var-m-left_xx-large"
+                    >
+                        <div class="slds-p-around_small">
+                            <lightning-formatted-rich-text
+                                class="slds-var-p-right_xx-small"
+                                value={labels.BLOCKFROST.Info}
+                            >
+                            </lightning-formatted-rich-text>                            
+                            <template if:true={isProjectIdSet}>
+                                <lightning-formatted-rich-text
+                                    class="slds-var-p-right_xx-small"
+                                    value={labels.BLOCKFROST.ProjectIdHeader}
+                                >
+                                </lightning-formatted-rich-text>
+                            </template>
+                            <template if:false={isProjectIdSet}>
+                                <lightning-input 
+                                    type="text"
+                                    value={blockfrostProjectId}
+                                    onchange={handleBlockfrostIdChange}                                    
+                                ></lightning-input>
+                            </template>
+                            <div class="slds-m-top_medium">
+                                <lightning-button 
+                                    variant="brand" 
+                                    label={labels.BLOCKFROST.SaveConfiguration}
+                                    onclick={handleBlockfrostSave}
+                                    class="slds-m-right_small"
+                                    disabled={isSaveDisabled}
+                                    lwc:if={isProjectIdNotSet}
+                                ></lightning-button>
+                                <lightning-button 
+                                    variant="destructive" 
+                                    label={labels.BLOCKFROST.RemoveConfiguration}
+                                    onclick={handleBlockfrostRemove}
+                                    disabled={isRemoveDisabled}
+                                    lwc:if={isProjectIdSet}
+                                ></lightning-button>
+                            </div>
+                        </div>
+                    </lightning-accordion-section>
+
+                    <!-- Test Configuration Section -->
+                    <lightning-accordion-section
+                        name={steps.n4}
+                        label={labels.BLOCKFROST.TestConfigurationHeader}
+                        class="slds-var-m-left_xx-large"
+                    >
+                        <div class="slds-p-around_small slds-m-top_medium">
+                            <lightning-formatted-rich-text
+                                class="slds-var-p-right_xx-small"
+                                value={labels.BLOCKFROST.TestConfigurationInfo}
+                            >
+                            </lightning-formatted-rich-text>
+                            <lightning-button 
+                                variant="brand-outline" 
+                                label={labels.BLOCKFROST.TestConfigurationButtonLabel} 
+                                onclick={handleTestBlockfrostConfig}
+                                disabled={isTestDisabled}
+                            ></lightning-button>
+                            <template if:true={testResult}>
+                                <div class="slds-m-top_small">
+                                    <lightning-formatted-rich-text
+                                        class="slds-var-p-right_xx-small"
+                                        value={labels.BLOCKFROST.TestConfigurationResult}
+                                    >
+                                    </lightning-formatted-rich-text>                                    
+                                    <pre class="slds-text-body_small">{testResult}</pre>
+                                </div>
+                            </template>
+                        </div>
+                    </lightning-accordion-section>                    
+                </lightning-accordion>
+            </lightning-card>
+        </div>
+    </lightning-card>
+</template>
