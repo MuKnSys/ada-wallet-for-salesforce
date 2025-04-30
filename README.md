@@ -16,7 +16,7 @@
     - flag `-y` sets the number of days before org expires
     - use `-h` flag for help
 1. Push code to newly created scratch org by using `sf project deploy start`
-1. Add the Admin Permissions to this user `sf org assign permset --name Web3_Enabler_Admin_Managed`
+1. Add the Admin Permissions to this user `sf org assign permset --name Ada_Wallet_Admin_Managed`
 1. Connect into the Org: `sf org open`
 1. To preload the AssetToken and TokenContract information in a development org, go into the Salesforce Debugger and execute: `PostInstall postInstallHandler = new PostInstall(); postInstallHandler.installDefaultAssetsAndContracts();`
 1. Introduce changes (deploy to scratch org if code was changed)
