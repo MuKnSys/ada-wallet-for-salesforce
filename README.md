@@ -18,12 +18,6 @@
 1. Push code to newly created scratch org by using `sf project deploy start`
 1. Add the Admin Permissions to this user `sf org assign permset --name Ada_Wallet_Admin_Managed`
 1. Connect into the Org: `sf org open`
-1. To preload the AssetToken and TokenContract information in a development org, go into the Salesforce Debugger and execute: `PostInstall postInstallHandler = new PostInstall(); postInstallHandler.installDefaultAssetsAndContracts();`
-1. Introduce changes (deploy to scratch org if code was changed)
-1. If any changes were introduced directly in scratch org pull them using `sf project retrieve start`
-1. To check if there are any changes run `sf project retrieve preview` and `sf project deploy preview`
-1. Commit changes to feature branch. Provide meaningful commit message like `mukn-123: unit tests`
-1. After finished development create a Pull Request back to `develop` branch
 
 ## Additional resources
 
