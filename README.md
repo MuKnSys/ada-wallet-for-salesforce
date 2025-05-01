@@ -36,24 +36,24 @@ After connecting to your org, complete these essential configuration steps:
 ## Key Features
 
 ### 1. Private Key Management
-![Private Key Management](./images/private-key-management.png)
+![Private Key Management](documentation-and-images/private-key-management.png)
 - **Component**: [Generate Seed Phrase](https://github.com/MuKnSys/ada-wallet-for-salesforce/tree/main/force-app/main/default/lwc/generateSeedPhrase)
 - **Description**: Users can create a Wallet Set in their Org where they can generate a new seed phrase from scratch and verify it to create it. Only users with the "ADA Wallet Seed Phrase And Wallet Keys" permission set have access to decrypt and view the Seed Phrase.
 
 ### 2. Transaction Address Generation
-![Address Generation](./images/address-generation.png)
+![Address Generation](documentation-and-images/address-generation.png)
 - **Components**: 
   - [Create New Wallet](https://github.com/MuKnSys/ada-wallet-for-salesforce/tree/main/force-app/main/default/lwc/createNewWallet)
   - [UTXO Addresses](https://github.com/MuKnSys/ada-wallet-for-salesforce/tree/main/force-app/main/default/lwc/utxoAddresses)
 - **Description**: The Create Wallet Flow handles deriving UTXO Addresses and generating the private and public keys for the wallet for a specific account path using an already created Wallet Set directly from the Seed Phrase. The UTXO component shows all derived UTXO addresses for both receiving and change addresses and the ability to derive new ones if needed.
 
 ### 3. Transaction Sending
-![Transaction Sending](./images/transaction-sending.png)
+![Transaction Sending](documentation-and-images/transaction-sending.png)
 - **Component**: [Wallet](https://github.com/MuKnSys/ada-wallet-for-salesforce/tree/main/force-app/main/default/lwc/wallet)
 - **Description**: The wallet page enables users to send transactions by selecting all UTXOs that can be used in building the transactions and automatically calculates fees for sending.
 
 ### 4. Transaction Receiving
-![Transaction Receiving](./images/transaction-receiving.png)
+![Transaction Receiving](documentation-and-images/transaction-receiving.png)
 - **Component**: [Wallet](https://github.com/MuKnSys/ada-wallet-for-salesforce/tree/main/force-app/main/default/lwc/wallet)
 - **Description**: Receiving transactions happens automatically by refreshing the page, which recalculates the total amount and assets in the wallet.
 
