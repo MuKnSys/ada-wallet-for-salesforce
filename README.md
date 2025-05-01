@@ -16,8 +16,8 @@ The public repository for the Cardano Catalyst Fund 13 project
 * The `-y` flag sets the number of days before the org expires.
 * Use the `-h` flag for help.
 * For more details: [developer docs scratch orgs create](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_scratch_orgs_create.htm).
-11. Push the code to the Scratch Org: `sf project deploy start`
-12. Connect to the Salesforce Scratch Org: `sf org open`
+5. Push the code to the Scratch Org: `sf project deploy start`
+6. Connect to the Salesforce Scratch Org: `sf org open`
 
 
 ## Copyright and Licence
