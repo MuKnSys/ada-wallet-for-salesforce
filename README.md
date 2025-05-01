@@ -1,45 +1,37 @@
 # ADA Wallet for Salesforce
 
-## Development
+![](documentation-and-images/ADA-Wallet-for-Salesforce-thumbnail.png)
+The public repository for the Cardano Catalyst Fund 13 project
 
-1. **If you are not authorised to dev hub** run `sf org login web --set-default-dev-hub --alias DevHub --instance-url DevHubURL`
-    - flag `--set-default-dev-hub` marks dev hub as default. If not set it will be required to provide dev hub in some commands like create scratch org
-    - flag `--alias` is an alias of the org. You can set some friendly name so you can easily reference that org
-    - flag `--instance-url` allows you to provide specific URL to log into in case you are authorised in multiple orgs
-      \*\*If you are already logged in but need to update the Dev Hub, you can use sf config set target-dev-hub DevHub --global
-1. Check out `develop` branch
-1. Create a new `feature` branch e.g. `feature/mukn-123`
-1. Create a scratch org by running `sf org create scratch -f ./config/project-scratch-def.json -a dev -d -y 30`
-    - flag `-f` is a path to config file (no need to change it)
-    - flag `-a` is an alias of the scratch org, if you create multiple scratch orgs you can give them unique aliases to easier refer to them
-    - flag `-d` marks the newly created scratch org as default. If you don't mark it as default you will have to reference it by username or alias, or you will have to use `sf config set target-org YourAliasOrUsername` to set is as default
-    - flag `-y` sets the number of days before org expires
-    - use `-h` flag for help
-1. Push code to newly created scratch org by using `sf project deploy start`
-1. Add the Admin Permissions to this user `sf org assign permset --name Ada_Wallet_Admin_Managed`
-1. Add the Seed Phrase permission set "ADA Wallet Seed Phrase And Wallet Keys" to users who need access to sensitive operations: `sf org assign permset --name Ada_Wallet_Seed_Phrase`
-1. Connect into the Org: `sf org open`
+## Installation Instructions / How to Test the App
 
-## Post-Setup Configuration
+1. Clone the repository. `git clone https://github.com/MuKnSys/ada-wallet-for-salesforce.git`
+2. Check out the main branch.
+3. Log into the Dev Hub Org by running `sf org login web --set-default-dev-hub --alias DevHub --instance-url https://login.salesforce.com` and entering your username and password.
+4. Create a Scratch Org by running `sf org create scratch -f ./config/project-scratch-def.json -a dev -d -y 30`.
+* The `-f` flag is a path to config file (no need to change it).
+* The `-a` flag is an alias of the scratch org, if you create multiple scratch orgs you can give them unique aliases to easier refer to them.
+* The `-d` flag marks the newly created scratch org as default. If you don't mark it as default you will have to reference it by username or alias, or you will have to use `sf config set target-org YourAliasOrUsername` to set is as default.
+* The `-y` flag sets the number of days before the org expires.
+* Use the `-h` flag for help.
+* For more details: [developer docs scratch orgs create](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_scratch_orgs_create.htm).
+5. Push the code to the Scratch Org: `sf project deploy start`
+6. Connect to the Salesforce Scratch Org: `sf org open`
+
+## Setup Configuration
 
 After connecting to your org, complete these essential configuration steps:
 
-1. Navigate to the App Launcher (nine dots in top left) and open "Ada Wallet Setup"
-2. Create the Organization Encryption Key:
+1. Add the Admin Permissions to this user `sf org assign permset --name Ada_Wallet_Admin_Managed`
+2. Add the Seed Phrase permission set "ADA Wallet Seed Phrase And Wallet Keys" to users who need access to sensitive operations: `sf org assign permset --name Ada_Wallet_Seed_Phrase`
+3. Navigate to the App Launcher (nine dots in top left) and open "Ada Wallet Setup"
+4. Create the Organization Encryption Key:
    - This step is only visible to users with the "ADA Wallet Seed Phrase And Wallet Keys" permission set (`Ada_Wallet_Seed_Phrase`)
    - This key is used to decrypt sensitive wallet information for users who should have access
-3. Set up Blockfrost Integration:
+5. Set up Blockfrost Integration:
    - Visit [Blockfrost.io](https://blockfrost.io) to create a free account
    - Create a new project to get your Project ID
    - In the Ada Wallet Setup app, enter your Blockfrost Project ID to enable blockchain operations
-
-## Additional resources
-
--   [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
--   [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
--   [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
--   [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
--   [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm)
 
 ## Key Features
 
@@ -64,3 +56,15 @@ After connecting to your org, complete these essential configuration steps:
 ![Transaction Receiving](./images/transaction-receiving.png)
 - **Component**: [Wallet](https://github.com/MuKnSys/ada-wallet-for-salesforce/tree/main/force-app/main/default/lwc/wallet)
 - **Description**: Receiving transactions happens automatically by refreshing the page, which recalculates the total amount and assets in the wallet.
+
+## Additional resources
+
+-   [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+-   [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
+-   [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
+-   [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+-   [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm)
+
+## Copyright and License
+
+Copyright 2024 Web3 Enabler, Inc. ADA Wallet for Salesforce is distributed under the GPL license, version 3.0. For more information, see the [LICENSE](LICENSE) file.
