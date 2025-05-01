@@ -20,6 +20,6 @@ The public repository for the Cardano Catalyst Fund 13 project
 6. Connect to the Salesforce Scratch Org: `sf org open`
 
 
-## Copyright and Licence
+## Copyright and License
 
 Copyright 2024 Web3 Enabler, Inc. ADA Wallet for Salesforce is distributed under the GPL licence, version 3.0. For more information, see the [LICENSE](LICENSE) file.
