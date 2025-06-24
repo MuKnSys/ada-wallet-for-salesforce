@@ -1,6 +1,9 @@
 public with sharing class BlockfrostService {
     private static final String BLOCKS_URL = '/blocks/latest';
     private static final String ADDRESS_TOTAL_URL = '/addresses/{address}/total';
+    private static final String ADDRESS_EXTENDED_URL = '/addresses/{address}/extended';
+    private static final String ADDRESS_UTXOS_URL = '/addresses/{address}/utxos';
+    private static final String ASSET_METADATA_URL = '/assets/{asset}';
     private static final String TYPE_RECEIVING = '0';
     private static final String TYPE_CHANGE = '1';
     
@@ -45,10 +48,20 @@ public with sharing class BlockfrostService {
             }
 
             Map<String, Object> totalData = (Map<String, Object>) JSON.deserializeUntyped(endpoint.getResponse().getBody());
-            
-            // Check if the address has any transactions
-            Integer txCount = (Integer) totalData.get('tx_count');            
-            return txCount > 0;
+
+            // Extract tx_count which may deserialize as Decimal
+            Object txObj = totalData.get('tx_count');
+            Integer txCount = 0;
+            if (txObj != null) {
+                if (txObj instanceof Decimal) {
+                    txCount = ((Decimal) txObj).intValue();
+                } else if (txObj instanceof Integer) {
+                    txCount = (Integer) txObj;
+                } else if (txObj instanceof Long) {
+                    txCount = ((Long) txObj).intValue();
+                }
+            }
+            return txCount != null && txCount > 0;
         } catch (Exception e) {            
             throw new BlockfrostEndpoint.BlockfrostAPIException('Error checking address usage: ' + e.getMessage());
         }
@@ -152,6 +165,125 @@ public with sharing class BlockfrostService {
         } catch (Exception e) {            
             throw new BlockfrostEndpoint.BlockfrostAPIException('Error retrieving wallet balance: ' + e.getMessage());
         }
+    }
+
+    /**
+     * Calls Blockfrost /addresses/{address}/extended endpoint and returns the raw JSON string.
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAddressExtended(String address) {
+        if (String.isBlank(address)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
+        }
+
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = ADDRESS_EXTENDED_URL.replace('{address}', address);
+
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            // Address not found on-chain. Return empty JSON so caller can handle.
+            return '{}';
+        }
+
+        // Return an informative JSON payload instead of raising an exception so callers can log the error without surfacing it to users.
+        return JSON.serialize(new Map<String,Object>{
+            'status' => endpoint.getStatusCode(),
+            'error'  => 'Blockfrost address extended API error'
+        });
+    }
+
+    /**
+     * Calls Blockfrost /addresses/{address}/total endpoint and returns raw JSON string.
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAddressTotal(String address) {
+        if (String.isBlank(address)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
+        }
+
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = ADDRESS_TOTAL_URL.replace('{address}', address);
+
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            return '{}';
+        }
+
+        return JSON.serialize(new Map<String,Object>{
+            'status' => endpoint.getStatusCode(),
+            'error' => 'Blockfrost address total API error'
+        });
+    }
+
+    /**
+     * Calls Blockfrost /addresses/{address}/utxos endpoint and returns raw JSON string (array).
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAddressUtxos(String address) {
+        if (String.isBlank(address)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address');
+        }
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = ADDRESS_UTXOS_URL.replace('{address}', address);
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String,String>{'Project_id'=>projectId,'Content-Type'=>'application/json','Accept'=>'application/json'})
+            .send();
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            return '[]';
+        }
+        throw new BlockfrostEndpoint.BlockfrostAPIException('UTXO call error status '+endpoint.getStatusCode());
+    }
+
+    public static Boolean hasUtxos(String address) {
+        String body = getAddressUtxos(address);
+        List<Object> listResp = (List<Object>) JSON.deserializeUntyped(body);
+        return !listResp.isEmpty();
+    }
+
+    @AuraEnabled(cacheable=false)
+    public static String getAssetMetadata(String unit) {
+        if (String.isBlank(unit)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid asset unit');
+        }
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = ASSET_METADATA_URL.replace('{asset}', unit);
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String,String>{'Project_id'=>projectId,'Content-Type'=>'application/json','Accept'=>'application/json'})
+            .send();
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            return '{}';
+        }
+        throw new BlockfrostEndpoint.BlockfrostAPIException('Asset metadata error status '+endpoint.getStatusCode());
     }
 
     public class BlockfrostPlatformError {

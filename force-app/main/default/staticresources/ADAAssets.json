@@ -1,0 +1,26 @@
+[
+  {
+    "symbol": "ADA",
+    "name": "Cardano"
+  },
+  {
+    "symbol": "MIN",
+    "name": "Minswap"
+  },
+  {
+    "symbol": "AGIX",
+    "name": "SingularityNET"
+  },
+  {
+    "symbol": "DJED",
+    "name": "Djed Stablecoin"
+  },
+  {
+    "symbol": "SNEK",
+    "name": "Snek"
+  },
+  {
+    "symbol": "USDA",
+    "name": "USDA Stablecoin"
+  }
+] 

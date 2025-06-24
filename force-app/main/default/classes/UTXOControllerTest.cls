@@ -7,7 +7,6 @@ private class UTXOControllerTest {
     private static final String ASSERT_MESSAGE_STAKING_KEY_HASH = 'Staking key hash should match';
     private static final String ASSERT_MESSAGE_PATH = 'Path should match';
     private static final String ASSERT_MESSAGE_TYPE = 'Type should match';
-    private static final String ASSERT_MESSAGE_IS_USED = 'Address used status should match';
     private static final String ASSERT_MESSAGE_NEXT_INDEX = 'Next index should match';
     private static final String TEST_PRIVATE_KEY = '0123456789abcdef0123456789abcdef';
     private static final String TEST_SEED_PHRASE = 'test seed phrase';
@@ -30,18 +29,6 @@ private class UTXOControllerTest {
     }
     
     @isTest
-    private static void checkIsAddressUsedShouldReturnTrueWhenAddressIsUsed() {
-        String testAddress = 'testAddress123';
-        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock());
-
-        Test.startTest();
-            Boolean result = UTXOController.checkIsAddressUsed(testAddress);
-        Test.stopTest();
-        
-        Assert.isNotNull(result, 'Result should not be null');
-    }       
-    
-    @isTest
     private static void getWalletShouldReturnWallet() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
         
@@ -51,7 +38,7 @@ private class UTXOControllerTest {
         
         Assert.areEqual(wallet.Id, result.Id, ASSERT_MESSAGE_WALLET_ID);
     }
-
+    
     @isTest
     static void shouldGetDecryptedSeedPhrase() {
         Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
@@ -225,14 +212,5 @@ private class UTXOControllerTest {
         Assert.areEqual('stakingKeyHash', createdAddresses[0].Staking_Key_Hash__c, ASSERT_MESSAGE_STAKING_KEY_HASH);
         Assert.areEqual('path', createdAddresses[0].Path__c, ASSERT_MESSAGE_PATH);
         Assert.areEqual('1', createdAddresses[0].Type__c, ASSERT_MESSAGE_TYPE);
-    }
-
-    private class BlockfrostServiceMock implements HttpCalloutMock {
-        public HTTPResponse respond(HTTPRequest request) {
-            HTTPResponse response = new HTTPResponse();
-            response.setStatusCode(200);
-            response.setBody('{"used": true}');
-            return response;
-        }
     }
 }

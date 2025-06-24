@@ -1,0 +1,37 @@
+<template>
+    <lightning-quick-action-panel header={labels.TITLE}>
+        <template lwc:if={isLoading}>
+            <div class="spinner slds-is-relative">
+                <lightning-spinner
+                    alternative-text={labels.SPINNER_TEXT}
+                    size={spinnerSize.LARGE}
+                    variant={buttonVariants.BRAND}
+                ></lightning-spinner>
+            </div>
+        </template>
+        <template lwc:else>
+            <template lwc:if={isSuccess}>
+                <div class="slds-align_absolute-center">
+                    <lightning-icon
+                        class="slds-var-p-right_small"
+                        icon-name={icons.SUCCESS}
+                        alternative-text={labels.SUCCESS_ICON_TEXT}
+                        title={labels.SUCCESS_ICON_TEXT}
+                    ></lightning-icon>
+                    {labels.SUCCESS_TEXT}
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="slds-align_absolute-center">
+                    <lightning-icon
+                        class="slds-var-p-right_small"
+                        icon-name={icons.ERROR}
+                        alternative-text={labels.ERROR_ICON_TEXT}
+                        title={labels.ERROR_ICON_TEXT}
+                    ></lightning-icon>
+                    {labels.ERROR_TEXT}
+                </div>
+            </template>
+        </template>
+    </lightning-quick-action-panel>
+</template> 

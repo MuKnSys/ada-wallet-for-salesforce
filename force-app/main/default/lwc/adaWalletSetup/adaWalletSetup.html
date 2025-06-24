@@ -191,6 +191,24 @@
                                 </div>
                             </template>
                         </div>
+                    </lightning-accordion-section>
+
+                    <!-- ADA Assets Initialization Section -->
+                    <lightning-accordion-section
+                        name="assets"
+                        label="ADA Assets"
+                        class="slds-var-m-left_xx-large"
+                    >
+                        <div class="slds-p-around_medium">
+                            <p class="slds-text-body_small slds-m-bottom_small">
+                                Click the button below to insert or refresh default ADA assets.
+                            </p>
+                            <lightning-button
+                                variant="brand"
+                                label="Initialize ADA Assets"
+                                onclick={handleInitializeAssets}
+                            ></lightning-button>
+                        </div>
                     </lightning-accordion-section>                    
                 </lightning-accordion>
             </lightning-card>

@@ -103,6 +103,7 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled(cacheable=true)
     public static Boolean checkIsAddressUsed(String address) {
         try {            
+            // Use /addresses/{address}/total endpoint via BlockfrostService.isAddressUsed for accurate historical usage check
             return BlockfrostService.isAddressUsed(address);
         } catch (Exception e) {            
             throw new AuraHandledException('Failed to check if address is used: ' + e.getMessage());

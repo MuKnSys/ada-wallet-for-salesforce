@@ -3,6 +3,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
+import { publish, MessageContext } from 'lightning/messageService';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -15,8 +16,14 @@ import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissio
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
-import checkIsAddressUsed from '@salesforce/apex/UTXOController.checkIsAddressUsed';
-import getDecryptedSeedPhrase from '@salesforce/apex/UTXOController.getDecryptedSeedPhrase';
+import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
+import syncAssetsForWallet from '@salesforce/apex/UTXOController.syncAssetsForWallet';
+
+import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
+
+/* eslint-disable no-console */
+// Set DEBUG to true to enable console logging for refresh process
+const DEBUG = true;
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -36,6 +43,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     displayLimit = 5; // Limit to 5 addresses per tab
     wiredAddressesResult; // To store the wired result for refresh
     viewLess = true;
+    @wire(MessageContext) messageContext;
 
     // Datatable columns
     columns = [
@@ -147,7 +155,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.displayedInternalAddresses = this.internalAddresses.slice(0, this.displayLimit);
             this.updateTabState(this.activeTab);
             this.error = undefined;
-            this.ensureUTXOAddresses();
         } else if (error) {
             this.error = error.body?.message || 'Unknown error';
             this.externalAddresses = [];
@@ -158,164 +165,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.showToast('Error Loading Addresses', this.error, 'error');
         }
         this.isLoading = false;
-    }
-
-    async ensureUTXOAddresses() {
-        if (!this.isLibraryLoaded) {
-            return;
-        }
-
-        try {
-            // Fetch wallet details to get Wallet_Set__c and Account_Index__c
-            const wallet = await getWallet({ walletId: this.recordId });
-            if (!wallet || !wallet.Wallet_Set__c || wallet.Account_Index__c == null) {
-                throw new Error('Invalid wallet data: Missing Wallet Set or Account Index');
-            }
-            
-            const mnemonic = await getDecryptedSeedPhrase({ walletSetId: wallet.Wallet_Set__c });
-
-            if (!mnemonic) {
-                throw new Error('Seed phrase is empty or null');
-            }
-
-            if (!window.bip39.validateMnemonic(mnemonic)) {
-                throw new Error('Decrypted mnemonic is invalid');
-            }
-
-            // Derive keys
-            const entropy = window.bip39.mnemonicToEntropy(mnemonic);
-            const seed = Buffer.from(entropy, 'hex');
-            const rootKey = window.cardanoSerialization.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
-            const harden = (num) => 0x80000000 + num;
-            const accountIndexNum = parseInt(wallet.Account_Index__c, 10);
-            if (accountIndexNum < 0) {
-                throw new Error('Account Index must be non-negative');
-            }
-            const accountKey = rootKey
-                .derive(harden(1852))
-                .derive(harden(1815))
-                .derive(harden(accountIndexNum));
-
-            const network = window.cardanoSerialization.NetworkInfo.mainnet();
-
-            // Ensure 20 consecutive unused receiving addresses (Type__c = '0')
-            await this.ensureConsecutiveUnusedAddresses(accountKey, network, '0', this.externalAddresses);
-
-            // Ensure 20 consecutive unused change addresses (Type__c = '1')
-            await this.ensureConsecutiveUnusedAddresses(accountKey, network, '1', this.internalAddresses);
-
-            // Refresh the UTXO addresses after derivation
-            await refreshApex(this.wiredAddressesResult);
-        } catch (error) {
-            this.showToast('Error Ensuring UTXO Addresses', error.message || 'Unknown error', 'error');
-        }
-    }
-
-    async ensureConsecutiveUnusedAddresses(accountKey, network, type, existingAddresses) {
-        const chainType = type === '0' ? 0 : 1; // 0 for receiving (external), 1 for change (internal)
-        const typeLabel = type === '0' ? 'receiving' : 'change';
-    
-        // Sort existing addresses by index to check for consecutive unused
-        const sortedAddresses = [...existingAddresses].sort((a, b) => parseInt(a.Index__c, 10) - parseInt(b.Index__c, 10));
-        let consecutiveUnused = 0;
-        let currentIndex = 0;
-        let maxIndex = sortedAddresses.length > 0 ? parseInt(sortedAddresses[sortedAddresses.length - 1].Index__c, 10) : -1;
-
-        // First, check existing addresses for consecutive unused sequence
-        if (sortedAddresses.length > 0) {
-            for (let i = 0; i <= maxIndex; i++) {
-                const addr = sortedAddresses.find(a => parseInt(a.Index__c, 10) === i);
-                if (!addr) {
-                    // If the address doesn't exist at this index, treat it as unused
-                    consecutiveUnused++;
-                } else {
-                    let isUsed;
-                    try {
-                        isUsed = await checkIsAddressUsed({ address: addr.Address__c });
-                    } catch (error) {
-                        throw new Error(`Failed to check address usage for ${typeLabel} address at index ${i}: ${error.body?.message || error.message}`);
-                    }
-    
-                    if (isUsed) {
-                        consecutiveUnused = 0;
-                    } else {
-                        consecutiveUnused++;
-                    }
-                }
-    
-                if (consecutiveUnused >= 20) {
-                    return;
-                }
-            }
-        }
-    
-        // If we don't have 20 consecutive unused addresses, start deriving from the next index
-        currentIndex = maxIndex + 1 >= 0 ? maxIndex + 1 : 0;
-        while (consecutiveUnused < 20) {
-            // Derive the address for the current index
-            const utxoPrivateKey = accountKey
-                .derive(chainType)
-                .derive(currentIndex);
-            const utxoPublicKey = utxoPrivateKey.to_public();
-            const utxoKeyHash = utxoPublicKey.to_raw_key().hash();
-            const utxoCred = window.cardanoSerialization.Credential.from_keyhash(utxoKeyHash);
-    
-            const stakePrivateKey = accountKey
-                .derive(2)
-                .derive(0)
-                .to_raw_key();
-            const stakePublicKey = stakePrivateKey.to_public();
-            const stakeKeyHash = stakePublicKey.hash();
-            const stakeCred = window.cardanoSerialization.Credential.from_keyhash(stakeKeyHash);
-    
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                utxoCred,
-                stakeCred
-            );
-            const bech32Address = baseAddress.to_address().to_bech32();
-    
-            // Check if the address is used
-            let isUsed;
-            try {
-                isUsed = await checkIsAddressUsed({ address: bech32Address });
-            } catch (error) {
-                throw new Error(`Failed to check address usage for ${typeLabel} address at index ${currentIndex}: ${error.body?.message || error.message}`);
-            }
-    
-            if (isUsed) {
-                consecutiveUnused = 0;
-            } else {
-                consecutiveUnused++;
-            }
-    
-            // Save the new address
-            const newAddress = {
-                index: currentIndex,
-                publicKey: utxoPublicKey.to_bech32(),
-                address: bech32Address,
-                stakingKeyHash: stakeKeyHash.to_hex(),
-                path: `m/1852'/1815'/${accountKey.Account_Index__c}'/${chainType}/${currentIndex}`
-            };
-    
-            try {
-                if (type === '0') {
-                    await addReceivingUTXOAddress({
-                        walletId: this.recordId,
-                        receivingAddress: newAddress
-                    });
-                } else {
-                    await addChangeUTXOAddress({
-                        walletId: this.recordId,
-                        changeAddress: newAddress
-                    });
-                }
-            } catch (error) {
-                throw new Error(`Failed to save ${typeLabel} address: ${error.body?.message || error.message}`);
-            }
-    
-            currentIndex++;
-        }
     }
 
     truncateText(text, maxLength, firstChars, lastChars) {
@@ -410,6 +259,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     async generateAddress() {
         this.isLoading = true;
         try {
+            if (!this.isLibraryLoaded) {
+                throw new Error('Cardano libraries not loaded yet. Please wait and try again.');
+            }
+
             const CardanoWasm = window.cardanoSerialization;
 
             // Determine the type based on the active tab
@@ -481,13 +334,32 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 });
             }
 
+            // Sync assets for wallet to create UTXO_Asset__c rows for new address (if any UTXOs)
+            try {
+                await syncAssetsForWallet({ walletId: this.recordId });
+                if (DEBUG) console.log('[GenerateAddress] Assets synced after new address');
+            } catch (e) {
+                if (DEBUG) console.error('[GenerateAddress] Asset sync failed', e);
+            }
+
             // Refresh the UTXO addresses to update the counts and lists
             await refreshApex(this.wiredAddressesResult);
 
+            // Broadcast message so other wallet-related components can refresh their data
+            try {
+                publish(this.messageContext, WALLET_SYNC_CHANNEL, {
+                    walletId: this.recordId,
+                    action: 'assetsUpdated'
+                });
+                if (DEBUG) console.log('[UTXO Refresh] WalletSyncChannel message published');
+            } catch(e) {
+                if (DEBUG) console.error('[UTXO Refresh] Failed to publish message', e);
+            }
+
             // Show a toast notification with the new address
             this.showToast(
-                'New UTXO Address Generated',
-                `New ${type === '0' ? 'receiving' : 'change'} address for index ${nextIndex}: ${bech32Address}`,
+                'Success',
+                `New ${type === '0' ? 'Receiving' : 'Change'} Address Derived`,
                 'success'
             );
         } catch (error) {
@@ -501,5 +373,57 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         this.dispatchEvent(
             new ShowToastEvent({ title, message, variant })
         );
+    }
+
+    async handleRefreshAddressCounts() {
+        this.isLoading = true;
+
+        try {
+            // Re-evaluate usage for existing addresses and then sync assets – no new derivations
+
+            const evaluateChain = async (list, label) => {
+                let consecutiveUnused = 0;
+                for (let addr of list
+                    .slice()
+                    .sort((a, b) => (a.Index__c ?? 0) - (b.Index__c ?? 0))) {
+                    const isUsed = await checkIsAddressUsed({ address: addr.Address__c });
+                    if (DEBUG) console.log(`[UTXO Refresh] (${label}) ${addr.Address__c} used=${isUsed}`);
+                    if (isUsed) {
+                        break;
+                    }
+                    consecutiveUnused++;
+                }
+                if (DEBUG) console.log(`[UTXO Refresh] (${label}) consecutiveUnused=${consecutiveUnused}`);
+            };
+
+            await evaluateChain(this.externalAddresses, 'external');
+            await evaluateChain(this.internalAddresses, 'internal');
+
+            // Sync assets for ALL current addresses
+            await syncAssetsForWallet({ walletId: this.recordId });
+            if (DEBUG) console.log('[UTXO Refresh] Assets synced for wallet');
+
+            await refreshApex(this.wiredAddressesResult);
+            if (DEBUG) console.log('[UTXO Refresh] Apex data refreshed');
+
+            // Broadcast update so wallet component refreshes balances
+            try {
+                publish(this.messageContext, WALLET_SYNC_CHANNEL, {
+                    walletId: this.recordId,
+                    action: 'assetsUpdated'
+                });
+                if (DEBUG) console.log('[UTXO Refresh] WalletSyncChannel message published');
+            } catch(e) {
+                if (DEBUG) console.error('[UTXO Refresh] Failed to publish message', e);
+            }
+
+            this.showToast('Success', 'UTXO assets refreshed for existing addresses.', 'success');
+        } catch (err) {
+            const msg = err.body?.message || err.message || 'Unknown error';
+            if (DEBUG) console.error('[UTXO Refresh] Error', msg);
+            this.showToast('Error', msg, 'error');
+        } finally {
+            this.isLoading = false;
+        }
     }
 }

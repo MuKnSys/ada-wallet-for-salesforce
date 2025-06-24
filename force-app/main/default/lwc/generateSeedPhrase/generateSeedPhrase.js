@@ -102,14 +102,12 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     }    
 
     handleNextFromStep2() {
-        // Create verification inputs and prefill with the generated seed phrase words
         this.verificationInputs = this.seedPhrase.map((item, i) => {
-            const input = {
+            return {
                 label: `Word ${i + 1}`,
-                value: item.word // Prefill with the correct word from seedPhrase
-            };            
-            return input;
-        });        
+                value: '' // Leave blank for user to fill
+            };
+        });
 
         this.step2 = false;
         this.step3 = true;

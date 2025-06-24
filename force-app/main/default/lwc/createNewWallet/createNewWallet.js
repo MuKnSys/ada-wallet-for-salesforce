@@ -9,9 +9,11 @@ import bip39Library from '@salesforce/resourceUrl/bip39';
 import createUTXOAddresses from '@salesforce/apex/UTXOController.createUTXOAddresses';
 import getDecryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getDecryptedSeedPhrase';
 import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
-import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
+import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
+import syncAssetsForWallet from '@salesforce/apex/UTXOController.syncAssetsForWallet';
+import getAddressTotal from '@salesforce/apex/BlockfrostService.getAddressTotal';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track librariesLoaded = false;
@@ -162,7 +164,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             const privateKey = accountKey
                 .derive(derivationPath)
                 .derive(index);
-                
+
             const publicKey = privateKey.to_public();
             const keyHash = publicKey.to_raw_key().hash();
             const cred = window.cardanoSerialization.Credential.from_keyhash(keyHash);
@@ -174,16 +176,22 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             );
             const bech32Address = baseAddress.to_address().to_bech32();
 
-            let isUsed;
+            // Check if address has any UTXOs (used)
+            let isUsed = false;
             try {
                 isUsed = await checkIsAddressUsed({ address: bech32Address });
-            } catch (error) {
-                const addressType = derivationPath === 0 ? 'receiving' : 'change';
-                throw new Error(`Failed to check address usage for ${addressType} address at index ${index}: ${error.body?.message || error.message}`);
+            } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('UTXO usage check failed', err);
             }
 
             if (isUsed) {
                 consecutiveUnused = 0;
+                try {
+                    await getAddressTotal({ address: bech32Address });
+                } catch (e) {
+                    // ignore totals fetch errors silently
+                }
             } else {
                 consecutiveUnused++;
             }
@@ -195,10 +203,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 stakingKeyHash: stakeKeyHash.to_hex(),
                 path: `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${index}`
             });
-
             index++;
         }
-
         return addresses;
     }
 
@@ -334,6 +340,14 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                     receivingAddresses: receivingAddresses,
                     changeAddresses: changeAddresses
                 });
+
+                // Sync ADA assets for used addresses
+                try {
+                    await syncAssetsForWallet({ walletId: recordId });
+                } catch (err) {
+                    // eslint-disable-next-line no-console
+                    console.error('ADA asset sync for wallet failed', err);
+                }
             } catch (error) {
                 throw new Error('Failed to save UTxO addresses: ' + (error.body?.message || error.message));
             }

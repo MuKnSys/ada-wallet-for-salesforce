@@ -15,5 +15,7 @@
     <navType>Standard</navType>
     <tabs>Wallet_Set__c</tabs>
     <tabs>Wallet__c</tabs>
+    <tabs>Outbound_Transaction__c</tabs>
+    <tabs>Asset__c</tabs>
     <uiType>Lightning</uiType>
 </CustomApplication>
