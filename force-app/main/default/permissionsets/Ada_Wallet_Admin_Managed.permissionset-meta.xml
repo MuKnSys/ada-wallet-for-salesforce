@@ -83,9 +83,7 @@
         <editable>true</editable>
         <field>Wallet_Set__c.Wallet_Name__c</field>
         <readable>true</readable>
-    </fieldPermissions>    
-
-    <!-- UTXO Asset Fields -->
+    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>UTXO_Asset__c.Amount__c</field>
@@ -109,6 +107,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Outbound_Transaction__c.Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Outbound_Transaction__c.Approved__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -143,6 +146,15 @@
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>ADA Wallet Admin</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>Outbound_Transaction__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>true</allowDelete>
