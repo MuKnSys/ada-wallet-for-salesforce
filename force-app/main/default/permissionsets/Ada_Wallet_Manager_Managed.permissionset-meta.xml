@@ -28,6 +28,10 @@
         <enabled>true</enabled>
         <name>AdaSettings__c</name>
     </customSettingAccesses>
+    <customSettingAccesses>
+        <enabled>true</enabled>
+        <name>Slacksettings__c</name>
+    </customSettingAccesses>
     <description>Manager access to the ADA Wallet application.</description>
     <fieldPermissions>
         <editable>false</editable>
