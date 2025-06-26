@@ -1,13 +1,14 @@
 import { LightningElement, api, track, wire } from 'lwc';
-import syncADAAsset from '@salesforce/apex/UTXOController.syncADAAsset';
-import getAddressExtended from '@salesforce/apex/UTXOController.getAddressExtended';
+import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 import { getRecord } from 'lightning/uiRecordApi';
 
-const ADDRESS_FIELD = 'UTXO_Address__c.Address__c';
+const WALLET_FIELD = 'UTXO_Address__c.Wallet__c';
 
 export default class GetUtxoAddressAssets extends LightningElement {
     /** Record Id of the UTXO_Address__c that launched the quick action */
     @api recordId;
+    @track walletId = '';
+    @track error;
 
     // UI constants
     labels = {
@@ -34,37 +35,136 @@ export default class GetUtxoAddressAssets extends LightningElement {
 
     @track isLoading = true;
     @track isSuccess = false;
+    @track assets = [];
+    @track error;
 
-    @wire(getRecord, { recordId: '$recordId', fields: [ADDRESS_FIELD] })
-    wiredRecord({ error, data }) {
-        if (data) {
-            const address = data.fields.Address__c.value;
-            this.callBlockfrost(address);
-        } else if (error) {
-            // eslint-disable-next-line no-console
-            console.error('Error fetching address__c', error);
-            this.isLoading = false;
+    get hasNoAssets() {
+        return !this.assets || this.assets.length === 0;
+    }
+
+    get pluralSuffix() {
+        return this.assets && this.assets.length !== 1 ? 's' : '';
+    }
+
+    get assetCountSuffix() {
+        return this.assets && this.assets.length !== 1 ? 's' : '';
+    }
+
+    formatQuantity(asset) {
+        if (asset.unit === 'lovelace') {
+            return (parseInt(asset.quantity || '0', 10) / 1000000).toFixed(6) + ' ADA';
+        }
+        return asset.quantity;
+    }
+
+    getAssetName(asset) {
+        if (asset.unit === 'lovelace') {
+            return 'Cardano';
+        }
+        return asset.metadata?.name || 'N/A';
+    }
+
+    formatMetadata(metadata) {
+        try {
+            return JSON.stringify(metadata, null, 2);
+        } catch (e) {
+            return 'Unable to display metadata';
         }
     }
 
-    async callBlockfrost(address) {
-        this.isLoading = true;
-        // eslint-disable-next-line no-console
-        console.log('Calling Blockfrost getAddressExtended for address', address);
-        try {
-            // Fetch full address extended details and log the raw JSON
-            const extendedResponse = await getAddressExtended({ utxoAddressId: this.recordId });
-            console.log('getAddressExtended response for', address, ':', extendedResponse);
+    @wire(getRecord, { recordId: '$recordId', fields: [WALLET_FIELD] })
+    wiredRecord({ error, data }) {
+        if (data) {
+            this.walletId = data.fields.Wallet__c.value;
+            this.syncAssets();
+        } else if (error) {
+            console.error('Error fetching wallet ID', error);
+            this.isLoading = false;
+            this.isSuccess = false;
+        }
+    }
 
-            const adaAmount = await syncADAAsset({ utxoAddressId: this.recordId });
-            console.log(`Synced ADA amount for address ${address}: ${adaAmount}`);
-            this.isSuccess = true;
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error('ADA sync error', err);
+    async syncAssets() {
+        this.isLoading = true;
+        this.error = undefined;
+        
+        try {
+            console.log('[GetUTXOAddressAssets] Starting asset and transaction sync for address ID:', this.recordId);
+            const syncResult = await syncAssetsAndTransactions({ utxoAddressId: this.recordId });
+            console.log('[GetUTXOAddressAssets] syncAssetsAndTransactions response:', JSON.stringify(syncResult, null, 2));
+            
+            if (syncResult && syncResult.success) {
+                // Flatten all individual assets from all UTXOs
+                const flattenedAssets = [];
+                
+                (syncResult.assets || []).forEach(utxo => {
+                    const utxoData = {
+                        address: utxo.address,
+                        tx_hash: utxo.tx_hash,
+                        tx_index: utxo.tx_index,
+                        output_index: utxo.output_index,
+                        block: utxo.block
+                    };
+                    
+                    // Process each individual asset within the UTXO
+                    (utxo.amount || []).forEach(asset => {
+                        flattenedAssets.push({
+                            ...utxoData,
+                            unit: asset.unit,
+                            quantity: asset.quantity,
+                            // Create a unique key using tx_hash, output_index, and unit
+                            get uniqueKey() {
+                                return `${utxoData.tx_hash}_${utxoData.output_index}_${asset.unit}`;
+                            },
+                            get formattedQuantity() {
+                                if (asset.unit === 'lovelace') {
+                                    return (parseInt(asset.quantity || '0', 10) / 1000000).toFixed(6) + ' ADA';
+                                }
+                                return asset.quantity;
+                            },
+                            get displayName() {
+                                if (asset.unit === 'lovelace') {
+                                    return 'Cardano';
+                                }
+                                return asset.metadata?.name || asset.unit || 'Unknown Asset';
+                            },
+                            get formattedMetadata() {
+                                try {
+                                    return JSON.stringify(asset.metadata || {}, null, 2);
+                                } catch (e) {
+                                    return 'Unable to display metadata';
+                                }
+                            }
+                        });
+                    });
+                });
+                
+                this.assets = flattenedAssets;
+                this.isSuccess = true;
+                
+                // Count assets by type for better logging
+                const lovelaceAssets = flattenedAssets.filter(asset => asset.unit === 'lovelace');
+                const nonLovelaceAssets = flattenedAssets.filter(asset => asset.unit !== 'lovelace');
+                
+                console.log('[GetUTXOAddressAssets] Successfully processed', flattenedAssets.length, 'assets');
+                console.log('[GetUTXOAddressAssets] Asset breakdown:', {
+                    totalAssets: flattenedAssets.length,
+                    lovelaceAssets: lovelaceAssets.length, 
+                    nonLovelaceAssets: nonLovelaceAssets.length,
+                    uniqueUnits: [...new Set(flattenedAssets.map(asset => asset.unit))]
+                });
+            } else {
+                this.error = syncResult?.message || 'Failed to fetch assets';
+                this.isSuccess = false;
+            }
+        } catch (error) {
+            console.error('[GetUTXOAddressAssets] Error syncing assets:', error);
+            this.error = error.body?.message || error.message || 'An error occurred';
             this.isSuccess = false;
         } finally {
             this.isLoading = false;
+            // Notify parent component that the sync is complete
+            this.dispatchEvent(new CustomEvent('refreshevent'));
         }
     }
 }

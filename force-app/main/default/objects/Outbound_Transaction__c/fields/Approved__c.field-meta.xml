@@ -2,8 +2,6 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Approved__c</fullName>
     <label>Approved</label>
-    <required>false</required>
-    <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -26,4 +24,5 @@
             </value>
         </valueSetDefinition>
     </valueSet>
-</CustomField>
+    <required>false</required>
+</CustomField> 

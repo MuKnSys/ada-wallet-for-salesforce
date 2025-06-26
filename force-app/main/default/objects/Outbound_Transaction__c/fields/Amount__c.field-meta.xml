@@ -5,5 +5,5 @@
     <type>Number</type>
     <precision>16</precision>
     <scale>6</scale>
-    <required>false</required>
+    <required>true</required>
 </CustomField>

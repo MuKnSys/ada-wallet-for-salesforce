@@ -152,7 +152,6 @@
     <enableSearch>false</enableSearch>
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
-    <externalSharingModel>Private</externalSharingModel>
     <label>Outbound Transaction</label>
     <nameField>
         <displayFormat>OT-{0000}</displayFormat>
@@ -161,6 +160,6 @@
     </nameField>
     <pluralLabel>Outbound Transactions</pluralLabel>
     <searchLayouts></searchLayouts>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>ControlledByParent</sharingModel>
     <visibility>Public</visibility>
 </CustomObject>

@@ -1,0 +1,32 @@
+<template>
+    <lightning-card icon-name="custom:custom63" title="Transaction Builder">
+        <div class="slds-p-around_medium">
+            <h2 class="slds-text-heading_medium slds-m-bottom_large slds-align_absolute-center">Transaction Builder</h2>
+
+            <!-- Main Action Button -->
+            <div class="slds-align_absolute-center slds-m-bottom_medium">
+                <lightning-button 
+                    label="Build and Sign Transaction" 
+                    onclick={buildAndSignTransaction} 
+                    variant="brand" 
+                    disabled={isLoading}>
+                </lightning-button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <template lwc:if={isLoading}>
+                <div class="slds-align_absolute-center slds-m-bottom_medium">
+                    <lightning-spinner alternative-text="Building transaction..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Instructions -->
+            <div class="slds-m-top_medium slds-p-around_small slds-theme_info">
+                <p class="slds-text-body_small">
+                    <strong>Instructions:</strong> Click "Build and Sign Transaction" to query UTXOs and prepare the transaction. 
+                    UTXO data will be logged to the browser console for inspection.
+                </p>
+            </div>
+        </div>
+    </lightning-card>
+</template> 

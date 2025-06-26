@@ -19,17 +19,7 @@
     <description>Standard User access to the ADA Wallet application.</description>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Outbound_Transaction__c.Transaction_Data__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Recipient_Address__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Amount__c</field>
+        <field>Outbound_Transaction__c.To_Address__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -37,36 +27,6 @@
         <field>Outbound_Transaction__c.Approved__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Fee__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Change_Address__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Inputs__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Outputs__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Metadata__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.Protocol_Parameters__c</field>
-        <readable>true</readable>
-    </fieldPermissions>    
     <fieldPermissions>
         <editable>true</editable>
         <field>UTXO_Address__c.Index__c</field>
@@ -89,7 +49,32 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>UTXO_Address__c.Private_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>UTXO_Address__c.Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.UTXO_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.Policy_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.Fingerprint__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.Unit__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -99,7 +84,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>UTXO_Asset__c.Asset__c</field>
+        <field>UTXO_Asset__c.Asset_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.Decimals__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>UTXO_Asset__c.Value__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -112,6 +112,36 @@
         <field>Wallet_Set__c.Wallet_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>    
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Inbound_Transaction__c.Block__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Inbound_Transaction__c.Data_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Inbound_Transaction__c.Reference_Script_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Inbound_Transaction__c.Inline_Datum__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Inbound_Transaction__c.Transaction_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Inbound_Transaction__c.Wallet__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>ADA Wallet Standard User</label>
     <objectPermissions>
@@ -133,6 +163,15 @@
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>UTXO_Asset__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
         <allowCreate>false</allowCreate>
         <allowDelete>false</allowDelete>
         <allowEdit>false</allowEdit>
@@ -150,6 +189,15 @@
         <object>Wallet__c</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Inbound_Transaction__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
     <tabSettings>
         <tab>Ada_Wallet_Setup</tab>
         <visibility>Visible</visibility>
@@ -162,4 +210,12 @@
         <tab>Wallet__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
-</PermissionSet>
+    <tabSettings>
+        <tab>Inbound_Transaction__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Outbound_Transaction__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+</PermissionSet> 

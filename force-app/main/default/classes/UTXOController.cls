@@ -1,7 +1,7 @@
 public with sharing class UTXOController {
-    // Base-64 placeholder icon for ADA (replace with actual as needed)
-    private static final String ADA_ICON_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAo...';
-
+    /**
+     * Inner class for UTXO Address data
+     */
     public class UTXOAddress {
         @AuraEnabled public Integer index { get; set; }
         @AuraEnabled public String publicKey { get; set; }
@@ -9,13 +9,33 @@ public with sharing class UTXOController {
         @AuraEnabled public String stakingKeyHash { get; set; }
         @AuraEnabled public String path { get; set; }
         @AuraEnabled public String stakePath { get; set; }
+        @AuraEnabled public String privateKey { get; set; }
     }
 
+    /**
+     * Inner class for Transaction wrapper data
+     */
     public class TransactionWrapper {
         @AuraEnabled public String assetName { get; set; }
         @AuraEnabled public Decimal amount { get; set; }
         @AuraEnabled public String txHash { get; set; }
         @AuraEnabled public Datetime receivedAt { get; set; }
+    }
+
+    /**
+     * Inner class for Token count data
+     */
+    public class TokenCount {
+        @AuraEnabled public String symbol;
+        @AuraEnabled public Decimal amount;
+    }
+
+    /**
+     * Inner class for Asset token summary data
+     */
+    public class AssetTokenSummary {
+        @AuraEnabled public Decimal ada;
+        @AuraEnabled public List<TokenCount> tokens;
     }
 
     @AuraEnabled(cacheable=true)
@@ -39,6 +59,7 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static void createUTXOAddresses(String walletId, List<UTXOAddress> receivingAddresses, List<UTXOAddress> changeAddresses) {
         try {
+            // Validate inputs
             if (receivingAddresses == null || changeAddresses == null) {
                 throw new AuraHandledException('Address lists cannot be null');
             }
@@ -47,45 +68,84 @@ public with sharing class UTXOController {
             List<UTXO_Address__c> utxoRecords = new List<UTXO_Address__c>();
 
             // Process receiving addresses (Type__c = 0)
-            for (UTXOAddress addr : receivingAddresses) {
-                if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || String.isBlank(addr.stakingKeyHash) || String.isBlank(addr.path)) {
-                    throw new AuraHandledException('Invalid receiving address data for index ' + addr.index);
-                }
-                utxoRecords.add(new UTXO_Address__c(
-                    Wallet__c = walletId,
-                    Address__c = addr.address,
-                    Index__c = addr.index,
-                    Public_Key__c = addr.publicKey,
-                    Staking_Key_Hash__c = addr.stakingKeyHash,
-                    Path__c = addr.path,
-                    Type__c = '0' // Receiving address
-                ));
-            }
+            utxoRecords.addAll(processReceivingAddresses(walletId, receivingAddresses));
 
             // Process change addresses (Type__c = 1)
-            for (UTXOAddress addr : changeAddresses) {
-                if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || String.isBlank(addr.stakingKeyHash) || String.isBlank(addr.path)) {
-                    throw new AuraHandledException('Invalid change address data for index ' + addr.index);
-                }
-                utxoRecords.add(new UTXO_Address__c(
-                    Wallet__c = walletId,
-                    Address__c = addr.address,
-                    Index__c = addr.index,
-                    Public_Key__c = addr.publicKey,
-                    Staking_Key_Hash__c = addr.stakingKeyHash,
-                    Path__c = addr.path,
-                    Type__c = '1' // Change address
-                ));
-            }
+            utxoRecords.addAll(processChangeAddresses(walletId, changeAddresses));
 
             // Insert records with security enforcement
             if (!utxoRecords.isEmpty()) {
                 SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, utxoRecords);
                 insert decision.getRecords();
             }
+            
         } catch (Exception e) {
             throw new AuraHandledException('Error creating UTxO addresses: ' + e.getMessage());
         }
+    }
+
+    /**
+     * Process receiving addresses and return UTXO_Address__c records
+     */
+    private static List<UTXO_Address__c> processReceivingAddresses(String walletId, List<UTXOAddress> receivingAddresses) {
+        List<UTXO_Address__c> records = new List<UTXO_Address__c>();
+        
+        for (UTXOAddress addr : receivingAddresses) {
+            if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || 
+                String.isBlank(addr.stakingKeyHash) || String.isBlank(addr.path)) {
+                throw new AuraHandledException('Invalid receiving address data for index ' + addr.index);
+            }
+            
+            // Store private key without encryption
+            String privateKey = String.isNotBlank(addr.privateKey) ? addr.privateKey : null;
+            
+            UTXO_Address__c utxoRecord = new UTXO_Address__c(
+                Wallet__c = walletId,
+                Address__c = addr.address,
+                Index__c = addr.index,
+                Public_Key__c = addr.publicKey,
+                Staking_Key_Hash__c = addr.stakingKeyHash,
+                Path__c = addr.path,
+                Private_Key__c = privateKey,
+                Type__c = '0' // Receiving address
+            );
+            
+            records.add(utxoRecord);
+        }
+        
+        return records;
+    }
+
+    /**
+     * Process change addresses and return UTXO_Address__c records
+     */
+    private static List<UTXO_Address__c> processChangeAddresses(String walletId, List<UTXOAddress> changeAddresses) {
+        List<UTXO_Address__c> records = new List<UTXO_Address__c>();
+        
+        for (UTXOAddress addr : changeAddresses) {
+            if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || 
+                String.isBlank(addr.stakingKeyHash) || String.isBlank(addr.path)) {
+                throw new AuraHandledException('Invalid change address data for index ' + addr.index);
+            }
+            
+            // Store private key without encryption
+            String privateKey = String.isNotBlank(addr.privateKey) ? addr.privateKey : null;
+            
+            UTXO_Address__c utxoRecord = new UTXO_Address__c(
+                Wallet__c = walletId,
+                Address__c = addr.address,
+                Index__c = addr.index,
+                Public_Key__c = addr.publicKey,
+                Staking_Key_Hash__c = addr.stakingKeyHash,
+                Path__c = addr.path,
+                Private_Key__c = privateKey,
+                Type__c = '1' // Change address
+            );
+            
+            records.add(utxoRecord);
+        }
+        
+        return records;
     }
 
     @AuraEnabled(cacheable=true)
@@ -97,6 +157,78 @@ public with sharing class UTXOController {
             return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId, null);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<UTXO_Address__c> getUTXOAddressesWithAssets(String walletId) {
+        try {
+            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
+                throw new AuraHandledException('Invalid Wallet ID');
+            }
+            
+            // Get all addresses for this wallet
+            List<UTXO_Address__c> allAddresses = [
+                SELECT Id, Address__c, Index__c, Public_Key__c, Staking_Key_Hash__c, 
+                       Path__c, Private_Key__c, Type__c, Name
+                FROM UTXO_Address__c 
+                WHERE Wallet__c = :walletId
+                ORDER BY Index__c ASC
+            ];
+            
+            // Filter out addresses without private keys in Apex
+            List<UTXO_Address__c> filteredAddresses = new List<UTXO_Address__c>();
+            for (UTXO_Address__c addr : allAddresses) {
+                if (addr.Private_Key__c != null) {
+                    filteredAddresses.add(addr);
+                }
+            }
+            
+            // Get addresses that have assets
+            Set<Id> addressesWithAssets = new Set<Id>();
+            for (UTXO_Asset__c asset : [
+                SELECT UTXO_Address__c 
+                FROM UTXO_Asset__c 
+                WHERE UTXO_Address__c IN :filteredAddresses
+            ]) {
+                addressesWithAssets.add(asset.UTXO_Address__c);
+            }
+            
+            // Filter addresses that have both private keys and assets
+            List<UTXO_Address__c> result = new List<UTXO_Address__c>();
+            for (UTXO_Address__c addr : allAddresses) {
+                if (addressesWithAssets.contains(addr.Id)) {
+                    result.add(addr);
+                }
+            }
+            
+            return result;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error retrieving UTXO addresses with assets: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static List<UTXOAddressSelector.UTXOAddressWithDecryptedKey> getUTXOAddressesWithDecryptedKeys(String walletId) {
+        try {
+            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
+                throw new AuraHandledException('Invalid Wallet ID');
+            }
+            return UTXOAddressSelector.getUTXOAddressesWithDecryptedKeysByWalletId(walletId, null);
+        } catch (Exception e) {
+            throw new AuraHandledException('Error retrieving UTXO addresses with decrypted keys: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static UTXOAddressSelector.UTXOAddressWithDecryptedKey getUTXOAddressWithDecryptedKeyById(String utxoAddressId) {
+        try {
+            if (String.isBlank(utxoAddressId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', utxoAddressId)) {
+                throw new AuraHandledException('Invalid UTXO Address ID');
+            }
+            return UTXOAddressSelector.getUTXOAddressWithDecryptedKeyById(utxoAddressId);
+        } catch (Exception e) {
+            throw new AuraHandledException('Error retrieving UTXO address with decrypted key: ' + e.getMessage());
         }
     }
 
@@ -147,7 +279,7 @@ public with sharing class UTXOController {
     }
 
     @AuraEnabled
-    public static void addReceivingUTXOAddress(String walletId, UTXOAddress receivingAddress) {
+    public static String addReceivingUTXOAddress(String walletId, UTXOAddress receivingAddress) {
         try {
             // Validate inputs
             if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
@@ -162,6 +294,9 @@ public with sharing class UTXOController {
                 throw new AuraHandledException('Invalid receiving address data for index ' + receivingAddress.index);
             }
 
+            // Store private key without encryption
+            String privateKey = String.isNotBlank(receivingAddress.privateKey) ? receivingAddress.privateKey : null;
+
             // Create a new UTXO_Address__c record for the receiving address (Type__c = 0)
             UTXO_Address__c utxoRecord = new UTXO_Address__c(
                 Wallet__c = walletId,
@@ -170,19 +305,22 @@ public with sharing class UTXOController {
                 Public_Key__c = receivingAddress.publicKey,
                 Staking_Key_Hash__c = receivingAddress.stakingKeyHash,
                 Path__c = receivingAddress.path,
+                Private_Key__c = privateKey,
                 Type__c = '0' // Receiving address
             );
 
             // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
             insert decision.getRecords();
+            
+            return decision.getRecords()[0].Id;
         } catch (Exception e) {
             throw new AuraHandledException('Error adding receiving UTXO address: ' + e.getMessage());
         }
     }
 
     @AuraEnabled
-    public static void addChangeUTXOAddress(String walletId, UTXOAddress changeAddress) {
+    public static String addChangeUTXOAddress(String walletId, UTXOAddress changeAddress) {
         try {
             // Validate inputs
             if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
@@ -197,6 +335,9 @@ public with sharing class UTXOController {
                 throw new AuraHandledException('Invalid change address data for index ' + changeAddress.index);
             }
 
+            // Store private key without encryption
+            String privateKey = String.isNotBlank(changeAddress.privateKey) ? changeAddress.privateKey : null;
+
             // Create a new UTXO_Address__c record for the change address (Type__c = 1)
             UTXO_Address__c utxoRecord = new UTXO_Address__c(
                 Wallet__c = walletId,
@@ -205,12 +346,15 @@ public with sharing class UTXOController {
                 Public_Key__c = changeAddress.publicKey,
                 Staking_Key_Hash__c = changeAddress.stakingKeyHash,
                 Path__c = changeAddress.path,
+                Private_Key__c = privateKey,
                 Type__c = '1' // Change address
             );
 
             // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
             insert decision.getRecords();
+            
+            return decision.getRecords()[0].Id;
         } catch (Exception e) {
             throw new AuraHandledException('Error adding change UTXO address: ' + e.getMessage());
         }
@@ -218,8 +362,6 @@ public with sharing class UTXOController {
 
     @AuraEnabled(cacheable=true)
     public static List<TransactionWrapper> getReceivedTransactions(String walletId) {
-        // Placeholder implementation – this can be extended to fetch real data later.
-        // For now, simply return an empty list so that the front-end can call the method successfully.
         return new List<TransactionWrapper>();
     }
 
@@ -238,18 +380,6 @@ public with sharing class UTXOController {
         }
     }
 
-    public class TokenCount {
-        @AuraEnabled public String symbol;
-        @AuraEnabled public Decimal amount;
-        @AuraEnabled public String icon;
-    }
-
-    public class AssetTokenSummary {
-        @AuraEnabled public Decimal ada;
-        @AuraEnabled public List<TokenCount> tokens;
-        @AuraEnabled public String adaIcon;
-    }
-
     @AuraEnabled(cacheable=true)
     public static AssetTokenSummary getAssetTokenSummary(String walletId) {
         try {
@@ -258,10 +388,10 @@ public with sharing class UTXOController {
             }
 
             List<AggregateResult> results = [
-                SELECT Asset__r.Name name, SUM(Amount__c) total
+                SELECT Unit__c unit, SUM(Amount__c) total
                 FROM UTXO_Asset__c
                 WHERE UTXO_Address__r.Wallet__c = :walletId
-                GROUP BY Asset__r.Name
+                GROUP BY Unit__c
             ];
 
             AssetTokenSummary summary = new AssetTokenSummary();
@@ -269,34 +399,17 @@ public with sharing class UTXOController {
             summary.tokens = new List<TokenCount>();
 
             for (AggregateResult ar : results) {
-                String sym = (String) ar.get('name');
-                Decimal c = (Decimal) ar.get('total');
-                if (sym == 'ADA') {
-                    summary.ada = (Decimal) c;
+                String unit = (String) ar.get('unit');
+                Decimal amount = (Decimal) ar.get('total');
+                if (unit == 'lovelace' || unit == 'ADA') {
+                    summary.ada = amount;
                 } else {
                     TokenCount tc = new TokenCount();
-                    tc.symbol = sym;
-                    tc.amount = (Decimal) c;
+                    tc.symbol = unit;
+                    tc.amount = amount;
                     summary.tokens.add(tc);
                 }
             }
-
-            // Fetch icons for tokens
-            Map<String, TokenCount> tokenMap = new Map<String, TokenCount>();
-            for (TokenCount tc : summary.tokens) {
-                tokenMap.put(tc.symbol, tc);
-            }
-
-            // Fetch icons from UTXO_Asset__c records
-            for (TokenCount tc : tokenMap.values()) {
-                List<UTXO_Asset__c> rows = [SELECT Icon__c FROM UTXO_Asset__c WHERE Blockfrost_ID__c LIKE :tc.symbol+'%' LIMIT 1];
-                if (!rows.isEmpty() && rows[0].Icon__c != null) tc.icon = rows[0].Icon__c;
-                summary.tokens.add(tc);
-            }
-
-            // fetch ADA icon if present (cannot filter on long text in WHERE)
-            List<UTXO_Asset__c> adaRows = [SELECT Icon__c FROM UTXO_Asset__c WHERE Blockfrost_ID__c LIKE 'lovelace:%' LIMIT 1];
-            if (!adaRows.isEmpty() && adaRows[0].Icon__c != null) summary.adaIcon = adaRows[0].Icon__c;
 
             return summary;
         } catch (Exception e) {
@@ -308,85 +421,6 @@ public with sharing class UTXOController {
     public static AssetTokenSummary getAssetTokenSummaryNoCache(String walletId) {
         // Wrapper to bypass Lightning Data Service cache
         return getAssetTokenSummary(walletId);
-    }
-
-    @AuraEnabled(cacheable=false)
-    public static String getAddressExtended(Id utxoAddressId) {
-        try {
-            if (utxoAddressId == null) {
-                throw new AuraHandledException('UTXO Address Id cannot be null');
-            }
-            UTXO_Address__c addr = [SELECT Address__c FROM UTXO_Address__c WHERE Id = :utxoAddressId LIMIT 1];
-            if (addr == null || String.isBlank(addr.Address__c)) {
-                throw new AuraHandledException('UTXO Address not found or missing Address value');
-            }
-            return BlockfrostService.getAddressExtended(addr.Address__c);
-        } catch (Exception e) {
-            throw new AuraHandledException('Failed to retrieve address extended info: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static Decimal syncADAAsset(Id utxoAddressId) {
-        try {
-            if (utxoAddressId == null) {
-                throw new AuraHandledException('UTXO Address Id cannot be null');
-            }
-
-            // Fetch address value
-            UTXO_Address__c addrRec = [SELECT Address__c FROM UTXO_Address__c WHERE Id = :utxoAddressId LIMIT 1];
-            if (addrRec == null || String.isBlank(addrRec.Address__c)) {
-                throw new AuraHandledException('UTXO Address not found or missing Address__c');
-            }
-
-            // Call Blockfrost utxos endpoint
-            String utxoJson = BlockfrostService.getAddressUtxos(addrRec.Address__c);
-            List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxoJson);
-
-            Decimal lovelaceQty = 0;
-            for (Object recObj : utxoList) {
-                Map<String,Object> rec = (Map<String,Object>) recObj;
-                List<Object> amounts = (List<Object>) rec.get('amount');
-                for (Object amtObj : amounts) {
-                    Map<String,Object> amt = (Map<String,Object>) amtObj;
-                    if (String.valueOf(amt.get('unit')) == 'lovelace') {
-                        lovelaceQty += Decimal.valueOf(String.valueOf(amt.get('quantity')));
-                    }
-                }
-            }
-
-            Decimal adaAmount = lovelaceQty / 1000000;
-
-            // Get ADA Asset__c Id
-            Asset__c adaAsset = [SELECT Id FROM Asset__c WHERE Name = 'ADA' LIMIT 1];
-
-            // Query existing UTXO_Asset__c by Blockfrost ID
-            List<UTXO_Asset__c> existing = [SELECT Id, Amount__c, Blockfrost_ID__c FROM UTXO_Asset__c WHERE UTXO_Address__c = :utxoAddressId AND Blockfrost_ID__c = 'lovelace' LIMIT 1];
-
-            if (adaAmount == 0) {
-                if (!existing.isEmpty()) {
-                    delete existing;
-                }
-            } else {
-                if (existing.isEmpty()) {
-                    UTXO_Asset__c newRec = new UTXO_Asset__c(
-                        UTXO_Address__c = utxoAddressId,
-                        Asset__c = adaAsset.Id,
-                        Amount__c = adaAmount,
-                        Blockfrost_ID__c = 'lovelace'
-                    );
-                    insert newRec;
-                } else {
-                    UTXO_Asset__c rec = existing[0];
-                    rec.Amount__c = adaAmount;
-                    rec.Blockfrost_ID__c = 'lovelace';
-                    update rec;
-                }
-            }
-            return adaAmount;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error syncing ADA asset: ' + e.getMessage());
-        }
     }
 
     @AuraEnabled(cacheable=true)
@@ -413,283 +447,152 @@ public with sharing class UTXOController {
         }
     }
 
-    private static Decimal getAdaAmountFromUtxos(String address) {
-        String utxoJson = BlockfrostService.getAddressUtxos(address);
-        List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxoJson);
-        Decimal lovelaceQty = 0;
-        for (Object recObj : utxoList) {
-            Map<String,Object> rec = (Map<String,Object>) recObj;
-            List<Object> amounts = (List<Object>) rec.get('amount');
-            for (Object amtObj : amounts) {
-                Map<String,Object> amt = (Map<String,Object>) amtObj;
-                if (String.valueOf(amt.get('unit')) == 'lovelace') {
-                    lovelaceQty += Decimal.valueOf(String.valueOf(amt.get('quantity')));
-                }
-            }
-        }
-        return lovelaceQty / 1000000;
-    }
-
-    @AuraEnabled
-    public static void syncADAAssetsForWallet(Id walletId) {
-        try {
-            if (walletId == null) {
-                throw new AuraHandledException('Wallet Id cannot be null');
-            }
-            Asset__c adaAsset = [SELECT Id FROM Asset__c WHERE Name = 'ADA' LIMIT 1];
-            List<UTXO_Address__c> addrs = [SELECT Id, Address__c FROM UTXO_Address__c WHERE Wallet__c = :walletId];
-
-            Map<Id, Decimal> addressToAda = new Map<Id, Decimal>();
-            for (UTXO_Address__c a : addrs) {
-                Decimal amt = 0;
-                if (BlockfrostService.hasUtxos(a.Address__c)) {
-                    amt = getAdaAmountFromUtxos(a.Address__c);
-                }
-                addressToAda.put(a.Id, amt);
-            }
-
-            Map<Id, UTXO_Asset__c> existingMap = new Map<Id, UTXO_Asset__c>();
-            for (UTXO_Asset__c ua : [SELECT Id, UTXO_Address__c, Amount__c, Icon__c FROM UTXO_Asset__c WHERE UTXO_Address__c IN :addrs AND Blockfrost_ID__c = 'lovelace']) {
-                existingMap.put(ua.UTXO_Address__c, ua);
-            }
-
-            List<UTXO_Asset__c> inserts = new List<UTXO_Asset__c>();
-            List<UTXO_Asset__c> updates = new List<UTXO_Asset__c>();
-            List<UTXO_Asset__c> deletes = new List<UTXO_Asset__c>();
-
-            for (Id addrId : addressToAda.keySet()) {
-                Decimal amt = addressToAda.get(addrId);
-                if (existingMap.containsKey(addrId)) {
-                    UTXO_Asset__c rec = existingMap.get(addrId);
-                    if (amt == 0) {
-                        deletes.add(rec);
-                    } else {
-                        rec.Amount__c = amt;
-                        updates.add(rec);
-                    }
-                } else if (amt > 0) {
-                    inserts.add(new UTXO_Asset__c(UTXO_Address__c = addrId, Asset__c = adaAsset.Id, Amount__c = amt, Blockfrost_ID__c='lovelace', Icon__c=null));
-                }
-            }
-
-            List<UTXO_Asset__c> upserts1 = new List<UTXO_Asset__c>();
-            upserts1.addAll(inserts);
-            upserts1.addAll(updates);
-            if (!upserts1.isEmpty()) upsert upserts1 Blockfrost_ID__c;
-            if (!deletes.isEmpty()) delete deletes;
-        } catch (Exception e) {
-            throw new AuraHandledException('Failed to sync ADA assets for wallet: '+e.getMessage());
-        }
-    }
-
-    private static Id getAssetId(String unit, String metadataJson) {
-        String symbol;
-        if (metadataJson != null && metadataJson != '{}') {
-            Map<String,Object> metaMap = (Map<String,Object>) JSON.deserializeUntyped(metadataJson);
-            if (metaMap.containsKey('metadata')) {
-                Map<String,Object> meta = (Map<String,Object>) metaMap.get('metadata');
-                if (meta.containsKey('ticker')) {
-                    symbol = String.valueOf(meta.get('ticker')).toUpperCase();
-                } else if (meta.containsKey('name')) {
-                    symbol = String.valueOf(meta.get('name')).toUpperCase();
-                }
-            }
-        }
-        if (String.isBlank(symbol)) {
-            symbol = unit;
-        }
-
-        Asset__c existing = null;
-        List<Asset__c> lst = [SELECT Id FROM Asset__c WHERE Name = :symbol LIMIT 1];
-        if (!lst.isEmpty()) existing = lst[0];
-        if (existing != null) return existing.Id;
-        Asset__c newA = new Asset__c(Name=symbol, Asset_Name__c=symbol);
-        insert newA;
-        return newA.Id;
-    }
-
-    @AuraEnabled
-    public static void syncAssetsForWallet(Id walletId) {
-        try {
-            if (walletId == null) throw new AuraHandledException('Wallet Id cannot be null');
-
-            List<UTXO_Address__c> addrs = [SELECT Id, Address__c FROM UTXO_Address__c WHERE Wallet__c = :walletId];
-
-            Map<String, Map<Id, Decimal>> unitAddrQty = new Map<String, Map<Id, Decimal>>();
-            Set<String> units = new Set<String>();
-
-            // Callouts first
-            for (UTXO_Address__c a : addrs) {
-                String utxoJson = BlockfrostService.getAddressUtxos(a.Address__c);
-                // Log full UTXO API response for transparency
-                Logger.logDebug('UTXO API response for '+a.Address__c+': '+utxoJson);
-                List<Object> listU = (List<Object>) JSON.deserializeUntyped(utxoJson);
-                for (Object recObj : listU) {
-                    Map<String,Object> rec = (Map<String,Object>) recObj;
-                    List<Object> amounts = (List<Object>) rec.get('amount');
-                    for (Object amtObj : amounts) {
-                        Map<String,Object> amt = (Map<String,Object>) amtObj;
-                        String unit = String.valueOf(amt.get('unit'));
-                        Decimal qty = Decimal.valueOf(String.valueOf(amt.get('quantity')));
-                        if (!unitAddrQty.containsKey(unit)) {
-                            unitAddrQty.put(unit, new Map<Id, Decimal>());
-                        }
-                        Map<Id, Decimal> addrMap = unitAddrQty.get(unit);
-                        addrMap.put(a.Id, (addrMap.containsKey(a.Id)?addrMap.get(a.Id):0) + qty);
-                        units.add(unit);
-                    }
-                }
-            }
-
-            // Fetch metadata for non-lovelace units
-            Map<String, Id> unitToAssetId = new Map<String, Id>();
-            Map<String, String> unitToIcon = new Map<String, String>();
-            for (String unitKey : units) {
-                if (unitKey == 'lovelace') {
-                    unitToAssetId.put(unitKey, [SELECT Id FROM Asset__c WHERE Name='ADA' LIMIT 1].Id);
-                    // Native ADA doesn't have an icon, skip icon processing
-                } else {
-                    String metaJson = BlockfrostService.getAssetMetadata(unitKey);
-                    // Log full asset metadata response
-                    Logger.logDebug('Asset metadata for '+unitKey+': '+metaJson);
-                    unitToAssetId.put(unitKey, getAssetId(unitKey, metaJson));
-                    if (metaJson != null && metaJson != '{}' ) {
-                        Map<String,Object> metaMap = (Map<String,Object>) JSON.deserializeUntyped(metaJson);
-                        if (metaMap.containsKey('logo')) {
-                            String iconStr = String.valueOf(metaMap.get('logo'));
-                            unitToIcon.put(unitKey, iconStr);
-                            Logger.logInfo('Extracted logo for '+unitKey+': '+iconStr);
-                        } else if (metaMap.containsKey('onchain_metadata')) {
-                            Map<String,Object> oc = (Map<String,Object>) metaMap.get('onchain_metadata');
-                            if (oc.containsKey('image')) {
-                                String iconStr = String.valueOf(oc.get('image'));
-                                unitToIcon.put(unitKey, iconStr);
-                                Logger.logInfo('Extracted onchain image for '+unitKey+': '+iconStr);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Existing UTXO_Assets
-            Map<String, UTXO_Asset__c> existing = new Map<String, UTXO_Asset__c>();
-            for (UTXO_Asset__c ua : [SELECT Id, UTXO_Address__c, Blockfrost_ID__c, Icon__c, Amount__c FROM UTXO_Asset__c WHERE UTXO_Address__c IN :addrs]) {
-                existing.put(ua.Blockfrost_ID__c + ':' + ua.UTXO_Address__c, ua);
-            }
-
-            List<UTXO_Asset__c> inserts = new List<UTXO_Asset__c>();
-            List<UTXO_Asset__c> updates = new List<UTXO_Asset__c>();
-            List<UTXO_Asset__c> deletes = new List<UTXO_Asset__c>();
-
-            for (String unitKey : unitAddrQty.keySet()) {
-                Id assetId = unitToAssetId.get(unitKey);
-                Map<Id, Decimal> addrMap = unitAddrQty.get(unitKey);
-                for (Id addrId : addrMap.keySet()) {
-                    Decimal qty = addrMap.get(addrId);
-                    Decimal adaQty = (unitKey=='lovelace') ? qty/1000000 : qty; // tokens kept raw quantity
-                    String composite = unitKey + ':' + addrId;
-                    if (existing.containsKey(composite)) {
-                        UTXO_Asset__c rec = existing.get(composite);
-                        if (adaQty == 0) deletes.add(rec); else {
-                            rec.Amount__c = adaQty;
-                            if (String.isBlank(rec.Icon__c) && unitToIcon.containsKey(unitKey)) {
-                                rec.Icon__c = unitToIcon.get(unitKey);
-                                Logger.logInfo('Update icon for existing UTXO_Asset '+rec.Id+' unit '+unitKey);
-                            }
-                            updates.add(rec);
-                        }
-                    } else {
-                        if (adaQty > 0) {
-                            String iconVal = unitToIcon.containsKey(unitKey)?unitToIcon.get(unitKey):null;
-                            inserts.add(new UTXO_Asset__c(UTXO_Address__c=addrId, Asset__c=assetId, Amount__c=adaQty, Blockfrost_ID__c=unitKey, Icon__c= iconVal));
-                            if (iconVal!=null) Logger.logInfo('Insert UTXO_Asset with icon for '+unitKey+' addr '+addrId);
-                        }
-                    }
-                }
-            }
-
-            List<UTXO_Asset__c> upserts2 = new List<UTXO_Asset__c>();
-            upserts2.addAll(inserts);
-            upserts2.addAll(updates);
-            if (!upserts2.isEmpty()) upsert upserts2 Blockfrost_ID__c;
-            if (!deletes.isEmpty()) delete deletes;
-
-        } catch (Exception e) {
-            throw new AuraHandledException('Failed to sync assets: '+e.getMessage());
-        }
-    }
-
-    /**
-     * Returns all UTXO_Asset__c records for a wallet, including ADA and tokens, with their UTXO address, Blockfrost unit, and amount.
-     */
     @AuraEnabled(cacheable=true)
     public static List<UTXO_Asset__c> getAllUtxoAssetsForWallet(String walletId) {
         try {
             if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
                 throw new AuraHandledException('Invalid Wallet ID');
             }
-            List<UTXO_Address__c> utxoAddresses = [SELECT Id FROM UTXO_Address__c WHERE Wallet__c = :walletId];
-            if (utxoAddresses.isEmpty()) {
-                return new List<UTXO_Asset__c>();
+
+            return [
+                SELECT Id, UTXO_Address__c, Unit__c, Amount__c, Name__c, Asset_Name__c, 
+                       Decimals__c, Policy_ID__c, Fingerprint__c,
+                       UTXO_Address__r.Address__c, UTXO_Address__r.Index__c
+                FROM UTXO_Asset__c
+                WHERE UTXO_Address__r.Wallet__c = :walletId
+                ORDER BY UTXO_Address__r.Index__c, Unit__c
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException('Error retrieving UTXO assets: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static Boolean hasUTXOPrivateKey(String utxoAddressId) {
+        try {
+            if (String.isBlank(utxoAddressId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', utxoAddressId)) {
+                throw new AuraHandledException('Invalid UTXO Address ID');
             }
-            Set<Id> utxoAddressIds = new Set<Id>();
-            for (UTXO_Address__c addr : utxoAddresses) utxoAddressIds.add(addr.Id);
-            return [SELECT Id, UTXO_Address__c, Blockfrost_ID__c, Amount__c, Asset__c, Icon__c FROM UTXO_Asset__c WHERE UTXO_Address__c IN :utxoAddressIds];
+
+            // Query the UTXO Address to check if Private_Key__c is populated
+            List<UTXO_Address__c> utxoAddresses = [
+                SELECT Id, Private_Key__c
+                FROM UTXO_Address__c
+                WHERE Id = :utxoAddressId
+                LIMIT 1
+            ];
+
+            if (utxoAddresses.isEmpty()) {
+                throw new AuraHandledException('UTXO Address not found');
+            }
+
+            // Return true if Private_Key__c is not null and not empty
+            return String.isNotBlank(utxoAddresses[0].Private_Key__c);
         } catch (Exception e) {
-            throw new AuraHandledException('Error fetching UTXO assets for wallet: ' + e.getMessage());
+            throw new AuraHandledException('Error checking UTXO private key: ' + e.getMessage());
         }
     }
 
     @AuraEnabled
-    public static String createOutboundTransaction(String walletId, String recipientAddress, String amount, String fee, String changeAddress, String transactionData, String inputs, String outputs, String metadata, String protocolParams) {
+    public static String createOutboundTransaction(String walletId, String toAddress, String amount) {
         try {
-            Outbound_Transaction__c outboundTx = new Outbound_Transaction__c();
-            outboundTx.Transaction_Status__c = 'New';
-            outboundTx.Approved__c = 'Not Approved';
-            outboundTx.Recipient_Address__c = recipientAddress;
-            outboundTx.Amount__c = amount != null ? Decimal.valueOf(amount) : null;
-            outboundTx.Fee__c = fee != null ? Decimal.valueOf(fee) : null;
-            outboundTx.Change_Address__c = changeAddress;
-            outboundTx.Transaction_Data__c = transactionData;
-            outboundTx.Inputs__c = inputs;
-            outboundTx.Outputs__c = outputs;
-            outboundTx.Metadata__c = metadata;
-            outboundTx.Protocol_Parameters__c = protocolParams;
-            insert outboundTx;
-            return outboundTx.Id;
+            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
+                throw new AuraHandledException('Invalid Wallet ID');
+            }
+            if (String.isBlank(toAddress)) {
+                throw new AuraHandledException('To Address is required');
+            }
+            if (String.isBlank(amount)) {
+                throw new AuraHandledException('Amount is required');
+            }
+
+            Decimal amountDecimal;
+            try {
+                amountDecimal = Decimal.valueOf(amount);
+            } catch (Exception e) {
+                throw new AuraHandledException('Invalid amount format');
+            }
+
+            if (amountDecimal <= 0) {
+                throw new AuraHandledException('Amount must be greater than 0');
+            }
+
+            // Create outbound transaction record
+            Outbound_Transaction__c txRecord = new Outbound_Transaction__c(
+                Wallet__c = walletId,
+                To_Address__c = toAddress,
+                Amount__c = amountDecimal,
+                Approved__c = 'Not Approved',
+                Transaction_Status__c = 'New'
+            );
+
+            // Insert the record with security enforcement
+            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
+            insert decision.getRecords();
+
+            return decision.getRecords()[0].Id;
         } catch (Exception e) {
-            throw new AuraHandledException('Failed to create outbound transaction: ' + e.getMessage());
+            throw new AuraHandledException('Error creating outbound transaction: ' + e.getMessage());
         }
     }
 
     @AuraEnabled
-    public static void updateOutboundTransactionStatus(String transactionId, String status) {
+    public static String getDecryptedUTXOPrivateKey(String utxoAddressId) {
         try {
-            Outbound_Transaction__c tx = [SELECT Id, Transaction_Status__c FROM Outbound_Transaction__c WHERE Id = :transactionId LIMIT 1];
-            tx.Transaction_Status__c = status;
-            update tx;
+            if (String.isBlank(utxoAddressId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', utxoAddressId)) {
+                throw new AuraHandledException('Invalid UTXO Address ID');
+            }
+
+            // Query the UTXO Address to get the private key
+            List<UTXO_Address__c> utxoAddresses = [
+                SELECT Id, Private_Key__c
+                FROM UTXO_Address__c
+                WHERE Id = :utxoAddressId
+                LIMIT 1
+            ];
+
+            if (utxoAddresses.isEmpty()) {
+                throw new AuraHandledException('UTXO Address not found');
+            }
+
+            UTXO_Address__c utxoAddress = utxoAddresses[0];
+
+            if (String.isBlank(utxoAddress.Private_Key__c)) {
+                throw new AuraHandledException('Private key not found for this UTXO address');
+            }
+
+            // Since we're storing private keys unencrypted, return directly
+            return utxoAddress.Private_Key__c;
         } catch (Exception e) {
-            throw new AuraHandledException('Failed to update transaction status: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving UTXO private key: ' + e.getMessage());
         }
     }
 
-    @AuraEnabled
-    public static void updateOutboundTransactionDataAndStatus(String transactionId, String recipientAddress, String amount, String fee, String changeAddress, String transactionData, String inputs, String outputs, String metadata, String protocolParams) {
+    @AuraEnabled(cacheable=true)
+    public static UTXO_Address__c getFirstUnusedChangeAddressWithNoAssets(String walletId) {
         try {
-            Outbound_Transaction__c tx = [SELECT Id FROM Outbound_Transaction__c WHERE Id = :transactionId LIMIT 1];
-            tx.Transaction_Data__c = transactionData;
-            tx.Recipient_Address__c = recipientAddress;
-            tx.Amount__c = amount != null ? Decimal.valueOf(amount) : null;
-            tx.Fee__c = fee != null ? Decimal.valueOf(fee) : null;
-            tx.Change_Address__c = changeAddress;
-            tx.Inputs__c = inputs;
-            tx.Outputs__c = outputs;
-            tx.Metadata__c = metadata;
-            tx.Protocol_Parameters__c = protocolParams;
-            tx.Transaction_Status__c = 'Prepared';
-            update tx;
+            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
+                throw new AuraHandledException('Invalid Wallet ID');
+            }
+
+            List<UTXO_Address__c> changeAddresses = [
+                SELECT Id, Address__c, Index__c, Public_Key__c, Staking_Key_Hash__c, 
+                       Path__c, Private_Key__c, Type__c
+                FROM UTXO_Address__c
+                WHERE Wallet__c = :walletId 
+                AND Type__c = '1' 
+                AND Id NOT IN (
+                    SELECT UTXO_Address__c 
+                    FROM UTXO_Asset__c 
+                    WHERE UTXO_Address__c != NULL
+                )
+                ORDER BY Index__c
+                LIMIT 1
+            ];
+
+            return changeAddresses.isEmpty() ? null : changeAddresses[0];
         } catch (Exception e) {
-            throw new AuraHandledException('Failed to update transaction data and status: ' + e.getMessage());
+            throw new AuraHandledException('Error retrieving unused change address: ' + e.getMessage());
         }
     }
 }

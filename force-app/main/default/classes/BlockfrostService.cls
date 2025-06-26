@@ -4,6 +4,8 @@ public with sharing class BlockfrostService {
     private static final String ADDRESS_EXTENDED_URL = '/addresses/{address}/extended';
     private static final String ADDRESS_UTXOS_URL = '/addresses/{address}/utxos';
     private static final String ASSET_METADATA_URL = '/assets/{asset}';
+    private static final String EPOCHS_PARAMETERS_URL = '/epochs/latest/parameters';
+    private static final String ADDRESS_TRANSACTIONS_URL = '/addresses/{address}/transactions';
     private static final String TYPE_RECEIVING = '0';
     private static final String TYPE_CHANGE = '1';
     
@@ -284,6 +286,256 @@ public with sharing class BlockfrostService {
             return '{}';
         }
         throw new BlockfrostEndpoint.BlockfrostAPIException('Asset metadata error status '+endpoint.getStatusCode());
+    }
+
+    /**
+     * Calls Blockfrost /epochs/latest/parameters endpoint and returns the raw JSON string.
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getEpochParameters() {
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(EPOCHS_PARAMETERS_URL)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else {
+            return JSON.serialize(new Map<String,Object>{
+                'status' => endpoint.getStatusCode(),
+                'error' => 'Blockfrost epochs parameters API error'
+            });
+        }
+    }
+
+    /**
+     * Calls Blockfrost /blocks/latest endpoint and returns current slot with calculated TTL.
+     * TTL = current_slot + 86400 (24-hour buffer).
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getCurrentSlotAndTTL() {
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(BLOCKS_URL)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+
+        if (endpoint.getStatusCode() == 200) {
+            try {
+                Map<String, Object> blockData = (Map<String, Object>) JSON.deserializeUntyped(endpoint.getResponse().getBody());
+                
+                // Extract slot number
+                Object slotObj = blockData.get('slot');
+                Long currentSlot = 0;
+                if (slotObj != null) {
+                    if (slotObj instanceof Long) {
+                        currentSlot = (Long) slotObj;
+                    } else if (slotObj instanceof Integer) {
+                        currentSlot = (Long) ((Integer) slotObj);
+                    } else if (slotObj instanceof Decimal) {
+                        currentSlot = ((Decimal) slotObj).longValue();
+                    }
+                }
+                
+                // Calculate TTL with 24-hour buffer (86400 slots)
+                Long ttl = currentSlot + 86400;
+                
+                // Return formatted response
+                Map<String, Object> result = new Map<String, Object>{
+                    'current_slot' => currentSlot,
+                    'ttl' => ttl,
+                    'buffer_slots' => 86400,
+                    'buffer_hours' => 24
+                };
+                
+                return JSON.serialize(result);
+            } catch (Exception e) {
+                return JSON.serialize(new Map<String,Object>{
+                    'status' => 'error',
+                    'error' => 'Failed to parse block data: ' + e.getMessage()
+                });
+            }
+        } else {
+            return JSON.serialize(new Map<String,Object>{
+                'status' => endpoint.getStatusCode(),
+                'error' => 'Blockfrost blocks latest API error'
+            });
+        }
+    }
+
+    /**
+     * Calls Blockfrost /addresses/{address}/utxos endpoint and returns detailed UTXO information
+     * including transaction hash and output index for transaction building.
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAddressUtxosDetailed(String address) {
+        if (String.isBlank(address)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
+        }
+        
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = ADDRESS_UTXOS_URL.replace('{address}', address);
+        
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+            
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            return '[]';
+        }
+        
+        return JSON.serialize(new Map<String,Object>{
+            'status' => endpoint.getStatusCode(),
+            'error' => 'Blockfrost address UTXOs API error'
+        });
+    }
+
+    /**
+     * Fetches UTXOs for multiple addresses and returns detailed information
+     * including transaction hash and output index for each UTXO.
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getMultipleAddressUtxosDetailed(List<String> addresses) {
+        if (addresses == null || addresses.isEmpty()) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('No addresses provided');
+        }
+        
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        Map<String, Object> result = new Map<String, Object>();
+        
+        for (String address : addresses) {
+            try {
+                String url = ADDRESS_UTXOS_URL.replace('{address}', address);
+                BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+                    .get()
+                    .setEndpoint(url)
+                    .setHeaders(new Map<String, String>{
+                        'Project_id' => projectId,
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json'
+                    })
+                    .send();
+                    
+                if (endpoint.getStatusCode() == 200) {
+                    List<Object> utxos = (List<Object>) JSON.deserializeUntyped(endpoint.getResponse().getBody());
+                    result.put(address, utxos);
+                } else if (endpoint.getStatusCode() == 404) {
+                    result.put(address, new List<Object>());
+                } else {
+                    result.put(address, new Map<String, Object>{
+                        'status' => endpoint.getStatusCode(),
+                        'error' => 'Blockfrost API error'
+                    });
+                }
+            } catch (Exception e) {
+                result.put(address, new Map<String, Object>{
+                    'status' => 'error',
+                    'error' => 'Failed to fetch UTXOs: ' + e.getMessage()
+                });
+            }
+        }
+        
+        return JSON.serialize(result);
+    }
+
+    /**
+     * Submits a signed transaction to Blockfrost /tx/submit endpoint.
+     * @param cborHex The signed transaction in CBOR hex format
+     * @return The transaction hash if successful, or error message
+     */
+    @AuraEnabled
+    public static String submitTransaction(String cborHex) {
+        if (String.isBlank(cborHex)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('CBOR hex is required');
+        }
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = '/tx/submit';
+        HttpRequest req = new HttpRequest();
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint().setEndpoint(url);
+        req.setEndpoint(endpoint.request.getEndpoint());
+        req.setMethod('POST');
+        req.setHeader('project_id', projectId);
+        req.setHeader('Content-Type', 'application/cbor');
+        req.setHeader('Accept', 'application/json');
+        // Convert hex string to binary
+        Blob cborBlob = EncodingUtil.convertFromHex(cborHex);
+        req.setBodyAsBlob(cborBlob);
+        Http http = new Http();
+        try {
+            HttpResponse res = http.send(req);
+            if (res.getStatusCode() == 200) {
+                // Blockfrost returns the transaction hash as plain text
+                return res.getBody();
+            } else {
+                return JSON.serialize(new Map<String,Object>{
+                    'status' => res.getStatusCode(),
+                    'error' => res.getBody()
+                });
+            }
+        } catch (Exception e) {
+            return JSON.serialize(new Map<String,Object>{
+                'status' => 'error',
+                'error' => e.getMessage()
+            });
+        }
+    }
+
+    /**
+     * Calls Blockfrost /addresses/{address}/transactions endpoint and returns the raw JSON array.
+     * Returns list of transactions for the given address with tx_hash, tx_index, block_height, and block_time.
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAddressTransactions(String address) {
+        if (String.isBlank(address)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
+        }
+
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = ADDRESS_TRANSACTIONS_URL.replace('{address}', address);
+
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            // Address not found on-chain or has no transactions. Return empty array.
+            return '[]';
+        }
+
+        // Return error information as JSON so callers can handle gracefully
+        return JSON.serialize(new Map<String,Object>{
+            'status' => endpoint.getStatusCode(),
+            'error' => 'Blockfrost address transactions API error'
+        });
     }
 
     public class BlockfrostPlatformError {

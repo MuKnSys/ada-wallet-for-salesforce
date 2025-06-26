@@ -3,16 +3,12 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
 import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
-import getUTXOAddressCountWithAssets from '@salesforce/apex/UTXOController.getUTXOAddressCountWithAssets';
-import getAssetTokenSummary from '@salesforce/apex/UTXOController.getAssetTokenSummaryNoCache';
+import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
 import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
-import { subscribe, MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
+import { subscribe, unsubscribe, MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
-import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
-import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOController.getAllUtxoAssetsForWallet';
 import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
-import updateOutboundTransactionStatus from '@salesforce/apex/UTXOController.updateOutboundTransactionStatus';
-import updateOutboundTransactionDataAndStatus from '@salesforce/apex/UTXOController.updateOutboundTransactionDataAndStatus';
+import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 /* eslint-disable no-console */
 const DEBUG = true;
@@ -33,18 +29,8 @@ export default class Wallet extends LightningElement {
     subscription = null;
     @track sendAmount = '';
     @track sendRecipient = '';
-    @track calculatedFee = '0.17'; // Placeholder, update with real fee logic
-    @track totalAmount = '';
     @track errorMessage = '';
     @track isSendButtonDisabled = true;
-    @track isMaxButtonDisabled = false;
-    @track utxos = [];
-    @track selectedUtxos = [];
-    @track isCardanoLibLoaded = false;
-    CardanoWasm = null;
-    @track showReviewModal = false;
-    @track pendingTransactionId = null;
-    @track pendingTransactionData = null;
 
     @api
     get recordId() {
@@ -90,32 +76,65 @@ export default class Wallet extends LightningElement {
     async fetchUtxoCounts() {
         if (DEBUG) console.log('[Wallet] fetchUtxoCounts start for', this.recordId);
         try {
+            // Get UTXO address counts for debugging
             const data = await getUTXOAddresses({ walletId: this.recordId });
             const external = data.filter(addr => addr.Type__c === '0').length;
             const internal = data.filter(addr => addr.Type__c === '1').length;
-            const summary = await getAssetTokenSummary({ walletId: this.recordId });
+            
+            // Get asset summary using new method that properly handles ADA conversion
+            const summary = await getWalletAssetSummary({ walletId: this.recordId });
             if (DEBUG) console.log('[Wallet] Asset summary', summary);
-            const tokens = summary.tokens || [];
-            const tokenAmount = tokens.reduce((t, x)=>t + (x.amount || 0), 0);
-            // Log counts for debugging; no toast shown
-            // eslint-disable-next-line no-console
-            console.log(`UTXO summary - Receiving: ${external}, Change: ${internal}, ADA: ${summary.ada}, Tokens: ${tokenAmount}`);
-            this.balance = summary.ada ? summary.ada.toString() : '0';
+            
+            if (summary.success) {
+                const tokens = summary.tokens || [];
+                const adaBalance = summary.adaBalance || 0;
+                
+                // Log counts for debugging
+                console.log(`UTXO summary - Receiving: ${external}, Change: ${internal}, ADA: ${adaBalance}, Tokens: ${tokens.length}`);
+                
+                // Set ADA balance (already converted from lovelace using Value__c field)
+                this.balance = this.formatNumber(adaBalance, 6); // ADA uses 6 decimal places
 
-            // Build assets list
-            const assetRows = [];
-            tokens.forEach(tok => {
-                assetRows.push({
-                    id: tok.symbol,
-                    name: tok.symbol,
-                    symbol: tok.symbol,
-                    amount: tok.amount,
-                    imgUrl: tok.icon || null,
-                    icon: 'utility:apps'
+                // Build assets list for tokens (non-ADA assets)
+                const assetRows = [];
+                tokens.forEach(token => {
+                    // Use the actual decimals from the asset metadata, fallback to 0 if not available
+                    const assetDecimals = token.decimals !== null && token.decimals !== undefined ? token.decimals : 0;
+                    
+                    assetRows.push({
+                        id: token.unit || token.symbol,
+                        name: token.name || token.symbol,
+                        symbol: token.symbol || token.unit,
+                        amount: this.formatNumber(token.amount, assetDecimals), // Use actual asset decimals
+                        rawAmount: token.rawAmount, // Keep raw amount for reference
+                        decimals: token.decimals,
+                        policyId: token.policyId,
+                        fingerprint: token.fingerprint,
+                        imgUrl: token.icon || null,
+                        icon: 'utility:apps'
+                    });
+                    
+                    if (DEBUG) {
+                        console.log(`[Wallet] Token ${token.symbol}: amount=${token.amount}, decimals=${assetDecimals}, formatted=${this.formatNumber(token.amount, assetDecimals)}`);
+                    }
                 });
-            });
-            this.assets = assetRows;
-            this.hasAssets = assetRows.length > 0;
+                
+                this.assets = assetRows;
+                this.hasAssets = assetRows.length > 0;
+                
+                if (DEBUG) {
+                    console.log('[Wallet] ADA Balance:', adaBalance, '(formatted:', this.balance, ')');
+                    console.log('[Wallet] Tokens found:', tokens.length);
+                    tokens.forEach(token => {
+                        console.log(`[Wallet] Token ${token.symbol}: ${token.amount} (from ${token.rawAmount} raw)`);
+                    });
+                }
+            } else {
+                console.error('[Wallet] Asset summary failed:', summary.message);
+                this.balance = '0';
+                this.assets = [];
+                this.hasAssets = false;
+            }
 
             // Fetch payment address
             const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
@@ -125,6 +144,7 @@ export default class Wallet extends LightningElement {
         } catch (error) {
             const message = error.body?.message || error.message || 'Unknown error';
             this.showToast('Error', message, 'error');
+            console.error('[Wallet] Error in fetchUtxoCounts:', error);
         } finally {
             this.isLoading = false;
         }
@@ -175,31 +195,17 @@ export default class Wallet extends LightningElement {
         if (DEBUG) console.log('[Send] openSendModal called');
         this.sendAmount = '';
         this.sendRecipient = '';
-        this.calculatedFee = '0.17';
-        this.totalAmount = '';
         this.errorMessage = '';
         this.isSendButtonDisabled = true;
-        this.selectedUtxos = [];
-        this.utxos = [];
+        
         if (DEBUG) console.log('[Send] Modal state reset:', {
             sendAmount: this.sendAmount,
             sendRecipient: this.sendRecipient,
-            calculatedFee: this.calculatedFee,
-            totalAmount: this.totalAmount,
             errorMessage: this.errorMessage,
-            isSendButtonDisabled: this.isSendButtonDisabled,
-            selectedUtxosCount: this.selectedUtxos.length,
-            utxosCount: this.utxos.length
+            isSendButtonDisabled: this.isSendButtonDisabled
         });
         
-        if (DEBUG) console.log('[Send] Loading CardanoSerialization library...');
-        this.loadCardanoLib();
-        
-        if (DEBUG) console.log('[Send] Fetching UTXOs for send...');
-        this.fetchUtxosForSend();
-        
         this.showSend = true;
-        if (DEBUG) console.log('[Send] Modal opened successfully');
     }
 
     closeSendModal() {
@@ -207,163 +213,68 @@ export default class Wallet extends LightningElement {
     }
 
     copyToClipboard() {
-        if (this.paymentAddress && !this.isAddressInvalid) {
+        if (navigator.clipboard && this.paymentAddress) {
             navigator.clipboard.writeText(this.paymentAddress).then(() => {
-                this.showToast('Success', 'Address copied to clipboard', 'success');
-            }).catch(error => {
-                this.showToast('Error', 'Failed to copy address to clipboard', 'error');
+                this.showToast('Success', 'Address copied to clipboard!', 'success');
+            }).catch(() => {
+                this.showToast('Error', 'Failed to copy address to clipboard.', 'error');
             });
         } else {
-            this.showToast('Error', 'No valid address to copy', 'error');
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = this.paymentAddress;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                this.showToast('Success', 'Address copied to clipboard!', 'success');
+            } catch (err) {
+                this.showToast('Error', 'Failed to copy address to clipboard.', 'error');
+            }
+            document.body.removeChild(textArea);
         }
     }
 
     shareLink() {
-        if (this.paymentAddress && !this.isAddressInvalid) {
-            const canvas = this.template.querySelector('.qr-code-canvas canvas');
-            if (canvas) {
-                const url = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'qr-code.png';
-                link.click();
-            } else {
-                this.showToast('Error', 'QR code not generated yet.', 'error');
-            }
-        } else {
-            this.showToast('Error', 'No valid address to share', 'error');
-        }
+        this.showToast('Info', 'QR Code download functionality not implemented yet.', 'info');
     }
 
     showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({
-                title,
-                message,
-                variant
-            })
-        );
+        const evt = new ShowToastEvent({
+            title: title,
+            message: message,
+            variant: variant,
+        });
+        this.dispatchEvent(evt);
     }
 
     connectedCallback() {
-        // Subscribe to WalletSyncChannel messages
-        this.subscription = subscribe(
-            this.messageContext,
-            WALLET_SYNC_CHANNEL,
-            (msg) => {
-                if (msg.walletId === this._recordId && msg.action === 'assetsUpdated') {
-                    if (DEBUG) console.log('[Wallet] assetsUpdated message received, refreshing counts');
-                    // Refresh balance information
-                    this.fetchUtxoCounts();
-                }
-            },
-            { scope: APPLICATION_SCOPE }
-        );
+        this.subscribeToMessageChannel();
     }
 
     disconnectedCallback() {
-        if (this.subscription) {
-            // no unsubscribe needed in most cases; stub left for completeness
-            this.subscription = null;
+        this.unsubscribeToMessageChannel();
+    }
+
+    subscribeToMessageChannel() {
+        if (!this.subscription) {
+            this.subscription = subscribe(
+                this.messageContext,
+                WALLET_SYNC_CHANNEL,
+                (message) => this.handleMessage(message),
+                { scope: APPLICATION_SCOPE }
+            );
         }
     }
 
-    async loadCardanoLib() {
-        if (DEBUG) console.log('[Send] loadCardanoLib called, isCardanoLibLoaded:', this.isCardanoLibLoaded);
-        if (this.isCardanoLibLoaded) {
-            if (DEBUG) console.log('[Send] CardanoSerialization already loaded, skipping');
-            return;
-        }
-        try {
-            if (DEBUG) console.log('[Send] Loading CardanoSerialization script...');
-            await loadScript(this, `${cardanoLibrary}/cardanoSerialization/bundle.js`);
-            if (DEBUG) console.log('[Send] Script loaded, setting CardanoWasm...');
-            this.CardanoWasm = window.cardanoSerialization;
-            this.isCardanoLibLoaded = true;
-            if (DEBUG) console.log('[Send] CardanoSerialization loaded successfully:', {
-                CardanoWasm: !!this.CardanoWasm,
-                isCardanoLibLoaded: this.isCardanoLibLoaded
-            });
-        } catch (e) {
-            this.errorMessage = 'Failed to load CardanoSerialization library.';
-            if (DEBUG) console.error('[Send] CardanoSerialization load error:', {
-                error: e,
-                message: e.message,
-                stack: e.stack
-            });
-        }
+    unsubscribeToMessageChannel() {
+        unsubscribe(this.subscription);
+        this.subscription = null;
     }
 
-    async fetchUtxosForSend() {
-        if (DEBUG) console.log('[Send] fetchUtxosForSend started for wallet:', this.recordId);
-        
-        try {
-            // Fetch all UTXO_Asset__c for this wallet
-            if (DEBUG) console.log('[Send] Calling getAllUtxoAssetsForWallet Apex method...');
-            const allAssets = await getAllUtxoAssetsForWallet({ walletId: this.recordId });
-            if (DEBUG) console.log('[Send] Raw Apex response - allAssets:', JSON.stringify(allAssets, null, 2));
-            if (DEBUG) console.log('[Send] Total assets returned:', allAssets ? allAssets.length : 0);
-            
-            // Group by UTXO_Address__c, filter for ADA (Blockfrost_ID__c == 'lovelace')
-            if (DEBUG) console.log('[Send] Filtering for ADA (lovelace) assets...');
-            const adaUtxos = allAssets.filter(a => {
-                const isLovelace = a.Blockfrost_ID__c === 'lovelace';
-                const hasAmount = a.Amount__c > 0;
-                if (DEBUG) console.log(`[Send] Asset ${a.Id}: Blockfrost_ID__c=${a.Blockfrost_ID__c}, Amount__c=${a.Amount__c}, isLovelace=${isLovelace}, hasAmount=${hasAmount}`);
-                return isLovelace && hasAmount;
-            });
-            if (DEBUG) console.log('[Send] Filtered ADA UTXOs (lovelace only):', JSON.stringify(adaUtxos, null, 2));
-            if (DEBUG) console.log('[Send] ADA UTXOs count after filtering:', adaUtxos.length);
-            
-            // Map to structure needed for CardanoSerialization
-            if (DEBUG) console.log('[Send] Mapping UTXOs to CardanoSerialization format...');
-            this.utxos = adaUtxos.map((a, index) => {
-                if (DEBUG) console.log(`[Send] Processing UTXO ${index + 1}/${adaUtxos.length}:`, {
-                    id: a.Id,
-                    utxoAddressId: a.UTXO_Address__c,
-                    blockfrostId: a.Blockfrost_ID__c,
-                    rawAmount: a.Amount__c,
-                    rawAmountType: typeof a.Amount__c
-                });
-                
-                const adaAmount = parseFloat(a.Amount__c);
-                if (DEBUG) console.log(`[Send] Parsed ADA amount: ${adaAmount} (from ${a.Amount__c})`);
-                
-                const lovelaceAmount = Math.floor(adaAmount * 1000000); // Convert ADA to lovelace
-                if (DEBUG) console.log(`[Send] Converted to lovelace: ${lovelaceAmount} (${adaAmount} * 1000000)`);
-                
-                if (DEBUG) console.log(`[Send] Processing UTXO ${a.Id}: ${adaAmount} ADA = ${lovelaceAmount} lovelace`);
-                
-                const mappedUtxo = {
-                    utxoAssetId: a.Id,
-                    utxoAddressId: a.UTXO_Address__c,
-                    amount: adaAmount, // Keep ADA amount for display/calculation
-                    lovelaceAmount: lovelaceAmount, // Add lovelace amount for CardanoSerialization
-                    blockfrostId: a.Blockfrost_ID__c,
-                    address: null, // will fill in later
-                    lastTxHash: null, // will fill in later
-                    lastTxIndex: null // will fill in later
-                };
-                
-                if (DEBUG) console.log(`[Send] Mapped UTXO object ${index + 1}:`, JSON.stringify(mappedUtxo, null, 2));
-                return mappedUtxo;
-            });
-            
-            if (DEBUG) console.log('[Send] Final UTXOs array:', JSON.stringify(this.utxos, null, 2));
-            if (DEBUG) console.log('[Send] Total ADA UTXOs found:', this.utxos.length);
-            if (DEBUG) console.log('[Send] UTXOs array type:', typeof this.utxos);
-            if (DEBUG) console.log('[Send] UTXOs is array:', Array.isArray(this.utxos));
-            
-            if (DEBUG) console.log('[Send] fetchUtxosForSend completed successfully');
-        } catch (e) {
-            this.errorMessage = 'Failed to fetch ADA UTXOs.';
-            if (DEBUG) console.error('[Send] UTXO fetch error details:', {
-                error: e,
-                message: e.message,
-                stack: e.stack,
-                body: e.body,
-                name: e.name
-            });
+    handleMessage(message) {
+        if (message.recordId === this.recordId) {
+            this.fetchUtxoCounts();
         }
     }
 
@@ -387,270 +298,109 @@ export default class Wallet extends LightningElement {
 
     handleMaxAmount() {
         if (DEBUG) console.log('[Send] handleMaxAmount called');
-        if (DEBUG) console.log('[Send] Current UTXOs for max calculation:', JSON.stringify(this.utxos, null, 2));
+        // Set the maximum amount to the current wallet balance
+        const maxAmount = parseFloat(this.balance);
+        if (DEBUG) console.log('[Send] Current wallet balance:', this.balance, 'Max amount:', maxAmount);
         
-        // Set max ADA available (sum of all ADA UTXO assets minus fee)
-        const totalAda = this.utxos.reduce((sum, u, index) => {
-            const utxoAmount = parseFloat(u.amount);
-            if (DEBUG) console.log(`[Send] UTXO ${index + 1}: ${utxoAmount} ADA, running sum: ${sum}`);
-            return sum + utxoAmount;
-        }, 0);
-        
-        if (DEBUG) console.log('[Send] Total ADA available:', totalAda);
-        if (DEBUG) console.log('[Send] Current fee:', this.calculatedFee);
-        
-        const maxAmount = totalAda - parseFloat(this.calculatedFee);
-        if (DEBUG) console.log('[Send] Max amount (total - fee):', maxAmount);
-        
-        this.sendAmount = maxAmount.toFixed(6);
-        if (DEBUG) console.log('[Send] Set sendAmount to:', this.sendAmount);
-        
+        if (maxAmount > 0) {
+            this.sendAmount = maxAmount.toString();
+            if (DEBUG) console.log('[Send] Set sendAmount to max balance:', this.sendAmount);
+        } else {
+            this.sendAmount = '0';
+            if (DEBUG) console.log('[Send] Wallet has no balance, set to 0');
+        }
         this.updateSendState();
     }
 
     updateSendState() {
         if (DEBUG) console.log('[Send] updateSendState called with:', JSON.stringify({
             sendAmount: this.sendAmount,
-            sendRecipient: this.sendRecipient,
-            calculatedFee: this.calculatedFee,
-            utxosCount: this.utxos.length,
-            utxos: this.utxos
+            sendRecipient: this.sendRecipient
         }, null, 2));
         
-        // Validate input and select UTXOs
-        if (DEBUG) console.log('[Send] Parsing amount and fee...');
+        // Basic validation - just enable/disable send button based on input
         const amount = parseFloat(this.sendAmount);
-        const fee = parseFloat(this.calculatedFee);
+        const hasAmount = !isNaN(amount) && amount > 0;
+        const hasRecipient = !!this.sendRecipient && this.sendRecipient.trim() !== '';
         
-        if (DEBUG) console.log('[Send] Parsed values:', JSON.stringify({ 
-            amount: amount, 
-            fee: fee,
-            amountType: typeof amount,
-            feeType: typeof fee,
-            isAmountValid: !isNaN(amount),
-            isFeeValid: !isNaN(fee)
-        }, null, 2));
-        
-        if (DEBUG) console.log('[Send] Validation check:', JSON.stringify({
-            hasAmount: !!amount,
-            amountPositive: amount > 0,
-            hasRecipient: !!this.sendRecipient,
+        if (DEBUG) console.log('[Send] Basic validation:', JSON.stringify({
+            hasAmount: hasAmount,
+            hasRecipient: hasRecipient,
             amount: amount,
-            recipient: this.sendRecipient,
-            validationPassed: !(!amount || amount <= 0 || !this.sendRecipient)
+            recipient: this.sendRecipient
         }, null, 2));
         
-        if (!amount || amount <= 0 || !this.sendRecipient) {
-            if (DEBUG) console.log('[Send] Validation failed:', JSON.stringify({
-                hasAmount: !!amount,
-                amountPositive: amount > 0,
-                hasRecipient: !!this.sendRecipient,
-                amount: amount,
-                recipient: this.sendRecipient
-            }, null, 2));
-            this.isSendButtonDisabled = true;
-            this.totalAmount = '';
-            if (DEBUG) console.log('[Send] Send button disabled due to validation failure');
-            return;
-        }
+        // Enable send button if we have both amount and recipient
+        this.isSendButtonDisabled = !(hasAmount && hasRecipient);
+        this.errorMessage = ''; // Clear any error messages
         
-        // Select UTXOs (greedy)
-        if (DEBUG) console.log('[Send] Starting UTXO selection. Available UTXOs:', this.utxos.length);
-        let sum = 0;
-        let selected = [];
-        const targetAmount = amount + fee;
-        if (DEBUG) console.log('[Send] Target amount (amount + fee):', targetAmount);
-        
-        for (let i = 0; i < this.utxos.length; i++) {
-            const utxo = this.utxos[i];
-            if (DEBUG) console.log(`[Send] Considering UTXO ${i + 1}/${this.utxos.length}:`, JSON.stringify({
-                utxoId: utxo.utxoAssetId,
-                amount: utxo.amount,
-                lovelaceAmount: utxo.lovelaceAmount
-            }, null, 2));
-            
-            selected.push(utxo);
-            const utxoAmount = parseFloat(utxo.amount);
-            sum += utxoAmount;
-            
-            if (DEBUG) console.log(`[Send] Running sum: ${sum} ADA, target: ${targetAmount}`);
-            if (sum >= targetAmount) {
-                if (DEBUG) console.log('[Send] Target reached, stopping UTXO selection');
-                break;
-            }
-        }
-        
-        this.selectedUtxos = selected;
-        this.totalAmount = targetAmount.toFixed(6);
-        
-        if (DEBUG) console.log('[Send] UTXO selection results:', JSON.stringify({
-            selectedCount: selected.length,
-            totalSelected: sum,
-            required: targetAmount,
-            sufficient: sum >= targetAmount,
-            selectedUtxos: selected
-        }, null, 2));
-        
-        if (sum < targetAmount) {
-            this.errorMessage = 'Insufficient ADA in UTXOs.';
-            this.isSendButtonDisabled = true;
-            if (DEBUG) console.log('[Send] Insufficient funds - disabling send button');
-        } else {
-            this.errorMessage = '';
-            this.isSendButtonDisabled = false;
-            if (DEBUG) console.log('[Send] Sufficient funds - enabling send button');
-        }
-        if (DEBUG) console.log('[Send] Selected ADA UTXOs:', JSON.stringify(this.selectedUtxos, null, 2));
-        
-        // Log the final state
         if (DEBUG) console.log('[Send] Final send state:', JSON.stringify({
             isSendButtonDisabled: this.isSendButtonDisabled,
-            errorMessage: this.errorMessage,
-            totalAmount: this.totalAmount,
-            selectedUtxosCount: this.selectedUtxos.length
+            errorMessage: this.errorMessage
         }, null, 2));
     }
 
     async handleSend() {
         if (DEBUG) console.log('[Send] handleSend started');
+        
+        // Create the outbound transaction record
         try {
-            // Build all transaction data
-            const txData = this.buildTransactionData();
-            // Create Outbound_Transaction__c with all fields set
-            const outboundTxId = await createOutboundTransaction({
+            if (DEBUG) console.log('[Send] Creating outbound transaction with:', {
                 walletId: this.recordId,
-                recipientAddress: txData.recipientAddress,
-                amount: txData.amount,
-                fee: txData.fee,
-                changeAddress: txData.changeAddress,
-                transactionData: txData.transactionData,
-                inputs: txData.inputs,
-                outputs: txData.outputs,
-                metadata: txData.metadata,
-                protocolParams: txData.protocolParams
+                toAddress: this.sendRecipient,
+                amount: this.sendAmount
             });
-            this.showToast('Success', 'New Outbound Transaction Created', 'success');
-            this.closeSendModal();
-            if (DEBUG) console.log('[Send] Outbound Transaction created with ID:', outboundTxId);
-        } catch (e) {
-            this.errorMessage = 'Failed to create outbound transaction: ' + e.message;
-            if (DEBUG) console.error('[Send] Error:', e);
-        }
-    }
-
-    buildTransactionData() {
-        // Build protocol parameters
-        const protocolParams = {
-            linearFee: {
-                constant: '44',
-                coefficient: '155381'
-            },
-            poolDeposit: '500000000',
-            keyDeposit: '2000000',
-            maxValueSize: 4000,
-            maxTxSize: 8000,
-            coinsPerUtxoByte: '34482'
-        };
-        // Build transaction inputs from selected UTXOs
-        const inputs = this.selectedUtxos.map((utxo) => ({
-            utxoAssetId: utxo.utxoAssetId,
-            utxoAddressId: utxo.utxoAddressId,
-            amount: utxo.amount.toString(),
-            lovelaceAmount: utxo.lovelaceAmount.toString(),
-            blockfrostId: utxo.blockfrostId,
-            address: null,
-            lastTxHash: null,
-            lastTxIndex: null
-        }));
-        // Build transaction outputs
-        const amount = parseFloat(this.sendAmount);
-        const fee = parseFloat(this.calculatedFee);
-        const totalInputAmount = this.selectedUtxos.reduce((sum, utxo) => sum + parseFloat(utxo.amount), 0);
-        const changeAmount = totalInputAmount - amount - fee;
-        const outputs = [
-            {
-                address: this.sendRecipient,
-                amount: (amount * 1000000).toString(),
-                type: 'payment',
-                description: 'Payment to recipient'
-            }
-        ];
-        if (changeAmount > 0) {
-            outputs.push({
-                address: this.paymentAddress,
-                amount: (changeAmount * 1000000).toString(),
-                type: 'change',
-                description: 'Change back to sender'
-            });
-        }
-        // Build transaction metadata
-        const metadata = {
-            ttl: 7200,
-            validityStart: Math.floor(Date.now() / 1000),
-            networkId: 1,
-            totalInputAmount: totalInputAmount.toString(),
-            totalOutputAmount: (amount + changeAmount).toString(),
-            estimatedFee: fee.toString(),
-            inputCount: inputs.length,
-            outputCount: outputs.length
-        };
-        // Return all values needed for Apex
-        return {
-            protocolParams: JSON.stringify(protocolParams),
-            inputs: JSON.stringify(inputs),
-            outputs: JSON.stringify(outputs),
-            metadata: JSON.stringify(metadata),
-            transactionData: JSON.stringify({
-                protocolParams,
-                inputs,
-                outputs,
-                metadata,
-                addresses: {
-                    recipient: this.sendRecipient,
-                    change: this.paymentAddress,
-                    sender: this.paymentAddress
-                },
+            
+            const transactionId = await createOutboundTransaction({
                 walletId: this.recordId,
-                amount: amount.toString(),
-                fee: fee.toString(),
-                timestamp: new Date().toISOString()
-            }),
-            recipientAddress: this.sendRecipient,
-            amount: amount.toString(),
-            fee: fee.toString(),
-            changeAddress: this.paymentAddress
-        };
-    }
-
-    async handleReviewConfirm() {
-        try {
-            const txData = this.pendingTransactionData;
-            await updateOutboundTransactionDataAndStatus({
-                transactionId: this.pendingTransactionId,
-                recipientAddress: txData.recipientAddress,
-                amount: txData.amount,
-                fee: txData.fee,
-                changeAddress: txData.changeAddress,
-                transactionData: txData.transactionData,
-                inputs: txData.inputs,
-                outputs: txData.outputs,
-                metadata: txData.metadata,
-                protocolParams: txData.protocolParams
+                toAddress: this.sendRecipient,
+                amount: this.sendAmount
             });
-            this.showToast('Success', 'Transaction prepared and status set to Prepared.', 'success');
-            this.showReviewModal = false;
-            this.pendingTransactionId = null;
-            this.pendingTransactionData = null;
+            
+            if (DEBUG) console.log('[Send] Outbound transaction created successfully:', transactionId);
+            this.showToast('Success', 'Outbound transaction created successfully.', 'success');
+            
+            // Close the modal after successful creation
             this.closeSendModal();
-        } catch (e) {
-            this.errorMessage = 'Failed to prepare transaction: ' + e.message;
-            if (DEBUG) console.error('[Review] Error:', e);
+            
+        } catch (error) {
+            if (DEBUG) console.error('[Send] Error creating outbound transaction:', error);
+            this.showToast('Error', `Failed to create outbound transaction: ${error.body?.message || error.message}`, 'error');
         }
     }
 
-    handleReviewCancel() {
-        this.showReviewModal = false;
-        this.pendingTransactionId = null;
-        this.pendingTransactionData = null;
+
+
+    // Helper method to format numbers with proper decimal places
+    formatNumber(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) {
+            return '0';
+        }
+        
+        const numValue = parseFloat(value);
+        
+        // If decimals is specified, use that for all values
+        if (decimals !== undefined && decimals !== null) {
+            return numValue.toFixed(decimals);
+        }
+        
+        // For very small numbers, show more decimal places
+        if (numValue > 0 && numValue < 0.001) {
+            return numValue.toFixed(6);
+        }
+        
+        // For numbers less than 1, show 3 decimal places
+        if (numValue < 1) {
+            return numValue.toFixed(3);
+        }
+        
+        // For larger numbers, show appropriate decimal places
+        if (numValue >= 1000000) {
+            return (numValue / 1000000).toFixed(2) + 'M';
+        } else if (numValue >= 1000) {
+            return (numValue / 1000).toFixed(2) + 'K';
+        } else {
+            return numValue.toFixed(2);
+        }
     }
 }

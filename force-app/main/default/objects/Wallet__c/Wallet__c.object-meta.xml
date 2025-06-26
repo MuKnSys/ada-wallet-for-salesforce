@@ -179,4 +179,10 @@
     </searchLayouts>
     <sharingModel>ControlledByParent</sharingModel>
     <visibility>Public</visibility>
+    <fields>
+        <fullName>Inbound_Transactions</fullName>
+        <label>Inbound Transactions</label>
+        <relationshipName>Wallet</relationshipName>
+        <type>Lookup</type>
+    </fields>
 </CustomObject>

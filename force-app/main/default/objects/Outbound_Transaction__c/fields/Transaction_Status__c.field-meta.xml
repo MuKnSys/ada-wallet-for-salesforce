@@ -2,8 +2,6 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Transaction_Status__c</fullName>
     <label>Transaction Status</label>
-    <required>true</required>
-    <trackTrending>false</trackTrending>
     <type>Picklist</type>
     <valueSet>
         <restricted>true</restricted>
@@ -13,31 +11,7 @@
                 <fullName>New</fullName>
                 <default>true</default>
                 <label>New</label>
-            </value>
-            <value>
-                <fullName>Prepared</fullName>
-                <default>false</default>
-                <label>Prepared</label>
-            </value>
-            <value>
-                <fullName>Ready to Sign</fullName>
-                <default>false</default>
-                <label>Ready to Sign</label>
-            </value>
-            <value>
-                <fullName>Ready to Send</fullName>
-                <default>false</default>
-                <label>Ready to Send</label>
-            </value>
-            <value>
-                <fullName>Sent</fullName>
-                <default>false</default>
-                <label>Sent</label>
-            </value>
-            <value>
-                <fullName>Confirmed</fullName>
-                <default>false</default>
-                <label>Confirmed</label>
+                <description>Created via app logic (LWC, Flow, or Apex).</description>
             </value>
             <value>
                 <fullName>Pending Approval</fullName>
@@ -49,6 +23,37 @@
                 <default>false</default>
                 <label>Rejected</label>
             </value>
+            <value>
+                <fullName>Prepared</fullName>
+                <default>false</default>
+                <label>Prepared</label>
+                <description>All lines are added and the transaction is marked ready to build.</description>
+            </value>
+            <value>
+                <fullName>Ready to Sign</fullName>
+                <default>false</default>
+                <label>Ready to Sign</label>
+                <description>Triggered automatically when prepared. The system builds the unsigned transaction.</description>
+            </value>
+            <value>
+                <fullName>Ready to Send</fullName>
+                <default>false</default>
+                <label>Ready to Send</label>
+                <description>The signed transaction is added by the front end. Note: This step requires the Lightning Web Component (LWC) to perform the signing. It cannot be bypassed or handled by Apex or automation.</description>
+            </value>
+            <value>
+                <fullName>Sent</fullName>
+                <default>false</default>
+                <label>Sent</label>
+                <description>Trigger sends the transaction to the blockchain (via Blockfrost).</description>
+            </value>
+            <value>
+                <fullName>Confirmed</fullName>
+                <default>false</default>
+                <label>Confirmed</label>
+                <description>Status is updated when the transaction is confirmed on-chain.</description>
+            </value>
         </valueSetDefinition>
     </valueSet>
-</CustomField>
+    <required>true</required>
+</CustomField> 

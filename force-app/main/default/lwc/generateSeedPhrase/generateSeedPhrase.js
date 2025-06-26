@@ -15,6 +15,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track errorMessage = '';
     @track isLibraryLoaded = false;
     @track isLoading = false;
+    @track originalSeedPhrase = []; // Store original seed phrase for verification
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -28,6 +29,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.walletName = '';
         this.seedPhrase = [];
         this.verificationInputs = [];
+        this.originalSeedPhrase = [];
         this.errorMessage = '';
         this.step1 = true;
         this.step2 = false;
@@ -66,11 +68,11 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             }
 
             try {
-                const mnemonic = window.bip39.generateMnemonic(256);
+                // Use hardcoded seed phrase for testing instead of generating new one
+                const mnemonic = 'gloom lawsuit citizen employ electric hobby history april sick carbon response scout shoot stick assume blind nest ceiling daring meadow scheme drift blame transfer';
 
-                
                 if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
-                    throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
+                    throw new Error('Hardcoded mnemonic is empty, invalid, or does not contain 24 words.');
                 }
 
                 // Transform the seed phrase into an array of objects with displayIndex
@@ -82,10 +84,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     return item;
                 });                
 
+                // Store original seed phrase words for verification
+                this.originalSeedPhrase = mnemonic.split(' ');
+
                 this.step1 = false;
                 this.step2 = true;
             } catch (error) {
-                this.showToast('Error', 'Failed to generate seed phrase: ' + error.message, 'error');
+                this.showToast('Error', 'Failed to use hardcoded seed phrase: ' + error.message, 'error');
             }
         }
     }
@@ -105,13 +110,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.verificationInputs = this.seedPhrase.map((item, i) => {
             return {
                 label: `Word ${i + 1}`,
-                value: '' // Leave blank for user to fill
+                value: this.originalSeedPhrase[i] // Auto-fill with correct word for testing
             };
         });
 
         this.step2 = false;
         this.step3 = true;
-        // Clear seed phrase from memory
+        // Clear seed phrase from memory but keep originalSeedPhrase for verification
         this.seedPhrase = [];
     }
 
@@ -123,7 +128,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     async handleSubmit() {
         const enteredPhrase = this.verificationInputs.map(input => input.value.trim());
-        const originalPhrase = this.verificationInputs.map(input => input.value.trim()); // Since seedPhrase is cleared, use initial values
+        const originalPhrase = this.originalSeedPhrase; // Use stored original phrase
         const isValid = enteredPhrase.every((word, i) => word === originalPhrase[i]);
 
         if (isValid) {

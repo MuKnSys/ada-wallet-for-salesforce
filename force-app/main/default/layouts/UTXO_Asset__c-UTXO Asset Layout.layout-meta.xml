@@ -15,20 +15,20 @@
                 <field>Amount__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Asset__c</field>
-            </layoutItems>
-            <layoutItems>
                 <behavior>Required</behavior>
                 <field>UTXO_Address__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Required</behavior>
-                <field>Blockfrost_ID__c</field>
+                <behavior>Edit</behavior>
+                <field>Unit__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Icon__c</field>
+                <field>Policy_ID__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Fingerprint__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns/>

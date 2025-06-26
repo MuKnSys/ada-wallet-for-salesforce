@@ -10,7 +10,6 @@ import enableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.enableLogging';
 import disableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.disableLogging';
 import saveBlockfrostProjectId from '@salesforce/apex/AdaWalletsSetupCtrl.saveBlockfrostProjectId';
 import testBlockfrostConfig from '@salesforce/apex/AdaWalletsSetupCtrl.testBlockfrostConfig';
-import initializeAssets from '@salesforce/apex/AdaAssetInitializer.initializeAssets';
 
 export default class AdaWalletSetup extends LightningElement {
     isLoading = true;
@@ -181,19 +180,6 @@ export default class AdaWalletSetup extends LightningElement {
             this.showToast(this.labels.CORE.Success, this.labels.LOGGING.DisableSuccess, TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {
             const errorMessage = error.body ? error.body.message : error.message;
-            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
-        } finally {
-            this.isLoading = false;
-        }
-    }
-
-    async handleInitializeAssets() {
-        this.isLoading = true;
-        try {
-            await initializeAssets();
-            this.showToast(this.labels.CORE.Success, 'ADA Assets initialized', TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
-        } catch (error) {
-            const errorMessage = 'Initialization failed: ' + (error.body?.message || error.message);
             this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
         } finally {
             this.isLoading = false;

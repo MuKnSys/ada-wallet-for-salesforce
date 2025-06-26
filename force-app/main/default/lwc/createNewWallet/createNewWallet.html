@@ -33,6 +33,22 @@
                 message-when-range-underflow="Account Index must be non-negative"
                 error-message={accountIndexErrorMessage}
             ></lightning-input>
+            
+            <!-- Progress Display -->
+            <template if:true={progressDisplay}>
+                <div class="slds-box slds-theme_shade slds-m-bottom_small">
+                    <div class="slds-text-heading_small slds-m-bottom_xx-small">
+                        <lightning-icon icon-name="utility:sync" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        {progressDisplay}
+                    </div>
+                    <template if:true={progressMessage}>
+                        <div class="slds-text-body_small slds-text-color_weak">
+                            {progressMessage}
+                        </div>
+                    </template>
+                </div>
+            </template>
+            
             <lightning-button
                 label={buttonLabel}
                 variant="brand"
