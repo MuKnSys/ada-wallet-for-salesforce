@@ -13,9 +13,14 @@
                             label="Generate New Address"
                             variant="brand"
                             onclick={generateAddress}
-                            class="slds-float_right"
+                            class="slds-m-right_small"
                         ></lightning-button>
                     </template>
+                    <lightning-button
+                        label="Refresh UTXOs"
+                        variant="neutral"
+                        onclick={handleRefreshAddressCounts}
+                    ></lightning-button>
                 </div>
             </div>
             <div class="slds-m-bottom_small">

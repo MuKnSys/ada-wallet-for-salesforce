@@ -32,6 +32,7 @@ private class WalletCtrlTest {
             Public_Key__c = 'testPublicKey',
             Staking_Key_Hash__c = 'testStakingKeyHash',
             Path__c = 'testPath',
+            Private_Key__c = 'testPrivateKey',
             Type__c = '0'
         );
         insert utxoAddress;

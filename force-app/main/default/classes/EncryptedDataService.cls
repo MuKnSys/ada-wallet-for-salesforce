@@ -24,13 +24,27 @@ public with sharing class EncryptedDataService {
     }
 
     public static Boolean hasAccessToDecrypt() {        
-        Set<Id> psIds = new Set<Id>();
-        for (PermissionSetAssignment psa : [SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()]) {
-            psIds.add(psa.PermissionSetId);
+        try {
+            System.debug('hasAccessToDecrypt - Checking permissions for user: ' + UserInfo.getName() + ' (ID: ' + UserInfo.getUserId() + ')');
+            
+            Set<Id> psIds = new Set<Id>();
+            for (PermissionSetAssignment psa : [SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()]) {
+                psIds.add(psa.PermissionSetId);
+            }
+            
+            System.debug('hasAccessToDecrypt - User has ' + psIds.size() + ' permission sets assigned');
+            
+            Id requiredPsId = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Seed_Phrase' LIMIT 1].Id;
+            System.debug('hasAccessToDecrypt - Required permission set ID: ' + requiredPsId);
+            
+            Boolean hasAccess = requiredPsId != null && psIds.contains(requiredPsId);
+            System.debug('hasAccessToDecrypt - User has access: ' + hasAccess);
+            
+            return hasAccess;
+        } catch (Exception e) {
+            System.debug('hasAccessToDecrypt - Error checking permissions: ' + e.getMessage());
+            System.debug('hasAccessToDecrypt - Stack trace: ' + e.getStackTraceString());
+            return false;
         }
-        
-        Id requiredPsId = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Seed_Phrase' LIMIT 1].Id;
-
-        return requiredPsId != null && psIds.contains(requiredPsId);
     }
 }

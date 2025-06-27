@@ -15,6 +15,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track errorMessage = '';
     @track isLibraryLoaded = false;
     @track isLoading = false;
+    @track originalSeedPhrase = []; // Store original seed phrase for verification
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -28,6 +29,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.walletName = '';
         this.seedPhrase = [];
         this.verificationInputs = [];
+        this.originalSeedPhrase = [];
         this.errorMessage = '';
         this.step1 = true;
         this.step2 = false;
@@ -66,9 +68,9 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             }
 
             try {
+                // Generate a new 24-word mnemonic using bip39
                 const mnemonic = window.bip39.generateMnemonic(256);
 
-                
                 if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
                     throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
                 }
@@ -78,9 +80,12 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     const item = {
                         word: word,
                         displayIndex: index + 1 // Start numbering from 1
-                    };                    
+                    };
                     return item;
-                });                
+                });
+
+                // Store original seed phrase words for verification
+                this.originalSeedPhrase = mnemonic.split(' ');
 
                 this.step1 = false;
                 this.step2 = true;
@@ -102,18 +107,16 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     }    
 
     handleNextFromStep2() {
-        // Create verification inputs and prefill with the generated seed phrase words
         this.verificationInputs = this.seedPhrase.map((item, i) => {
-            const input = {
+            return {
                 label: `Word ${i + 1}`,
-                value: item.word // Prefill with the correct word from seedPhrase
-            };            
-            return input;
-        });        
+                value: '' // Do not autofill; user must enter manually
+            };
+        });
 
         this.step2 = false;
         this.step3 = true;
-        // Clear seed phrase from memory
+        // Clear seed phrase from memory but keep originalSeedPhrase for verification
         this.seedPhrase = [];
     }
 
@@ -125,7 +128,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     async handleSubmit() {
         const enteredPhrase = this.verificationInputs.map(input => input.value.trim());
-        const originalPhrase = this.verificationInputs.map(input => input.value.trim()); // Since seedPhrase is cleared, use initial values
+        const originalPhrase = this.originalSeedPhrase; // Use stored original phrase
         const isValid = enteredPhrase.every((word, i) => word === originalPhrase[i]);
 
         if (isValid) {

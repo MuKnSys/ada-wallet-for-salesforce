@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>UTXO_Address__c</fullName>
+    <label>UTXO Address</label>
+    <type>MasterDetail</type>
+    <referenceTo>UTXO_Address__c</referenceTo>
+    <relationshipLabel>Inbound Transactions</relationshipLabel>
+    <relationshipName>Inbound_Transactions</relationshipName>
+    <reparentableMasterDetail>true</reparentableMasterDetail>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+</CustomField> 

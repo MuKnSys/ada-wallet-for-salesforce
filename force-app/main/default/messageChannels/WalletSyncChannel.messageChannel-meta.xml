@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Channel to notify wallet-related LWCs when UTXO assets are refreshed, balances updated, etc.</description>
+    <isExposed>true</isExposed>
+    <masterLabel>WalletSyncChannel</masterLabel>
+    <lightningMessageFields>
+        <fieldName>walletId</fieldName>
+        <description>Wallet record Id</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>action</fieldName>
+        <description>Action identifier (e.g., assetsUpdated)</description>
+    </lightningMessageFields>
+</LightningMessageChannel> 

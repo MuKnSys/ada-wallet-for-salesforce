@@ -4,7 +4,8 @@ public with sharing class AdaWalletsSetupCtrl {
         try {
             return new SetupData()                
                 .withPrivateKey(AdaWalletsService.getPrivateKey())
-                .withBlockfrostProjectId(AdaWalletsService.getBlockfrostProjectId());
+                .withBlockfrostProjectId(AdaWalletsService.getBlockfrostProjectId())
+                .withTransactionApprovalsEnabled(getTransactionApprovalsEnabled());
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
@@ -44,6 +45,8 @@ public with sharing class AdaWalletsSetupCtrl {
         public String privateKey { get; set; }
         @AuraEnabled
         public String blockfrostProjectId { get; set; }
+        @AuraEnabled
+        public Boolean isTransactionApprovalsEnabled { get; set; }
 
         public SetupData withPrivateKey(String value) {
             privateKey = enrich(value);
@@ -52,6 +55,11 @@ public with sharing class AdaWalletsSetupCtrl {
 
         public SetupData withBlockfrostProjectId(String value) {
             blockfrostProjectId = enrich(value);
+            return this;
+        }
+
+        public SetupData withTransactionApprovalsEnabled(Boolean value) {
+            isTransactionApprovalsEnabled = value;
             return this;
         }
 
@@ -75,6 +83,29 @@ public with sharing class AdaWalletsSetupCtrl {
             new LoggerService().updateLoggerService(false);
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void updateTransactionApprovals(Boolean isEnabled) {
+        try {
+            AdaSettings__c adaSettings = AdaSettings__c.getInstance();
+            if (adaSettings == null) {
+                adaSettings = new AdaSettings__c();
+            }
+            adaSettings.Transaction_approvals_enabled__c = isEnabled;
+            upsert adaSettings;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to update transaction approvals setting: ' + e.getMessage());
+        }
+    }
+
+    private static Boolean getTransactionApprovalsEnabled() {
+        try {
+            AdaSettings__c adaSettings = AdaSettings__c.getInstance();
+            return adaSettings != null ? adaSettings.Transaction_approvals_enabled__c : false;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

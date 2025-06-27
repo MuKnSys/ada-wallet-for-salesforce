@@ -22,6 +22,20 @@ public with sharing class CreateNewWalletCtrl {
         }
     }
 
+    /**
+     * Inner class for UTXO Address data from LWC
+     */
+    public class UTXOAddressData {
+        @AuraEnabled public Integer index { get; set; }
+        @AuraEnabled public String publicKey { get; set; }
+        @AuraEnabled public String privateKey { get; set; }
+        @AuraEnabled public String address { get; set; }
+        @AuraEnabled public String stakingKeyHash { get; set; }
+        @AuraEnabled public String path { get; set; }
+    }
+
+
+
     @AuraEnabled(cacheable=true)
     public static Wallet__c getWalletById(String walletId) {
         try {
@@ -100,12 +114,75 @@ public with sharing class CreateNewWalletCtrl {
         }
     }
 
+    /**
+     * Enhanced method to check if address has any transactions (receiving or outbound)
+     * This replaces the simple "used" check with a comprehensive transaction check
+     */
     @AuraEnabled(cacheable=true)
     public static Boolean checkIsAddressUsed(String address) {
         try {            
+            // Use /addresses/{address}/total endpoint via BlockfrostService.isAddressUsed for accurate historical usage check
             return BlockfrostService.isAddressUsed(address);
         } catch (Exception e) {            
             throw new AuraHandledException('Failed to check if address is used: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * Enhanced method to check if address has any transactions by syncing and checking the results
+     * This provides more detailed information than just "used/unused"
+     */
+    @AuraEnabled
+    public static Map<String, Object> checkAddressTransactionHistory(String address) {
+        try {
+            // Create a temporary UTXO address record for syncing (we'll delete it after)
+            UTXO_Address__c tempAddress = new UTXO_Address__c(
+                Address__c = address,
+                Index__c = -1, // Temporary marker
+                Public_Key__c = 'temp',
+                Staking_Key_Hash__c = 'temp',
+                Path__c = 'temp',
+                Type__c = '0'
+            );
+            insert tempAddress;
+            
+            try {
+                // Sync to get transaction and asset data
+                Map<String, Object> syncResult = UTXOAssetController.syncAssetsAndTransactions(tempAddress.Id);
+                
+                // Check if any assets or transactions were found
+                Boolean hasTransactions = false;
+                Boolean hasAssets = false;
+                
+                if (syncResult.get('success') == true && syncResult.containsKey('statistics')) {
+                    Map<String, Object> stats = (Map<String, Object>) syncResult.get('statistics');
+                    
+                    Integer assetsInserted = (Integer) stats.get('assetsInserted');
+                    Integer assetsUpdated = (Integer) stats.get('assetsUpdated');
+                    Integer transactionsInserted = (Integer) stats.get('transactionsInserted');
+                    Integer transactionsUpdated = (Integer) stats.get('transactionsUpdated');
+                    
+                    hasAssets = (assetsInserted != null && assetsInserted > 0) || (assetsUpdated != null && assetsUpdated > 0);
+                    hasTransactions = (transactionsInserted != null && transactionsInserted > 0) || (transactionsUpdated != null && transactionsUpdated > 0);
+                }
+                
+                return new Map<String, Object>{
+                    'address' => address,
+                    'hasTransactions' => hasTransactions,
+                    'hasAssets' => hasAssets,
+                    'isUsed' => hasTransactions || hasAssets,
+                    'syncResult' => syncResult
+                };
+                
+            } finally {
+                // Clean up temporary records
+                delete [SELECT Id FROM UTXO_Asset__c WHERE UTXO_Address__c = :tempAddress.Id];
+                delete [SELECT Id FROM Inbound_Transaction__c WHERE UTXO_Address__c = :tempAddress.Id];
+                delete tempAddress;
+            }
+            
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to check address transaction history: ' + e.getMessage());
         }
     }
 
@@ -115,6 +192,152 @@ public with sharing class CreateNewWalletCtrl {
             return EncryptedDataService.getDecryptedSeedPhrase(walletSetId);
         } catch (Exception e) {            
             throw new AuraHandledException('Failed to get seed phrase: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * Enhanced method to check if address has any transactions by calling Blockfrost directly
+     * This avoids the DML + callout issue by doing only callouts
+     */
+    @AuraEnabled
+    public static Map<String, Object> checkAddressUsageOnly(String address) {
+        try {
+            Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] 🔍 Checking usage for address: ' + address);
+            
+            // Call Blockfrost directly to check if address is used
+            Boolean isUsed = BlockfrostService.isAddressUsed(address);
+            
+            // Get more detailed information if the address is used
+            Map<String, Object> result = new Map<String, Object>{
+                'address' => address,
+                'isUsed' => isUsed,
+                'hasAssets' => false,
+                'hasTransactions' => false,
+                'checkMethod' => 'blockfrost_direct'
+            };
+            
+            if (isUsed) {
+                try {
+                    // Try to get more details about what makes it "used"
+                    String utxosJson = BlockfrostService.getAddressUtxos(address);
+                    List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxosJson);
+                    result.put('hasAssets', !utxoList.isEmpty());
+                    
+                    String transactionsJson = BlockfrostService.getAddressTransactions(address);
+                    List<Object> transactionList = (List<Object>) JSON.deserializeUntyped(transactionsJson);
+                    result.put('hasTransactions', !transactionList.isEmpty());
+                    
+                    Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] 📊 Address ' + address + ' usage details: UTXOs=' + utxoList.size() + ', Transactions=' + transactionList.size());
+                } catch (Exception detailsError) {
+                    Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] ⚠️ Could not get detailed usage for ' + address + ': ' + detailsError.getMessage());
+                }
+            }
+            
+            Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] ✅ Address ' + address + ' check complete: isUsed=' + isUsed);
+            return result;
+            
+        } catch (Exception e) {
+            Logger.logError('[CreateNewWalletCtrl.checkAddressUsageOnly] ❌ Error checking address usage: ' + e.getMessage());
+            throw new AuraHandledException('Failed to check address usage: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * Bulk create UTXO addresses without syncing (to avoid DML + callout issues)
+     */
+    @AuraEnabled
+    public static Map<String, Object> createUTXOAddressesBulk(String walletId, List<UTXOAddressData> receivingAddresses, List<UTXOAddressData> changeAddresses) {
+        try {
+            Logger.logInfo('[CreateNewWalletCtrl.createUTXOAddressesBulk] 📍 Creating UTXO addresses in bulk for wallet: ' + walletId);
+            Long startTime = System.now().getTime();
+            
+            // Validate inputs
+            if (receivingAddresses == null || changeAddresses == null) {
+                throw new AuraHandledException('Address lists cannot be null');
+            }
+
+            List<UTXO_Address__c> allAddresses = new List<UTXO_Address__c>();
+            List<Map<String, Object>> receivingResults = new List<Map<String, Object>>();
+            List<Map<String, Object>> changeResults = new List<Map<String, Object>>();
+
+            // Process receiving addresses
+            for (UTXOAddressData addr : receivingAddresses) {
+                UTXO_Address__c utxoRecord = new UTXO_Address__c(
+                    Wallet__c = walletId,
+                    Address__c = addr.address,
+                    Index__c = addr.index,
+                    Public_Key__c = addr.publicKey,
+                    Staking_Key_Hash__c = addr.stakingKeyHash,
+                    Path__c = addr.path,
+                    Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
+                    Type__c = '0'
+                );
+                allAddresses.add(utxoRecord);
+                
+                receivingResults.add(new Map<String, Object>{
+                    'address' => addr.address,
+                    'index' => addr.index,
+                    'type' => '0',
+                    'typeLabel' => 'Receiving'
+                });
+            }
+
+            // Process change addresses  
+            for (UTXOAddressData addr : changeAddresses) {
+                UTXO_Address__c utxoRecord = new UTXO_Address__c(
+                    Wallet__c = walletId,
+                    Address__c = addr.address,
+                    Index__c = addr.index,
+                    Public_Key__c = addr.publicKey,
+                    Staking_Key_Hash__c = addr.stakingKeyHash,
+                    Path__c = addr.path,
+                    Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
+                    Type__c = '1'
+                );
+                allAddresses.add(utxoRecord);
+                
+                changeResults.add(new Map<String, Object>{
+                    'address' => addr.address,
+                    'index' => addr.index,
+                    'type' => '1',
+                    'typeLabel' => 'Change'
+                });
+            }
+
+            // Insert all addresses in bulk
+            if (!allAddresses.isEmpty()) {
+                SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, allAddresses);
+                insert decision.getRecords();
+                
+                // Update results with the inserted IDs
+                for (Integer i = 0; i < receivingAddresses.size(); i++) {
+                    receivingResults[i].put('utxoAddressId', decision.getRecords()[i].Id);
+                }
+                for (Integer i = 0; i < changeAddresses.size(); i++) {
+                    changeResults[i].put('utxoAddressId', decision.getRecords()[receivingAddresses.size() + i].Id);
+                }
+            }
+
+            Map<String, Object> result = new Map<String, Object>{
+                'success' => true,
+                'walletId' => walletId,
+                'receivingAddresses' => receivingResults,
+                'changeAddresses' => changeResults,
+                'statistics' => new Map<String, Object>{
+                    'totalReceivingCreated' => receivingAddresses.size(),
+                    'totalChangeCreated' => changeAddresses.size(),
+                    'processingTimeMs' => System.now().getTime() - startTime
+                }
+            };
+
+            Logger.logInfo('[CreateNewWalletCtrl.createUTXOAddressesBulk] ✅ Created ' + allAddresses.size() + ' UTXO addresses in bulk');
+            return result;
+            
+        } catch (Exception e) {
+            Logger.logError('[CreateNewWalletCtrl.createUTXOAddressesBulk] ❌ Error: ' + e.getMessage());
+            throw new AuraHandledException('Error creating UTXO addresses in bulk: ' + e.getMessage());
+        } finally {
+            Logger.commitLogs();
         }
     }
 }

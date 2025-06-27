@@ -191,7 +191,26 @@
                                 </div>
                             </template>
                         </div>
-                    </lightning-accordion-section>                    
+                    </lightning-accordion-section>
+
+                    <!-- Approval Enabling Section -->
+                    <lightning-accordion-section
+                        name="approvals"
+                        label="Approval Enabling"
+                        class="slds-var-m-left_xx-large"
+                    >
+                        <div class="slds-p-around_medium">
+                            <p class="slds-text-body_small slds-m-bottom_small">
+                                Enable approval for ADA transactions to ensure security and compliance.
+                            </p>
+                            <lightning-input
+                                type="checkbox"
+                                label="Enable Transaction Approvals"
+                                checked={isTransactionApprovalsEnabled}
+                                onchange={handleTransactionApprovalsChange}
+                            ></lightning-input>
+                        </div>
+                    </lightning-accordion-section>
                 </lightning-accordion>
             </lightning-card>
         </div>

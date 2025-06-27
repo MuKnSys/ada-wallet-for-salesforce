@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fieldUpdates>
+        <fullName>Set_Approved_field_to_Approved</fullName>
+        <field>Approved__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Set Approved field to Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Set_Approved_field_to_Not_Approved</fullName>
+        <field>Approved__c</field>
+        <literalValue>Not Approved</literalValue>
+        <name>Set Approved field to Not Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Set_Status_Field_to_Rejected</fullName>
+        <field>Transaction_Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Set Status Field to Rejected</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Set_status_field_to_approved</fullName>
+        <field>Transaction_Status__c</field>
+        <literalValue>Ready to Sign</literalValue>
+        <name>Set Status field to approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+</Workflow>
