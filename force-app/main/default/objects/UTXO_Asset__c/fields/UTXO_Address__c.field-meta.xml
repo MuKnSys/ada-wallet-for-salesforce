@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>UTXO_Address__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>UTXO Address</label>
+    <referenceTo>UTXO_Address__c</referenceTo>
+    <relationshipLabel>UTXO Assets</relationshipLabel>
+    <relationshipName>UTXO_Assets</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

@@ -31,7 +31,7 @@
 
                 <!-- Action Buttons -->
                 <div class="action-buttons">
-                    <lightning-button label="Send" variant="neutral" onclick={openSendModal} class="action-button"></lightning-button>
+                    <lightning-button label="Create Transaction" variant="neutral" onclick={openSendModal} class="action-button"></lightning-button>
                     <lightning-button label="Receive" variant="brand" onclick={openReceiveModal} disabled={isAddressInvalid} class="action-button"></lightning-button>
                 </div>
 
@@ -41,19 +41,26 @@
                         <!-- Assets Tab -->
                         <lightning-tab label="Assets" value="assets">
                             <div class="assets-content">
-                                <template for:each={assets} for:item="asset">
-                                    <div key={asset.id} class="asset-item">
-                                        <div class="asset-icon">
-                                            <lightning-icon icon-name={asset.icon} size="small" class="asset-icon-img"></lightning-icon>
+                                <template lwc:if={hasAssets}>
+                                    <template for:each={assets} for:item="asset">
+                                        <div key={asset.id} class="asset-item">
+                                            <div class="asset-icon">
+                                                <template lwc:if={asset.imgUrl}>
+                                                    <img src={asset.imgUrl} class="asset-img" alt={asset.symbol} />
+                                                </template>
+                                                <template lwc:else>
+                                                    <lightning-icon icon-name={asset.icon} size="small" class="asset-icon-img"></lightning-icon>
+                                                </template>
+                                            </div>
+                                            <div class="asset-details">
+                                                <div class="asset-name">{asset.name}</div>
+                                                <div class="asset-symbol">{asset.symbol}</div>
+                                            </div>
+                                            <div class="asset-amount">{asset.amount}</div>
                                         </div>
-                                        <div class="asset-details">
-                                            <div class="asset-name">{asset.name}</div>
-                                            <div class="asset-symbol">{asset.symbol}</div>
-                                        </div>
-                                        <div class="asset-amount">{asset.amount}</div>
-                                    </div>
+                                    </template>
                                 </template>
-                                <template if:false={assets}>
+                                <template lwc:else>
                                     <p class="no-assets">No assets available</p>
                                 </template>
                             </div>
@@ -151,31 +158,30 @@
                         <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
                         <span class="slds-assistive-text">Close</span>
                     </button>
-                    <h2 id="modal-heading-send" class="slds-modal__title send-title">Send ADA</h2>
+                    <h2 id="modal-heading-send" class="slds-modal__title send-title">Create Outbound Transaction</h2>
                 </header>
                 <div class="slds-modal__content send-content">
+                    <div class="transaction-description">
+                        <p>This will create an outbound transaction record that can be reviewed and approved before processing.</p>
+                    </div>
                     <div class="send-form">
                         <div class="form-field">
                             <label class="form-label" for="send-amount">Amount (ADA)</label>
                             <div class="amount-input-container">
-                                <input type="number" id="send-amount" data-id="send-amount" class="form-input" placeholder="Enter amount in ADA" step="0.000001" min="0" onchange={handleAmountChange} />
-                                <lightning-button label="Max" variant="neutral" onclick={handleMaxAmount} class="max-button" disabled={isMaxButtonDisabled}></lightning-button>
-                            </div>
-                            <div class="fee-info">
-                                <p>Fee: {calculatedFee} ADA</p>
-                                <p>Total (Amount + Fee): {totalAmount} ADA</p>
+                                <input type="number" id="send-amount" data-id="send-amount" class="form-input" placeholder="Enter amount in ADA" step="0.000001" min="0" value={sendAmount} onchange={handleAmountChange} />
+                                <lightning-button label="Max" variant="neutral" onclick={handleMaxAmount} class="max-button"></lightning-button>
                             </div>
                         </div>
                         <div class="form-field">
                             <label class="form-label" for="send-address">Recipient Address</label>
-                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address" onchange={handleAddressChange}></textarea>
+                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address" value={sendRecipient} onchange={handleAddressChange}></textarea>
                         </div>
                         <template lwc:if={errorMessage}>
                             <div class="error-message slds-text-color_destructive">{errorMessage}</div>
                         </template>
                     </div>
                     <div class="action-buttons">
-                        <lightning-button label="Send" variant="brand" onclick={handleSend} disabled={isSendButtonDisabled} class="modal-button send-button"></lightning-button>
+                        <lightning-button label="Create Transaction" variant="brand" onclick={handleSend} disabled={isSendButtonDisabled} class="modal-button send-button"></lightning-button>
                     </div>
                 </div>
                 <footer class="slds-modal__footer">

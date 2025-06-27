@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Signed_Transaction_CBOR__c</fullName>
+    <label>Signed Transaction CBOR</label>
+    <type>LongTextArea</type>
+    <length>131072</length>
+    <visibleLines>10</visibleLines>
+    <required>false</required>
+    <description>Signed transaction in CBOR (Concise Binary Object Representation) format that is sent to Blockfrost API</description>
+</CustomField> 

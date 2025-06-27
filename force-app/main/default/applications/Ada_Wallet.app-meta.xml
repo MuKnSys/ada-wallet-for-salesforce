@@ -1,7 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Outbound_Transaction_Record_Page2</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Outbound_Transaction__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Outbound_Transaction_Record_Page2</content>
+        <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Outbound_Transaction__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>UTXO_Asset_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>UTXO_Asset__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>UTXO_Asset_Record_Page</content>
+        <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>UTXO_Asset__c</pageOrSobjectType>
+    </actionOverrides>
     <brand>
-        <headerColor>#0070D2</headerColor>        
+        <headerColor>#0070D2</headerColor>
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
     </brand>
     <description>Salesforce ADA Wallets application.</description>
@@ -13,7 +49,73 @@
     <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
     <label>Ada Wallets</label>
     <navType>Standard</navType>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>UTXO_Address_Record_Page3</content>
+        <formFactor>Small</formFactor>
+        <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>UTXO_Address_Record_Page3</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>UTXO_Address_Record_Page3</content>
+        <formFactor>Small</formFactor>
+        <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Standard</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>UTXO_Address_Record_Page3</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Standard</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Inbound_Transaction_Record_Page1</content>
+        <formFactor>Small</formFactor>
+        <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Inbound_Transaction_Record_Page1</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Inbound_Transaction_Record_Page1</content>
+        <formFactor>Small</formFactor>
+        <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Standard</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>Inbound_Transaction_Record_Page1</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Standard</profile>
+    </profileActionOverrides>
     <tabs>Wallet_Set__c</tabs>
     <tabs>Wallet__c</tabs>
+    <tabs>Inbound_Transaction__c</tabs>
+    <tabs>Outbound_Transaction__c</tabs>
     <uiType>Lightning</uiType>
 </CustomApplication>

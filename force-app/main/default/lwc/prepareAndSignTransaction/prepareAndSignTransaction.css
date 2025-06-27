@@ -1,0 +1,139 @@
+.status-text {
+    font-family: monospace;
+    background-color: #f3f2f2;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dddbda;
+}
+
+.ps-modal-backdrop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+}
+
+.ps-modal-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 400px;
+    max-width: 90vw;
+}
+
+.ps-card {
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    background: #fff;
+}
+
+.ps-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 2.5rem 2rem 2.5rem;
+}
+
+.ps-heading {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.ps-button-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+.ps-action-button {
+    min-width: 260px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(80,80,80,0.08);
+}
+
+.ps-status-text {
+    font-family: monospace;
+    background-color: #f3f2f2;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dddbda;
+    margin-top: 0.5rem;
+    text-align: center;
+    color: #333;
+    font-size: 1rem;
+    max-width: 400px;
+    word-break: break-word;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.step-logs-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.transaction-hex-container {
+    background-color: #f3f2f2;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    max-height: 200px;
+    overflow-y: auto;
+    word-break: break-all;
+}
+
+.transaction-hex {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #2e844a;
+    background: transparent;
+}
+
+.slds-box.slds-theme_error {
+    background-color: #fef7f7;
+    border-color: #ea001e;
+}
+
+.slds-box.slds-theme_default {
+    background-color: #f8f9fa;
+    border-color: #dddbda;
+}
+
+.cbor-display {
+    background-color: #f3f2f2;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    word-break: break-all;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    color: #2c2c2c;
+}
+
+.cbor-display code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+} 

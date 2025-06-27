@@ -28,6 +28,7 @@ public with sharing class BlockfrostEndpoint {
     }    
 
     public BlockfrostEndpoint send() {
+        System.debug('Blockfrost request endpoint: ' + request.getEndpoint());
         Http http = new Http();
         response = http.send(request);
         return this;
