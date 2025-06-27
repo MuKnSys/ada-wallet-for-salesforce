@@ -340,9 +340,19 @@ public with sharing class UTXOAssetController {
             // CLEANUP PHASE: Delete assets that are not part of current sync
             Logger.logInfo('[UTXOAssetController.syncAssets] 🧹 Starting cleanup phase');
             Set<String> currentSyncUnits = unitToTotalAmount.keySet();
+            
+            // Create a mapping for cleanup check that includes both original and display units
+            Set<String> unitsToKeep = new Set<String>();
+            for (String unit : currentSyncUnits) {
+                unitsToKeep.add(unit); // Add original unit
+                if (unit == 'lovelace') {
+                    unitsToKeep.add('ADA'); // Add display unit for ADA
+                }
+            }
+            
             List<UTXO_Asset__c> assetsToDelete = new List<UTXO_Asset__c>();
             for (UTXO_Asset__c existingAsset : existingAssets) {
-                if (!currentSyncUnits.contains(existingAsset.Unit__c)) {
+                if (!unitsToKeep.contains(existingAsset.Unit__c)) {
                     assetsToDelete.add(existingAsset);
                     Logger.logInfo('[UTXOAssetController.syncAssets] 🗑️ Marking asset for deletion: ' + existingAsset.Unit__c);
                 }
@@ -1085,8 +1095,18 @@ public with sharing class UTXOAssetController {
             
             // Find assets to delete (existing assets not in current sync)
             List<UTXO_Asset__c> assetsToDelete = new List<UTXO_Asset__c>();
+            
+            // Create a mapping for cleanup check that includes both original and display units
+            Set<String> unitsToKeep = new Set<String>();
+            for (String unit : currentSyncUnits) {
+                unitsToKeep.add(unit); // Add original unit
+                if (unit == 'lovelace') {
+                    unitsToKeep.add('ADA'); // Add display unit for ADA
+                }
+            }
+            
             for (UTXO_Asset__c existingAsset : existingAssets) {
-                if (!currentSyncUnits.contains(existingAsset.Unit__c)) {
+                if (!unitsToKeep.contains(existingAsset.Unit__c)) {
                     assetsToDelete.add(existingAsset);
                     Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🗑️ Marking asset for deletion: ' + existingAsset.Unit__c);
                 }
