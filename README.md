@@ -171,7 +171,7 @@ The transaction follows a multi-step lifecycle with approval integration:
 
 ### Approval Methodology
 
-The system uses Salesforce Flow Approvals to manage outbound transaction authorization.
+The system uses Salesforce Flow and Approval processes to manage outbound transaction authorization.
 
 #### Approval Fields
 
@@ -183,10 +183,10 @@ The system uses Salesforce Flow Approvals to manage outbound transaction authori
 **Status (Transaction Status)**
 - Additional values: Pending Approval, Rejected
 
-#### Approval Flow Logic
+#### Flow and Approval process Logic
 
 1. When a transaction is marked **Prepared**, it moves to **Pending Approval** instead of **Ready to Sign**
-2. The system sets `Approved = "Approval Requested"` and launches an approval Flow
+2. The system sets `Approved = "Approval Requested"` and launches an Flow which call the Approval process
 3. After review:
    - **If approved**: `Approved = "Approved"`, `Status = "Ready to Sign"`
    - **If rejected**: `Approved = "Not Approved"`, `Status = "Rejected"`
@@ -194,14 +194,7 @@ The system uses Salesforce Flow Approvals to manage outbound transaction authori
 #### Optional Enablement
 
 - Approvals are **disabled by default**
-- To enable:
-  - Activate the new Status picklist values
-  - Enable the approval Flow
-- This can be done manually or via a Setup Button that automates both steps
-
-## Automation Templates (Flows)
-
-A set of pre-built Flow templates support key wallet operations and can be used out-of-the-box or adapted to fit organization-specific requirements.
+- To enable: check the checkbox On the Setup page
 
 ### Slack Integration Setup
 
@@ -221,7 +214,7 @@ Populate:
 - Slack channel Id
 - Slack workspace Id
 
-### Available Flow Templates
+### Available Flows
 
 #### 1. Slack on Receiving a Transaction
 Automatically sends a Slack notification when a new Inbound Transaction record is created. The flow queries the Slack Settings custom setting to get the configured channel ID and workspace details, then posts a formatted message containing transaction details (amount, sender address, block information) to the designated Slack channel. This provides real-time visibility to the team when funds are received.
@@ -260,14 +253,16 @@ Routes approval requests through Slack instead of traditional email notification
 Sends an email notification to the accounting contact configured in the organization's settings when a transaction is successfully sent. The flow includes transaction details such as amounts, fees, recipient information, and timestamps in a formatted email template. This provides accounting teams with immediate notification of financial transactions for record-keeping and reconciliation purposes.
 
 **Component**: Flow triggered by Outbound Transaction status change to "Sent"
+- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.
 **Implementation Notes:**
 - Sends an email to the accounting contact configured in Setup
 - Simple Flow logic and templated email format
 
 #### 5. Emailing an Account Owner
-Sends notification emails to the Account Owner associated with the transaction context. If no account relationship exists, the flow defaults to emailing the Wallet Owner. The flow includes relevant transaction details and can be configured to trigger on specific events (creation, approval, sending, etc.). This ensures account owners are kept informed of wallet activities related to their accounts.
+Sends notification emails to the Wallet Set Owner associated with the transaction context. The flow includes relevant transaction details and can be configured to trigger on specific events (creation, approval, sending, etc.). This ensures account owners are kept informed of wallet activities related to their accounts.
 
 **Component**: Flow triggered by Outbound Transaction creation or status changes
+- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.
 **Implementation Notes:**
 - Sends a notification email to the Account Owner linked to the transaction context
 - If no account relationship exists, defaults to emailing the Wallet Owner
