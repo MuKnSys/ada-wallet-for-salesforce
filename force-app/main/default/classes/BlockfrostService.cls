@@ -538,6 +538,278 @@ public with sharing class BlockfrostService {
         });
     }
 
+    /**
+     * Determines if a transaction is inbound or outbound for a specific wallet
+     * by analyzing the transaction's inputs and outputs using the /txs/{hash} endpoint.
+     * 
+     * @param txHash The transaction hash to analyze
+     * @param walletAddresses Set of addresses belonging to the wallet
+     * @return Map containing transaction direction analysis
+     */
+    @AuraEnabled(cacheable=false)
+    public static String analyzeTransactionDirection(String txHash, List<String> walletAddresses) {
+        try {
+            if (String.isBlank(txHash)) {
+                throw new BlockfrostEndpoint.BlockfrostAPIException('Transaction hash is required');
+            }
+            
+            if (walletAddresses == null || walletAddresses.isEmpty()) {
+                throw new BlockfrostEndpoint.BlockfrostAPIException('Wallet addresses are required');
+            }
+            
+            // Convert wallet addresses to a set for efficient lookup
+            Set<String> walletAddressSet = new Set<String>(walletAddresses);
+            
+            String projectId = AdaWalletsService.getBlockfrostProjectId();
+            String url = '/txs/' + txHash;
+            
+            BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+                .get()
+                .setEndpoint(url)
+                .setHeaders(new Map<String, String>{
+                    'Project_id' => projectId,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                })
+                .send();
+                
+            if (endpoint.getStatusCode() == 200) {
+                Map<String, Object> txData = (Map<String, Object>) JSON.deserializeUntyped(endpoint.getResponse().getBody());
+                
+                // Analyze transaction direction
+                Map<String, Object> analysis = analyzeTransactionDirectionFromData(txData, walletAddressSet);
+                
+                return JSON.serialize(analysis);
+            } else if (endpoint.getStatusCode() == 404) {
+                return JSON.serialize(new Map<String, Object>{
+                    'success' => false,
+                    'error' => 'Transaction not found',
+                    'status' => 404
+                });
+            } else {
+                return JSON.serialize(new Map<String, Object>{
+                    'success' => false,
+                    'error' => 'Blockfrost API error',
+                    'status' => endpoint.getStatusCode()
+                });
+            }
+        } catch (Exception e) {
+            return JSON.serialize(new Map<String, Object>{
+                'success' => false,
+                'error' => 'Error analyzing transaction direction: ' + e.getMessage()
+            });
+        }
+    }
+    
+    /**
+     * Analyzes transaction direction from transaction data
+     * @param txData The transaction data from Blockfrost
+     * @param walletAddresses Set of wallet addresses to check against
+     * @return Map containing direction analysis
+     */
+    private static Map<String, Object> analyzeTransactionDirectionFromData(Map<String, Object> txData, Set<String> walletAddresses) {
+        Map<String, Object> analysis = new Map<String, Object>();
+        
+        try {
+            // Normalize wallet addresses to lower case for robust comparison
+            Set<String> walletAddressesLower = new Set<String>();
+            for (String addr : walletAddresses) {
+                if (addr != null) walletAddressesLower.add(addr.toLowerCase());
+            }
+
+            // Get inputs and outputs
+            List<Object> inputs = (List<Object>) txData.get('inputs');
+            List<Object> outputs = (List<Object>) txData.get('outputs');
+            
+            if (inputs == null || outputs == null) {
+                analysis.put('success', false);
+                analysis.put('error', 'Transaction data missing inputs or outputs');
+                return analysis;
+            }
+            
+            // Analyze inputs (where funds come from)
+            Set<String> inputAddresses = new Set<String>();
+            for (Object inputObj : inputs) {
+                Map<String, Object> input = (Map<String, Object>) inputObj;
+                String address = String.valueOf(input.get('address'));
+                if (address != null && address != 'null') {
+                    inputAddresses.add(address.toLowerCase());
+                }
+            }
+            
+            // Analyze outputs (where funds go to)
+            Set<String> outputAddresses = new Set<String>();
+            for (Object outputObj : outputs) {
+                Map<String, Object> output = (Map<String, Object>) outputObj;
+                String address = String.valueOf(output.get('address'));
+                if (address != null && address != 'null') {
+                    outputAddresses.add(address.toLowerCase());
+                }
+            }
+            
+            // Determine transaction direction
+            Boolean hasWalletInputs = false;
+            Boolean hasWalletOutputs = false;
+            
+            // Check if any inputs belong to our wallet
+            for (String inputAddr : inputAddresses) {
+                if (walletAddressesLower.contains(inputAddr)) {
+                    hasWalletInputs = true;
+                    break;
+                }
+            }
+            
+            // Check if any outputs belong to our wallet
+            for (String outputAddr : outputAddresses) {
+                if (walletAddressesLower.contains(outputAddr)) {
+                    hasWalletOutputs = true;
+                    break;
+                }
+            }
+            
+            // Determine transaction type
+            String transactionType;
+            String direction;
+            Boolean isInbound = false;
+            Boolean isOutbound = false;
+            Boolean isInternal = false;
+            
+            if (hasWalletInputs && hasWalletOutputs) {
+                transactionType = 'Internal Transfer';
+                direction = 'Internal';
+                isInternal = true;
+            } else if (hasWalletOutputs) {
+                transactionType = 'Inbound';
+                direction = 'Inbound';
+                isInbound = true;
+            } else if (hasWalletInputs) {
+                transactionType = 'Outbound';
+                direction = 'Outbound';
+                isOutbound = true;
+            } else {
+                transactionType = 'External';
+                direction = 'External';
+            }
+            
+            // Build result
+            analysis.put('success', true);
+            analysis.put('transactionType', transactionType);
+            analysis.put('direction', direction);
+            analysis.put('isInbound', isInbound);
+            analysis.put('isOutbound', isOutbound);
+            analysis.put('isInternal', isInternal);
+            analysis.put('inputAddresses', new List<String>(inputAddresses));
+            analysis.put('outputAddresses', new List<String>(outputAddresses));
+            analysis.put('walletInputAddresses', getWalletAddressesInSet(inputAddresses, walletAddressesLower));
+            analysis.put('walletOutputAddresses', getWalletAddressesInSet(outputAddresses, walletAddressesLower));
+            analysis.put('netAmount', txData.get('netAmount'));
+            analysis.put('netAmountADA', txData.get('netAmountADA'));
+            analysis.put('totalInputLovelace', txData.get('totalInputLovelace'));
+            analysis.put('totalOutputLovelace', txData.get('totalOutputLovelace'));
+            analysis.put('fee', txData.get('fees'));
+            analysis.put('blockHeight', txData.get('block_height'));
+            analysis.put('blockTime', txData.get('block_time'));
+            analysis.put('slot', txData.get('slot'));
+        } catch (Exception e) {
+            analysis.put('success', false);
+            analysis.put('error', 'Error analyzing transaction data: ' + e.getMessage());
+        }
+        
+        return analysis;
+    }
+    
+    /**
+     * Helper method to get wallet addresses that are in a given set
+     */
+    private static List<String> getWalletAddressesInSet(Set<String> addressSet, Set<String> walletAddresses) {
+        List<String> walletAddressesInSet = new List<String>();
+        for (String addr : addressSet) {
+            if (walletAddresses.contains(addr)) {
+                walletAddressesInSet.add(addr);
+            }
+        }
+        return walletAddressesInSet;
+    }
+
+    /**
+     * Analyzes multiple transactions to determine their direction for a wallet
+     * @param txHashes List of transaction hashes to analyze
+     * @param walletAddresses List of addresses belonging to the wallet
+     * @return Map containing analysis for each transaction
+     */
+    @AuraEnabled(cacheable=false)
+    public static String analyzeMultipleTransactionDirections(List<String> txHashes, List<String> walletAddresses) {
+        try {
+            if (txHashes == null || txHashes.isEmpty()) {
+                throw new BlockfrostEndpoint.BlockfrostAPIException('Transaction hashes are required');
+            }
+            
+            if (walletAddresses == null || walletAddresses.isEmpty()) {
+                throw new BlockfrostEndpoint.BlockfrostAPIException('Wallet addresses are required');
+            }
+            
+            Map<String, Object> results = new Map<String, Object>();
+            
+            for (String txHash : txHashes) {
+                try {
+                    String analysis = analyzeTransactionDirection(txHash, walletAddresses);
+                    Map<String, Object> analysisMap = (Map<String, Object>) JSON.deserializeUntyped(analysis);
+                    results.put(txHash, analysisMap);
+                } catch (Exception e) {
+                    results.put(txHash, new Map<String, Object>{
+                        'success' => false,
+                        'error' => 'Failed to analyze transaction: ' + e.getMessage()
+                    });
+                }
+            }
+            
+            return JSON.serialize(results);
+        } catch (Exception e) {
+            return JSON.serialize(new Map<String, Object>{
+                'success' => false,
+                'error' => 'Error analyzing multiple transactions: ' + e.getMessage()
+            });
+        }
+    }
+
+    /**
+     * Gets detailed transaction information from Blockfrost
+     * @param txHash The transaction hash to get details for
+     * @return JSON string containing full transaction details
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getTransactionDetails(String txHash) {
+        if (String.isBlank(txHash)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Transaction hash is required');
+        }
+
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = '/txs/' + txHash;
+
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            // Transaction not found. Return empty object.
+            return '{}';
+        }
+
+        // Return error information as JSON so callers can handle gracefully
+        return JSON.serialize(new Map<String,Object>{
+            'status' => endpoint.getStatusCode(),
+            'error' => 'Blockfrost transaction details API error'
+        });
+    }
+
     public class BlockfrostPlatformError {
         public Integer code;
         public String message;

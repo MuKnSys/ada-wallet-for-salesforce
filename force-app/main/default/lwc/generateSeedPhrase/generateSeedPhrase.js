@@ -68,11 +68,11 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             }
 
             try {
-                // Use hardcoded seed phrase for testing instead of generating new one
-                const mnemonic = 'gloom lawsuit citizen employ electric hobby history april sick carbon response scout shoot stick assume blind nest ceiling daring meadow scheme drift blame transfer';
+                // Generate a new 24-word mnemonic using bip39
+                const mnemonic = window.bip39.generateMnemonic(256);
 
                 if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
-                    throw new Error('Hardcoded mnemonic is empty, invalid, or does not contain 24 words.');
+                    throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
                 }
 
                 // Transform the seed phrase into an array of objects with displayIndex
@@ -80,9 +80,9 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     const item = {
                         word: word,
                         displayIndex: index + 1 // Start numbering from 1
-                    };                    
+                    };
                     return item;
-                });                
+                });
 
                 // Store original seed phrase words for verification
                 this.originalSeedPhrase = mnemonic.split(' ');
@@ -90,7 +90,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 this.step1 = false;
                 this.step2 = true;
             } catch (error) {
-                this.showToast('Error', 'Failed to use hardcoded seed phrase: ' + error.message, 'error');
+                this.showToast('Error', 'Failed to generate seed phrase: ' + error.message, 'error');
             }
         }
     }
@@ -110,7 +110,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.verificationInputs = this.seedPhrase.map((item, i) => {
             return {
                 label: `Word ${i + 1}`,
-                value: this.originalSeedPhrase[i] // Auto-fill with correct word for testing
+                value: '' // Do not autofill; user must enter manually
             };
         });
 

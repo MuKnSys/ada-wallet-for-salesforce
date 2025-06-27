@@ -523,7 +523,7 @@ public with sharing class UTXOController {
                 To_Address__c = toAddress,
                 Amount__c = amountDecimal,
                 Approved__c = 'Not Approved',
-                Transaction_Status__c = 'New'
+                Transaction_Status__c = 'Ready to Sign'
             );
 
             // Insert the record with security enforcement

@@ -3,6 +3,40 @@
  */
 public with sharing class UTXOAssetController {
     
+    // Place this at the class level, outside of any method
+    private static void populateAssetFields(UTXO_Asset__c asset, String unit, Decimal totalAmount, String assetName, String displayUnit, Map<String, Object> metadata) {
+        asset.Amount__c = totalAmount;
+        asset.Unit__c = (unit == 'lovelace' ? 'ADA' : displayUnit);
+        asset.Name__c = (unit == 'lovelace' ? 'Cardano' : assetName);
+        asset.Asset_Name__c = displayUnit;
+        if (unit == 'lovelace') {
+            asset.Decimals__c = 6;
+        } else if (metadata != null) {
+            // Set Policy ID
+            if (metadata.containsKey('policy_id') && metadata.get('policy_id') != null) {
+                asset.Policy_ID__c = String.valueOf(metadata.get('policy_id'));
+            }
+            // Set Fingerprint
+            if (metadata.containsKey('fingerprint') && metadata.get('fingerprint') != null) {
+                asset.Fingerprint__c = String.valueOf(metadata.get('fingerprint'));
+            }
+            // Set Decimals from metadata
+            if (metadata.containsKey('metadata') && metadata.get('metadata') != null) {
+                Map<String, Object> innerMeta = (Map<String, Object>) metadata.get('metadata');
+                if (innerMeta.containsKey('decimals') && innerMeta.get('decimals') != null) {
+                    Object decimalsObj = innerMeta.get('decimals');
+                    if (decimalsObj instanceof Integer) {
+                        asset.Decimals__c = (Integer) decimalsObj;
+                    } else if (decimalsObj instanceof Decimal) {
+                        asset.Decimals__c = ((Decimal) decimalsObj).intValue();
+                    } else {
+                        asset.Decimals__c = Integer.valueOf(String.valueOf(decimalsObj));
+                    }
+                }
+            }
+        }
+    }
+    
     /**
      * Synchronizes assets only for a UTXO address
      * @param utxoAddressId The UTXO Address ID to sync assets for
@@ -31,6 +65,9 @@ public with sharing class UTXOAssetController {
             }
             
             Logger.logInfo('[UTXOAssetController.syncAssets] 📍 Processing address: ' + utxoAddress.Address__c);
+            
+            // At the top of the syncAssets method, after variable declarations:
+            List<UTXO_Asset__c> duplicatesToDelete = new List<UTXO_Asset__c>();
             
             // Step 1: Get UTXOs from Blockfrost
             String utxoJson = BlockfrostService.getAddressUtxos(utxoAddress.Address__c);
@@ -95,91 +132,51 @@ public with sharing class UTXOAssetController {
                 WHERE UTXO_Address__c = :utxoAddress.Id
             ];
             
-            // Create a comprehensive lookup map for existing assets
-            // We need to handle cases where existing records might have old or new unit formats
+            // Deduplicate existing assets: keep only the most recent for each Unit__c
             Map<String, UTXO_Asset__c> unitToExistingAsset = new Map<String, UTXO_Asset__c>();
-            Map<String, List<UTXO_Asset__c>> duplicateTracker = new Map<String, List<UTXO_Asset__c>>();
-            
+            Map<String, List<UTXO_Asset__c>> unitToAllAssets = new Map<String, List<UTXO_Asset__c>>();
             for (UTXO_Asset__c asset : existingAssets) {
-                String currentUnit = asset.Unit__c;
-                String compositeKey = currentUnit + ':' + asset.UTXO_Address__c;
-                
-                // Track duplicates for cleanup
-                if (!duplicateTracker.containsKey(currentUnit)) {
-                    duplicateTracker.put(currentUnit, new List<UTXO_Asset__c>());
+                if (!unitToAllAssets.containsKey(asset.Unit__c)) {
+                    unitToAllAssets.put(asset.Unit__c, new List<UTXO_Asset__c>());
                 }
-                duplicateTracker.get(currentUnit).add(asset);
-                
-                // Use the most recent record if duplicates exist
-                if (!unitToExistingAsset.containsKey(compositeKey) || 
-                    asset.CreatedDate > unitToExistingAsset.get(compositeKey).CreatedDate) {
-                    unitToExistingAsset.put(compositeKey, asset);
-                }
-                
-                // Also map the reverse lookup for old/new format compatibility
-                // If existing record has "ADA", also map it to "lovelace" key for lookup
-                if (currentUnit == 'ADA') {
-                    String lovelaceKey = 'lovelace:' + asset.UTXO_Address__c;
-                    if (!unitToExistingAsset.containsKey(lovelaceKey) || 
-                        asset.CreatedDate > unitToExistingAsset.get(lovelaceKey).CreatedDate) {
-                        unitToExistingAsset.put(lovelaceKey, asset);
-                    }
-                }
-                // If existing record has "lovelace", also map it to "ADA" key for lookup  
-                else if (currentUnit == 'lovelace') {
-                    String adaKey = 'ADA:' + asset.UTXO_Address__c;
-                    if (!unitToExistingAsset.containsKey(adaKey) || 
-                        asset.CreatedDate > unitToExistingAsset.get(adaKey).CreatedDate) {
-                        unitToExistingAsset.put(adaKey, asset);
-                    }
-                }
+                unitToAllAssets.get(asset.Unit__c).add(asset);
             }
-            
-            // Clean up duplicates - delete older duplicate records
-            List<UTXO_Asset__c> duplicatesToDelete = new List<UTXO_Asset__c>();
-            for (String unit : duplicateTracker.keySet()) {
-                List<UTXO_Asset__c> unitAssets = duplicateTracker.get(unit);
-                if (unitAssets.size() > 1) {
-                    Logger.logInfo('[UTXOAssetController.syncAssets] 🧹 Found ' + unitAssets.size() + ' duplicate records for unit: ' + unit);
-                    // Find the record with the latest CreatedDate to keep
-                    UTXO_Asset__c newestRecord = unitAssets[0];
-                    for (UTXO_Asset__c asset : unitAssets) {
-                        if (asset.CreatedDate > newestRecord.CreatedDate) {
-                            newestRecord = asset;
+            for (String unit : unitToAllAssets.keySet()) {
+                List<UTXO_Asset__c> assets = unitToAllAssets.get(unit);
+                if (assets.size() == 1) {
+                    unitToExistingAsset.put(unit, assets[0]);
+                } else {
+                    // Find the most recent by CreatedDate
+                    UTXO_Asset__c mostRecent = assets[0];
+                    for (Integer i = 1; i < assets.size(); i++) {
+                        if (assets[i].CreatedDate > mostRecent.CreatedDate) {
+                            mostRecent = assets[i];
                         }
                     }
-                    // Mark all other records for deletion
-                    for (UTXO_Asset__c asset : unitAssets) {
-                        if (asset.Id != newestRecord.Id) {
+                    unitToExistingAsset.put(unit, mostRecent);
+                    for (UTXO_Asset__c asset : assets) {
+                        if (asset.Id != mostRecent.Id) {
                             duplicatesToDelete.add(asset);
-                            Logger.logInfo('[UTXOAssetController.syncAssets] 🗑️  Marking duplicate for deletion: ' + asset.Id);
                         }
                     }
                 }
             }
-            
-            // Delete duplicate records
-            if (!duplicatesToDelete.isEmpty()) {
-                delete duplicatesToDelete;
-                Logger.logInfo('[UTXOAssetController.syncAssets] ✅ Cleaned up ' + duplicatesToDelete.size() + ' duplicate records');
-            }
-            
             List<UTXO_Asset__c> assetsToInsert = new List<UTXO_Asset__c>();
             List<UTXO_Asset__c> assetsToUpdate = new List<UTXO_Asset__c>();
-            
+            Set<String> validUnits = new Set<String>();
+            Integer insertedCount = 0;
+            Integer updatedCount = 0;
             for (String unit : unitToTotalAmount.keySet()) {
                 Decimal totalAmount = unitToTotalAmount.get(unit);
-                
-                // Determine the display unit (what we'll store in Unit__c)
                 String displayUnit = unit;
                 String assetName = unit;
-                
+                Map<String, Object> metadata = null;
                 if (unit == 'lovelace') {
                     displayUnit = 'ADA';
                     assetName = 'Cardano';
                 } else if (unitToMetadata.containsKey(unit)) {
                     try {
-                        Map<String, Object> metadata = (Map<String, Object>) JSON.deserializeUntyped(unitToMetadata.get(unit));
+                        metadata = (Map<String, Object>) JSON.deserializeUntyped(unitToMetadata.get(unit));
                         if (metadata.containsKey('metadata')) {
                             Map<String, Object> innerMeta = (Map<String, Object>) metadata.get('metadata');
                             if (innerMeta.containsKey('ticker')) {
@@ -194,141 +191,20 @@ public with sharing class UTXOAssetController {
                         Logger.logError('[UTXOAssetController.syncAssets] ❌ Error parsing metadata for display unit: ' + unit);
                     }
                 }
-                
-                // Try to find existing asset with either old or new unit format
-                String newCompositeKey = displayUnit + ':' + utxoAddress.Id;
-                String oldCompositeKey = unit + ':' + utxoAddress.Id;  // For backward compatibility
-                
-                UTXO_Asset__c existingAsset = null;
-                if (unitToExistingAsset.containsKey(newCompositeKey)) {
-                    existingAsset = unitToExistingAsset.get(newCompositeKey);
-                } else if (unitToExistingAsset.containsKey(oldCompositeKey)) {
-                    existingAsset = unitToExistingAsset.get(oldCompositeKey);
-                }
-                
+                String intendedUnit = displayUnit;
+                validUnits.add(intendedUnit);
+                UTXO_Asset__c existingAsset = unitToExistingAsset.get(intendedUnit);
                 if (existingAsset != null) {
-                    // Update existing asset
-                    Boolean needsUpdate = false;
-                    
-                    if (existingAsset.Amount__c != totalAmount) {
-                        existingAsset.Amount__c = totalAmount;
-                        needsUpdate = true;
-                    }
-
-                    // ADA (lovelace) special handling
-                    if (unit == 'lovelace') {
-                        if (existingAsset.Unit__c != 'ADA') {
-                            existingAsset.Unit__c = 'ADA';
-                            existingAsset.Name__c = 'Cardano';
-                            existingAsset.Decimals__c = 6;
-                            needsUpdate = true;
-                        }
-                    } else if (existingAsset.Unit__c != displayUnit) {
-                        existingAsset.Unit__c = displayUnit;
-                        needsUpdate = true;
-                    }
-
-                    // Update unit to new format if it's in old format
-                    if (existingAsset.Unit__c != displayUnit) {
-                        existingAsset.Unit__c = displayUnit;
-                        existingAsset.Name__c = assetName;
-                        existingAsset.Asset_Name__c = displayUnit;
-                        if (unit == 'lovelace') {
-                            existingAsset.Decimals__c = 6;
-                        }
-                        needsUpdate = true;
-                    }
-                    // For non-ADA assets, populate metadata fields if they're missing
-                    if (unit != 'lovelace' && unitToMetadata.containsKey(unit)) {
-                        try {
-                            Map<String, Object> metadata = (Map<String, Object>) JSON.deserializeUntyped(unitToMetadata.get(unit));
-                            // Set Policy ID if missing
-                            if ((existingAsset.Policy_ID__c == null || existingAsset.Policy_ID__c == '') && 
-                                metadata.containsKey('policy_id') && metadata.get('policy_id') != null) {
-                                existingAsset.Policy_ID__c = String.valueOf(metadata.get('policy_id'));
-                                needsUpdate = true;
-                            }
-                            // Set Fingerprint if missing
-                            if ((existingAsset.Fingerprint__c == null || existingAsset.Fingerprint__c == '') && 
-                                metadata.containsKey('fingerprint') && metadata.get('fingerprint') != null) {
-                                existingAsset.Fingerprint__c = String.valueOf(metadata.get('fingerprint'));
-                                needsUpdate = true;
-                            }
-                            // Set Decimals if missing
-                            if (existingAsset.Decimals__c == null && metadata.containsKey('metadata') && metadata.get('metadata') != null) {
-                                Map<String, Object> innerMeta = (Map<String, Object>) metadata.get('metadata');
-                                if (innerMeta.containsKey('decimals') && innerMeta.get('decimals') != null) {
-                                    Object decimalsObj = innerMeta.get('decimals');
-                                    if (decimalsObj instanceof Integer) {
-                                        existingAsset.Decimals__c = (Integer) decimalsObj;
-                                    } else if (decimalsObj instanceof Decimal) {
-                                        existingAsset.Decimals__c = ((Decimal) decimalsObj).intValue();
-                                    } else {
-                                        existingAsset.Decimals__c = Integer.valueOf(String.valueOf(decimalsObj));
-                                    }
-                                    needsUpdate = true;
-                                }
-                            }
-                        } catch (Exception e) {
-                            Logger.logError('[UTXOAssetController] ❌ Error checking metadata fields for existing asset: ' + unit + ' - ' + e.getMessage());
-                        }
-                    }
-                    if (needsUpdate) {
-                        assetsToUpdate.add(existingAsset);
-                    }
+                    // Always update existing asset, even if nothing changed
+                    populateAssetFields(existingAsset, unit, totalAmount, assetName, displayUnit, metadata);
+                    assetsToUpdate.add(existingAsset);
                 } else {
-                    // Create new
-                    UTXO_Asset__c newAsset = new UTXO_Asset__c(
-                        UTXO_Address__c = utxoAddress.Id,
-                        Unit__c = (unit == 'lovelace' ? 'ADA' : displayUnit),
-                        Amount__c = totalAmount,
-                        Name__c = (unit == 'lovelace' ? 'Cardano' : assetName),
-                        Asset_Name__c = displayUnit
-                    );
-                    if (unit == 'lovelace') {
-                        newAsset.Decimals__c = 6;
-                    } else {
-                        // For non-ADA assets, populate metadata fields
-                        if (unitToMetadata.containsKey(unit)) {
-                            try {
-                                Map<String, Object> metadata = (Map<String, Object>) JSON.deserializeUntyped(unitToMetadata.get(unit));
-                                // Set Policy ID
-                                if (metadata.containsKey('policy_id') && metadata.get('policy_id') != null) {
-                                    newAsset.Policy_ID__c = String.valueOf(metadata.get('policy_id'));
-                                }
-                                // Set Fingerprint
-                                if (metadata.containsKey('fingerprint') && metadata.get('fingerprint') != null) {
-                                    newAsset.Fingerprint__c = String.valueOf(metadata.get('fingerprint'));
-                                }
-                                // Set Decimals from metadata
-                                if (metadata.containsKey('metadata') && metadata.get('metadata') != null) {
-                                    Map<String, Object> innerMeta = (Map<String, Object>) metadata.get('metadata');
-                                    if (innerMeta.containsKey('decimals') && innerMeta.get('decimals') != null) {
-                                        Object decimalsObj = innerMeta.get('decimals');
-                                        if (decimalsObj instanceof Integer) {
-                                            newAsset.Decimals__c = (Integer) decimalsObj;
-                                        } else if (decimalsObj instanceof Decimal) {
-                                            newAsset.Decimals__c = ((Decimal) decimalsObj).intValue();
-                                        } else {
-                                            newAsset.Decimals__c = Integer.valueOf(String.valueOf(decimalsObj));
-                                        }
-                                    }
-                                }
-                                Logger.logInfo('[UTXOAssetController] 📋 Set metadata fields for ' + displayUnit + 
-                                    ' - Policy ID: ' + newAsset.Policy_ID__c + 
-                                    ', Fingerprint: ' + newAsset.Fingerprint__c + 
-                                    ', Decimals: ' + newAsset.Decimals__c);
-                            } catch (Exception e) {
-                                Logger.logError('[UTXOAssetController] ❌ Error setting metadata fields for unit: ' + unit + ' - ' + e.getMessage());
-                            }
-                        }
-                    }
+                    // Always insert if not found
+                    UTXO_Asset__c newAsset = new UTXO_Asset__c(UTXO_Address__c = utxoAddress.Id);
+                    populateAssetFields(newAsset, unit, totalAmount, assetName, displayUnit, metadata);
                     assetsToInsert.add(newAsset);
                 }
             }
-            // Perform DML operations
-            Integer insertedCount = 0;
-            Integer updatedCount = 0;
             if (!assetsToInsert.isEmpty()) {
                 insert assetsToInsert;
                 insertedCount = assetsToInsert.size();
@@ -337,31 +213,22 @@ public with sharing class UTXOAssetController {
                 update assetsToUpdate;
                 updatedCount = assetsToUpdate.size();
             }
-            // CLEANUP PHASE: Delete assets that are not part of current sync
-            Logger.logInfo('[UTXOAssetController.syncAssets] 🧹 Starting cleanup phase');
-            Set<String> currentSyncUnits = unitToTotalAmount.keySet();
-            
-            // Create a mapping for cleanup check that includes both original and display units
-            Set<String> unitsToKeep = new Set<String>();
-            for (String unit : currentSyncUnits) {
-                unitsToKeep.add(unit); // Add original unit
-                if (unit == 'lovelace') {
-                    unitsToKeep.add('ADA'); // Add display unit for ADA
-                }
-            }
-            
-            List<UTXO_Asset__c> assetsToDelete = new List<UTXO_Asset__c>();
-            for (UTXO_Asset__c existingAsset : existingAssets) {
-                if (!unitsToKeep.contains(existingAsset.Unit__c)) {
-                    assetsToDelete.add(existingAsset);
-                    Logger.logInfo('[UTXOAssetController.syncAssets] 🗑️ Marking asset for deletion: ' + existingAsset.Unit__c);
-                }
-            }
+            // After all upserts, clean up any assets not in the current sync
+            List<UTXO_Asset__c> assetsToDelete = [
+                SELECT Id, Unit__c FROM UTXO_Asset__c
+                WHERE UTXO_Address__c = :utxoAddress.Id
+                AND Unit__c NOT IN :validUnits
+            ];
             Integer deletedCount = 0;
             if (!assetsToDelete.isEmpty()) {
                 delete assetsToDelete;
                 deletedCount = assetsToDelete.size();
                 Logger.logInfo('[UTXOAssetController.syncAssets] ✅ Deleted ' + deletedCount + ' stale assets');
+            }
+            // Delete any duplicates found before upsert
+            if (!duplicatesToDelete.isEmpty()) {
+                delete duplicatesToDelete;
+                Logger.logInfo('[UTXOAssetController.syncAssets] ✅ Deleted ' + duplicatesToDelete.size() + ' duplicate assets');
             }
             Logger.logInfo('[UTXOAssetController.syncAssets] 🧹 Cleanup phase completed');
             Long processingTime = System.now().getTime() - startTime;
@@ -947,220 +814,89 @@ public with sharing class UTXOAssetController {
             // Prepare asset operations
             List<UTXO_Asset__c> assetsToInsert = new List<UTXO_Asset__c>();
             List<UTXO_Asset__c> assetsToUpdate = new List<UTXO_Asset__c>();
-            
+            Set<String> validUnits = new Set<String>();
+            Integer insertedCount = 0;
+            Integer updatedCount = 0;
             for (String unit : unitToTotalAmount.keySet()) {
                 Decimal totalAmount = unitToTotalAmount.get(unit);
-                
-                if (unitToExistingAsset.containsKey(unit)) {
-                    // Update existing asset
-                    UTXO_Asset__c existingAsset = unitToExistingAsset.get(unit);
-                    if (existingAsset.Amount__c != totalAmount) {
-                        existingAsset.Amount__c = totalAmount;
-                        assetsToUpdate.add(existingAsset);
-                    }
-                } else {
-                    // Create new asset
-                    UTXO_Asset__c newAsset = new UTXO_Asset__c(
-                        UTXO_Address__c = utxoAddress.Id,
-                        Unit__c = unit,
-                        Amount__c = totalAmount
-                    );
-                    
-                    // Set metadata if available
-                    if (unitToMetadata.containsKey(unit)) {
-                        try {
-                            Map<String, Object> metadata = (Map<String, Object>) JSON.deserializeUntyped(unitToMetadata.get(unit));
-                            if (metadata.containsKey('name')) {
-                                newAsset.Name__c = String.valueOf(metadata.get('name'));
+                String displayUnit = unit;
+                String assetName = unit;
+                Map<String, Object> metadata = null;
+                if (unit == 'lovelace') {
+                    displayUnit = 'ADA';
+                    assetName = 'Cardano';
+                } else if (unitToMetadata.containsKey(unit)) {
+                    try {
+                        metadata = (Map<String, Object>) JSON.deserializeUntyped(unitToMetadata.get(unit));
+                        if (metadata.containsKey('metadata')) {
+                            Map<String, Object> innerMeta = (Map<String, Object>) metadata.get('metadata');
+                            if (innerMeta.containsKey('ticker')) {
+                                displayUnit = String.valueOf(innerMeta.get('ticker'));
+                                assetName = displayUnit;
                             }
-                            if (metadata.containsKey('asset_name')) {
-                                newAsset.Asset_Name__c = String.valueOf(metadata.get('asset_name'));
+                            if (innerMeta.containsKey('name')) {
+                                assetName = String.valueOf(innerMeta.get('name'));
                             }
-                            if (metadata.containsKey('decimals')) {
-                                newAsset.Decimals__c = Integer.valueOf(String.valueOf(metadata.get('decimals')));
-                            }
-                            if (metadata.containsKey('policy_id')) {
-                                newAsset.Policy_ID__c = String.valueOf(metadata.get('policy_id'));
-                            }
-                            if (metadata.containsKey('fingerprint')) {
-                                newAsset.Fingerprint__c = String.valueOf(metadata.get('fingerprint'));
-                            }
-                        } catch (Exception e) {
-                            Logger.logError('[UTXOAssetController.syncAssetsAndTransactions] ❌ Error parsing metadata for unit ' + unit + ': ' + e.getMessage());
                         }
+                    } catch (Exception e) {
+                        Logger.logError('[UTXOAssetController.syncAssets] ❌ Error parsing metadata for display unit: ' + unit);
                     }
-                    
+                }
+                String intendedUnit = displayUnit;
+                validUnits.add(intendedUnit);
+                UTXO_Asset__c existingAsset = unitToExistingAsset.get(intendedUnit);
+                if (existingAsset != null) {
+                    // Always update existing asset, even if nothing changed
+                    populateAssetFields(existingAsset, unit, totalAmount, assetName, displayUnit, metadata);
+                    assetsToUpdate.add(existingAsset);
+                } else {
+                    // Always insert if not found
+                    UTXO_Asset__c newAsset = new UTXO_Asset__c(UTXO_Address__c = utxoAddress.Id);
+                    populateAssetFields(newAsset, unit, totalAmount, assetName, displayUnit, metadata);
                     assetsToInsert.add(newAsset);
                 }
             }
-            
-            // Prepare transaction operations - Only store inbound transactions in database
-            List<Inbound_Transaction__c> transactionsToInsert = new List<Inbound_Transaction__c>();
-            List<Inbound_Transaction__c> transactionsToUpdate = new List<Inbound_Transaction__c>();
-            
-            for (Object txObj : allTransactions) {
-                Map<String, Object> tx = (Map<String, Object>) txObj;
-                String txHash = String.valueOf(tx.get('tx_hash'));
-                String direction = String.valueOf(tx.get('direction'));
-                
-                // Only process inbound transactions for database storage
-                if (direction == 'incoming') {
-                    if (existingTransactions.containsKey(txHash)) {
-                        // Update existing if needed
-                        Inbound_Transaction__c existing = existingTransactions.get(txHash);
-                        Boolean needsUpdate = false;
-                        
-                        if (tx.get('block_height') != null) {
-                            Integer blockHeight = Integer.valueOf(String.valueOf(tx.get('block_height')));
-                            if (existing.Block_Height__c != blockHeight) {
-                                existing.Block_Height__c = blockHeight;
-                                needsUpdate = true;
-                            }
-                        }
-                        
-                        if (tx.get('block_time') != null) {
-                            Integer blockTime = Integer.valueOf(String.valueOf(tx.get('block_time')));
-                            if (existing.Block_Time__c != blockTime) {
-                                existing.Block_Time__c = blockTime;
-                                needsUpdate = true;
-                            }
-                        }
-                        
-                        if (needsUpdate) {
-                            transactionsToUpdate.add(existing);
-                        }
-                    } else {
-                        // Create new inbound transaction
-                        Inbound_Transaction__c newTransaction = new Inbound_Transaction__c(
-                            UTXO_Address__c = utxoAddress.Id,
-                            Transaction_Hash__c = txHash
-                        );
-                        
-                        if (tx.get('tx_index') != null) {
-                            newTransaction.Transaction_Index__c = Integer.valueOf(String.valueOf(tx.get('tx_index')));
-                        }
-                        
-                        if (tx.get('block_height') != null) {
-                            newTransaction.Block_Height__c = Integer.valueOf(String.valueOf(tx.get('block_height')));
-                        }
-                        
-                        if (tx.get('block_time') != null) {
-                            newTransaction.Block_Time__c = Integer.valueOf(String.valueOf(tx.get('block_time')));
-                        }
-                        
-                        transactionsToInsert.add(newTransaction);
-                    }
-                }
-            }
-            
-            // Perform all DML operations
-            Integer assetsInserted = 0;
-            Integer assetsUpdated = 0;
-            Integer transactionsInserted = 0;
-            Integer transactionsUpdated = 0;
-            
             if (!assetsToInsert.isEmpty()) {
                 insert assetsToInsert;
-                assetsInserted = assetsToInsert.size();
+                insertedCount = assetsToInsert.size();
             }
-            
             if (!assetsToUpdate.isEmpty()) {
                 update assetsToUpdate;
-                assetsUpdated = assetsToUpdate.size();
+                updatedCount = assetsToUpdate.size();
             }
-            
-            if (!transactionsToInsert.isEmpty()) {
-                insert transactionsToInsert;
-                transactionsInserted = transactionsToInsert.size();
-            }
-            
-            if (!transactionsToUpdate.isEmpty()) {
-                update transactionsToUpdate;
-                transactionsUpdated = transactionsToUpdate.size();
-            }
-            
-            // CLEANUP PHASE: Delete assets and transactions that are not part of current sync
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🧹 Starting cleanup phase');
-            
-            // Collect all units and transaction hashes from current sync
-            Set<String> currentSyncUnits = unitToTotalAmount.keySet();
-            Set<String> currentSyncInboundTransactionHashes = new Set<String>();
-            for (Object txObj : allTransactions) {
-                Map<String, Object> tx = (Map<String, Object>) txObj;
-                String direction = String.valueOf(tx.get('direction'));
-                if (direction == 'incoming') {
-                    currentSyncInboundTransactionHashes.add(String.valueOf(tx.get('tx_hash')));
-                }
-            }
-            
-            // Find assets to delete (existing assets not in current sync)
-            List<UTXO_Asset__c> assetsToDelete = new List<UTXO_Asset__c>();
-            
-            // Create a mapping for cleanup check that includes both original and display units
-            Set<String> unitsToKeep = new Set<String>();
-            for (String unit : currentSyncUnits) {
-                unitsToKeep.add(unit); // Add original unit
-                if (unit == 'lovelace') {
-                    unitsToKeep.add('ADA'); // Add display unit for ADA
-                }
-            }
-            
-            for (UTXO_Asset__c existingAsset : existingAssets) {
-                if (!unitsToKeep.contains(existingAsset.Unit__c)) {
-                    assetsToDelete.add(existingAsset);
-                    Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🗑️ Marking asset for deletion: ' + existingAsset.Unit__c);
-                }
-            }
-            
-            // Find inbound transactions to delete (existing inbound transactions not in current sync)
-            List<Inbound_Transaction__c> transactionsToDelete = new List<Inbound_Transaction__c>();
-            for (Inbound_Transaction__c existingTransaction : existingTransactions.values()) {
-                if (!currentSyncInboundTransactionHashes.contains(existingTransaction.Transaction_Hash__c)) {
-                    transactionsToDelete.add(existingTransaction);
-                    Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🗑️ Marking inbound transaction for deletion: ' + existingTransaction.Transaction_Hash__c);
-                }
-            }
-            
-            // Perform deletions
-            Integer assetsDeleted = 0;
-            Integer transactionsDeleted = 0;
-            
+            // After all upserts, clean up any assets not in the current sync
+            List<UTXO_Asset__c> assetsToDelete = [
+                SELECT Id, Unit__c FROM UTXO_Asset__c
+                WHERE UTXO_Address__c = :utxoAddress.Id
+                AND Unit__c NOT IN :validUnits
+            ];
+            Integer deletedCount = 0;
             if (!assetsToDelete.isEmpty()) {
                 delete assetsToDelete;
-                assetsDeleted = assetsToDelete.size();
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Deleted ' + assetsDeleted + ' stale assets');
+                deletedCount = assetsToDelete.size();
+                Logger.logInfo('[UTXOAssetController.syncAssets] ✅ Deleted ' + deletedCount + ' stale assets');
             }
-            
-            if (!transactionsToDelete.isEmpty()) {
-                delete transactionsToDelete;
-                transactionsDeleted = transactionsToDelete.size();
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Deleted ' + transactionsDeleted + ' stale transactions');
-            }
-            
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🧹 Cleanup phase completed');
-            
-            Long totalProcessingTime = System.now().getTime() - totalStartTime;
-            
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Combined sync completed in ' + totalProcessingTime + 'ms');
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Assets - Inserted: ' + assetsInserted + ', Updated: ' + assetsUpdated + ', Deleted: ' + assetsDeleted);
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Transactions - Inserted: ' + transactionsInserted + ', Updated: ' + transactionsUpdated + ', Deleted: ' + transactionsDeleted);
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Analysis - Total: ' + allTransactions.size() + ', Inbound: ' + inboundCount + ', Outbound: ' + outboundCount);
+            Logger.logInfo('[UTXOAssetController.syncAssets] 🧹 Cleanup phase completed');
+            Long processingTime = System.now().getTime() - totalStartTime;
+            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Combined sync completed in ' + processingTime + 'ms');
+            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Assets - Inserted: ' + insertedCount + ', Updated: ' + updatedCount + ', Deleted: ' + deletedCount);
+            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Transactions - Inbound: ' + inboundCount + ', Outbound: ' + outboundCount);
             
             return new Map<String, Object>{
                 'success' => true,
                 'assets' => utxoList,
                 'transactions' => allTransactions,
                 'statistics' => new Map<String, Object>{
-                    'assetsInserted' => assetsInserted,
-                    'assetsUpdated' => assetsUpdated,
-                    'assetsDeleted' => assetsDeleted,
-                    'transactionsInserted' => transactionsInserted,
-                    'transactionsUpdated' => transactionsUpdated,
-                    'transactionsDeleted' => transactionsDeleted,
+                    'assetsInserted' => insertedCount,
+                    'assetsUpdated' => updatedCount,
+                    'assetsDeleted' => deletedCount,
+                    'transactionsInserted' => inboundCount + outboundCount,
+                    'transactionsUpdated' => 0,
+                    'transactionsDeleted' => 0,
                     'totalTransactionsFound' => allTransactions.size(),
                     'inboundTransactionsFound' => inboundCount,
                     'outboundTransactionsFound' => outboundCount,
-                    'totalProcessingTimeMs' => totalProcessingTime
+                    'totalProcessingTimeMs' => processingTime
                 },
                 'message' => allTransactions.isEmpty() ? 'No transactions found - cleanup completed' : 'Assets and transactions synchronized successfully with cleanup'
             };
