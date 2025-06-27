@@ -10,6 +10,7 @@ import enableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.enableLogging';
 import disableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.disableLogging';
 import saveBlockfrostProjectId from '@salesforce/apex/AdaWalletsSetupCtrl.saveBlockfrostProjectId';
 import testBlockfrostConfig from '@salesforce/apex/AdaWalletsSetupCtrl.testBlockfrostConfig';
+import updateTransactionApprovals from '@salesforce/apex/AdaWalletsSetupCtrl.updateTransactionApprovals';
 
 export default class AdaWalletSetup extends LightningElement {
     isLoading = true;
@@ -25,6 +26,8 @@ export default class AdaWalletSetup extends LightningElement {
     testResult = '';
     @track 
     isProjectIdSet = false;    
+    @track 
+    isTransactionApprovalsEnabled = false;
 
     get privateKeyCompleted() {
         return !this.isBlank(this.setupData, 'privateKey');
@@ -66,6 +69,7 @@ export default class AdaWalletSetup extends LightningElement {
             this.processSetupData(result);            
             this.blockfrostProjectId = result.blockfrostProjectId || '';
             this.isProjectIdSet = !!this.blockfrostProjectId;
+            this.isTransactionApprovalsEnabled = result.isTransactionApprovalsEnabled || false;
             this.dataChanged = false;
             this.testResult = '';
         } catch (error) {
@@ -181,6 +185,22 @@ export default class AdaWalletSetup extends LightningElement {
         } catch (error) {
             const errorMessage = error.body ? error.body.message : error.message;
             this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    async handleTransactionApprovalsChange(event) {
+        this.isLoading = true;
+        try {
+            const isEnabled = event.target.checked;
+            await updateTransactionApprovals({ isEnabled: isEnabled });
+            this.isTransactionApprovalsEnabled = isEnabled;
+            this.showToast(this.labels.CORE.Success, 'Transaction approvals setting updated successfully', TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
+        } catch (error) {
+            const errorMessage = 'Failed to update transaction approvals: ' + (error.body?.message || error.message);
+            this.showToast('Error', errorMessage, TOAST_VARIANT.ERROR, TOAST_MODE.ERROR);
+            this.isTransactionApprovalsEnabled = !event.target.checked;
         } finally {
             this.isLoading = false;
         }
