@@ -128,64 +128,6 @@ public with sharing class CreateNewWalletCtrl {
         }
     }
 
-    /**
-     * Enhanced method to check if address has any transactions by syncing and checking the results
-     * This provides more detailed information than just "used/unused"
-     */
-    @AuraEnabled
-    public static Map<String, Object> checkAddressTransactionHistory(String address) {
-        try {
-            // Create a temporary UTXO address record for syncing (we'll delete it after)
-            UTXO_Address__c tempAddress = new UTXO_Address__c(
-                Address__c = address,
-                Index__c = -1, // Temporary marker
-                Public_Key__c = 'temp',
-                Staking_Key_Hash__c = 'temp',
-                Path__c = 'temp',
-                Type__c = '0'
-            );
-            insert tempAddress;
-            
-            try {
-                // Sync to get transaction and asset data
-                Map<String, Object> syncResult = UTXOAssetController.syncAssetsAndTransactions(tempAddress.Id);
-                
-                // Check if any assets or transactions were found
-                Boolean hasTransactions = false;
-                Boolean hasAssets = false;
-                
-                if (syncResult.get('success') == true && syncResult.containsKey('statistics')) {
-                    Map<String, Object> stats = (Map<String, Object>) syncResult.get('statistics');
-                    
-                    Integer assetsInserted = (Integer) stats.get('assetsInserted');
-                    Integer assetsUpdated = (Integer) stats.get('assetsUpdated');
-                    Integer transactionsInserted = (Integer) stats.get('transactionsInserted');
-                    Integer transactionsUpdated = (Integer) stats.get('transactionsUpdated');
-                    
-                    hasAssets = (assetsInserted != null && assetsInserted > 0) || (assetsUpdated != null && assetsUpdated > 0);
-                    hasTransactions = (transactionsInserted != null && transactionsInserted > 0) || (transactionsUpdated != null && transactionsUpdated > 0);
-                }
-                
-                return new Map<String, Object>{
-                    'address' => address,
-                    'hasTransactions' => hasTransactions,
-                    'hasAssets' => hasAssets,
-                    'isUsed' => hasTransactions || hasAssets,
-                    'syncResult' => syncResult
-                };
-                
-            } finally {
-                // Clean up temporary records
-                delete [SELECT Id FROM UTXO_Asset__c WHERE UTXO_Address__c = :tempAddress.Id];
-                delete [SELECT Id FROM Inbound_Transaction__c WHERE UTXO_Address__c = :tempAddress.Id];
-                delete tempAddress;
-            }
-            
-        } catch (Exception e) {
-            throw new AuraHandledException('Failed to check address transaction history: ' + e.getMessage());
-        }
-    }
-
     @AuraEnabled(cacheable=true)
     public static String getDecryptedSeedPhrase(Id walletSetId) {
         try {            

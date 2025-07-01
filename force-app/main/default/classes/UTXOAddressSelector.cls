@@ -83,68 +83,6 @@ public with sharing class UTXOAddressSelector {
         }
     }
     
-    @AuraEnabled
-    public static UTXOAddressWithDecryptedKey getLastUTXOAddressWithDecryptedKeyByType(Id walletId, String type) {
-        try {
-            // Check if user has permission to decrypt private keys
-            if (!EncryptedDataService.hasAccessToDecrypt()) {
-                throw new AuraHandledException('Access denied to decrypt private keys. You need the "Ada_Wallet_Seed_Phrase" permission set.');
-            }
-            
-            List<UTXO_Address__c> addresses = getLastUTXOAddressByType(walletId, type);
-            if (addresses.isEmpty()) {
-                return null;
-            }
-            
-            UTXO_Address__c addr = addresses[0];
-            String decryptedKey = null;
-            if (String.isNotBlank(addr.Private_Key__c)) {
-                try {
-                    decryptedKey = DataEncryptor.decrypt(addr.Private_Key__c);
-                } catch (Exception e) {
-                    System.debug('Failed to decrypt private key for address ' + addr.Id + ': ' + e.getMessage());
-                    // Continue with null decrypted key
-                }
-            }
-            
-            return new UTXOAddressWithDecryptedKey(addr, decryptedKey);
-        } catch (Exception e) {
-            Logger.logError('Error in getLastUTXOAddressWithDecryptedKeyByType: ' + e.getMessage());
-            throw new AuraHandledException('Error fetching last UTXO address with decrypted key: ' + e.getMessage());
-        }
-    }
-    
-    @AuraEnabled
-    public static List<UTXOAddressWithDecryptedKey> getUTXOAddressesWithDecryptedKeysByWalletIdAndTypeOrdered(Id walletId, String type) {
-        try {
-            // Check if user has permission to decrypt private keys
-            if (!EncryptedDataService.hasAccessToDecrypt()) {
-                throw new AuraHandledException('Access denied to decrypt private keys. You need the "Ada_Wallet_Seed_Phrase" permission set.');
-            }
-            
-            List<UTXO_Address__c> addresses = getUTXOAddressesByWalletIdAndTypeOrdered(walletId, type);
-            List<UTXOAddressWithDecryptedKey> result = new List<UTXOAddressWithDecryptedKey>();
-            
-            for (UTXO_Address__c addr : addresses) {
-                String decryptedKey = null;
-                if (String.isNotBlank(addr.Private_Key__c)) {
-                    try {
-                        decryptedKey = DataEncryptor.decrypt(addr.Private_Key__c);
-                    } catch (Exception e) {
-                        System.debug('Failed to decrypt private key for address ' + addr.Id + ': ' + e.getMessage());
-                        // Continue with null decrypted key
-                    }
-                }
-                result.add(new UTXOAddressWithDecryptedKey(addr, decryptedKey));
-            }
-            
-            return result;
-        } catch (Exception e) {
-            Logger.logError('Error in getUTXOAddressesWithDecryptedKeysByWalletIdAndTypeOrdered: ' + e.getMessage());
-            throw new AuraHandledException('Error fetching UTXO addresses with decrypted keys: ' + e.getMessage());
-        }
-    }
-    
     // Method to get a single UTXO address with decrypted private key by ID
     @AuraEnabled
     public static UTXOAddressWithDecryptedKey getUTXOAddressWithDecryptedKeyById(Id utxoAddressId) {

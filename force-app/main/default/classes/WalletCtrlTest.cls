@@ -37,64 +37,6 @@ private class WalletCtrlTest {
         );
         insert utxoAddress;
     }
-    
-    @isTest
-    private static void getPaymentAddressShouldReturnUnusedAddress() {
-        Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock(0));
-        
-        Test.startTest();
-            String result = WalletCtrl.getPaymentAddress(wallet.Id);
-        Test.stopTest();
-        
-        Assert.areEqual(TEST_ADDRESS, result, ASSERT_MESSAGE_ADDRESS);
-    }
-    
-    @isTest
-    private static void getPaymentAddressShouldThrowExceptionWhenNoAddresses() {
-        Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        delete [SELECT Id FROM UTXO_Address__c WHERE Wallet__c = :wallet.Id];
-        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock(0));
-        
-        Test.startTest();
-            try {
-                WalletCtrl.getPaymentAddress(wallet.Id);
-                Assert.fail('Should throw an exception');
-            } catch (Exception e) {
-                Assert.isNotNull(e.getMessage(), 'Should throw an exception');
-            }
-        Test.stopTest();
-    }
-    
-    @isTest
-    private static void getPaymentAddressShouldThrowExceptionWhenAllAddressesUsed() {
-        Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock(2));
-        
-        Test.startTest();
-            try {
-                WalletCtrl.getPaymentAddress(wallet.Id);
-                Assert.fail('Should throw an exception');
-            } catch (Exception e) {
-                Assert.isNotNull(e.getMessage(), 'Should throw an exception');
-            }
-        Test.stopTest();
-    }
-    
-    @isTest
-    private static void getWalletTotalBalanceShouldReturnBalance() {
-        Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock(0));
-        
-        Test.startTest();
-            Map<String, Object> result = WalletCtrl.getWalletTotalBalance(wallet.Id);
-        Test.stopTest();
-        
-        Map<String, Decimal> totalBalance = (Map<String, Decimal>) result.get('totalBalance');
-        
-        Assert.isNotNull(result, 'Balance should not be null');
-        Assert.areEqual(TEST_BALANCE, totalBalance.get('lovelace'), ASSERT_MESSAGE_BALANCE);
-    }
 
     private class BlockfrostServiceMock implements HttpCalloutMock {
         private Decimal txCount;

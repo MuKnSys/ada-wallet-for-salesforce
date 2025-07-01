@@ -361,69 +361,6 @@ public with sharing class UTXOController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<TransactionWrapper> getReceivedTransactions(String walletId) {
-        return new List<TransactionWrapper>();
-    }
-
-    @AuraEnabled(cacheable=true)
-    public static Integer getUTXOAddressCountWithAssets(String walletId) {
-        try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-
-            String soql = 'SELECT COUNT() FROM UTXO_Address__c WHERE Wallet__c = :walletId AND Id IN (SELECT UTXO_Address__c FROM UTXO_Asset__c WHERE UTXO_Address__c != NULL)';
-            Integer cnt = Database.countQuery(soql);
-            return cnt;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error counting UTXO addresses with assets: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
-    public static AssetTokenSummary getAssetTokenSummary(String walletId) {
-        try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-
-            List<AggregateResult> results = [
-                SELECT Unit__c unit, SUM(Amount__c) total
-                FROM UTXO_Asset__c
-                WHERE UTXO_Address__r.Wallet__c = :walletId
-                GROUP BY Unit__c
-            ];
-
-            AssetTokenSummary summary = new AssetTokenSummary();
-            summary.ada = 0;
-            summary.tokens = new List<TokenCount>();
-
-            for (AggregateResult ar : results) {
-                String unit = (String) ar.get('unit');
-                Decimal amount = (Decimal) ar.get('total');
-                if (unit == 'lovelace' || unit == 'ADA') {
-                    summary.ada = amount;
-                } else {
-                    TokenCount tc = new TokenCount();
-                    tc.symbol = unit;
-                    tc.amount = amount;
-                    summary.tokens.add(tc);
-                }
-            }
-
-            return summary;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error building asset summary: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static AssetTokenSummary getAssetTokenSummaryNoCache(String walletId) {
-        // Wrapper to bypass Lightning Data Service cache
-        return getAssetTokenSummary(walletId);
-    }
-
-    @AuraEnabled(cacheable=true)
     public static String getFirstUnusedReceivingAddress(String walletId) {
         try {
             if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
@@ -467,32 +404,6 @@ public with sharing class UTXOController {
         }
     }
 
-    @AuraEnabled(cacheable=true)
-    public static Boolean hasUTXOPrivateKey(String utxoAddressId) {
-        try {
-            if (String.isBlank(utxoAddressId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', utxoAddressId)) {
-                throw new AuraHandledException('Invalid UTXO Address ID');
-            }
-
-            // Query the UTXO Address to check if Private_Key__c is populated
-            List<UTXO_Address__c> utxoAddresses = [
-                SELECT Id, Private_Key__c
-                FROM UTXO_Address__c
-                WHERE Id = :utxoAddressId
-                LIMIT 1
-            ];
-
-            if (utxoAddresses.isEmpty()) {
-                throw new AuraHandledException('UTXO Address not found');
-            }
-
-            // Return true if Private_Key__c is not null and not empty
-            return String.isNotBlank(utxoAddresses[0].Private_Key__c);
-        } catch (Exception e) {
-            throw new AuraHandledException('Error checking UTXO private key: ' + e.getMessage());
-        }
-    }
-
     @AuraEnabled
     public static String createOutboundTransaction(String walletId, String toAddress, String amount) {
         try {
@@ -533,66 +444,6 @@ public with sharing class UTXOController {
             return decision.getRecords()[0].Id;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating outbound transaction: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static String getDecryptedUTXOPrivateKey(String utxoAddressId) {
-        try {
-            if (String.isBlank(utxoAddressId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', utxoAddressId)) {
-                throw new AuraHandledException('Invalid UTXO Address ID');
-            }
-
-            // Query the UTXO Address to get the private key
-            List<UTXO_Address__c> utxoAddresses = [
-                SELECT Id, Private_Key__c
-                FROM UTXO_Address__c
-                WHERE Id = :utxoAddressId
-                LIMIT 1
-            ];
-
-            if (utxoAddresses.isEmpty()) {
-                throw new AuraHandledException('UTXO Address not found');
-            }
-
-            UTXO_Address__c utxoAddress = utxoAddresses[0];
-
-            if (String.isBlank(utxoAddress.Private_Key__c)) {
-                throw new AuraHandledException('Private key not found for this UTXO address');
-            }
-
-            // Since we're storing private keys unencrypted, return directly
-            return utxoAddress.Private_Key__c;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving UTXO private key: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
-    public static UTXO_Address__c getFirstUnusedChangeAddressWithNoAssets(String walletId) {
-        try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-
-            List<UTXO_Address__c> changeAddresses = [
-                SELECT Id, Address__c, Index__c, Public_Key__c, Staking_Key_Hash__c, 
-                       Path__c, Private_Key__c, Type__c
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId 
-                AND Type__c = '1' 
-                AND Id NOT IN (
-                    SELECT UTXO_Address__c 
-                    FROM UTXO_Asset__c 
-                    WHERE UTXO_Address__c != NULL
-                )
-                ORDER BY Index__c
-                LIMIT 1
-            ];
-
-            return changeAddresses.isEmpty() ? null : changeAddresses[0];
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving unused change address: ' + e.getMessage());
         }
     }
 }

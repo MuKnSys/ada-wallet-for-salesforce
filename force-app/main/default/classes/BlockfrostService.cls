@@ -1,7 +1,6 @@
 public with sharing class BlockfrostService {
     private static final String BLOCKS_URL = '/blocks/latest';
     private static final String ADDRESS_TOTAL_URL = '/addresses/{address}/total';
-    private static final String ADDRESS_EXTENDED_URL = '/addresses/{address}/extended';
     private static final String ADDRESS_UTXOS_URL = '/addresses/{address}/utxos';
     private static final String ASSET_METADATA_URL = '/assets/{asset}';
     private static final String EPOCHS_PARAMETERS_URL = '/epochs/latest/parameters';
@@ -170,76 +169,6 @@ public with sharing class BlockfrostService {
     }
 
     /**
-     * Calls Blockfrost /addresses/{address}/extended endpoint and returns the raw JSON string.
-     */
-    @AuraEnabled(cacheable=false)
-    public static String getAddressExtended(String address) {
-        if (String.isBlank(address)) {
-            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
-        }
-
-        String projectId = AdaWalletsService.getBlockfrostProjectId();
-        String url = ADDRESS_EXTENDED_URL.replace('{address}', address);
-
-        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
-            .get()
-            .setEndpoint(url)
-            .setHeaders(new Map<String, String>{
-                'Project_id' => projectId,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            })
-            .send();
-
-        if (endpoint.getStatusCode() == 200) {
-            return endpoint.getResponse().getBody();
-        } else if (endpoint.getStatusCode() == 404) {
-            // Address not found on-chain. Return empty JSON so caller can handle.
-            return '{}';
-        }
-
-        // Return an informative JSON payload instead of raising an exception so callers can log the error without surfacing it to users.
-        return JSON.serialize(new Map<String,Object>{
-            'status' => endpoint.getStatusCode(),
-            'error'  => 'Blockfrost address extended API error'
-        });
-    }
-
-    /**
-     * Calls Blockfrost /addresses/{address}/total endpoint and returns raw JSON string.
-     */
-    @AuraEnabled(cacheable=false)
-    public static String getAddressTotal(String address) {
-        if (String.isBlank(address)) {
-            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
-        }
-
-        String projectId = AdaWalletsService.getBlockfrostProjectId();
-        String url = ADDRESS_TOTAL_URL.replace('{address}', address);
-
-        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
-            .get()
-            .setEndpoint(url)
-            .setHeaders(new Map<String, String>{
-                'Project_id' => projectId,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            })
-            .send();
-
-        if (endpoint.getStatusCode() == 200) {
-            return endpoint.getResponse().getBody();
-        } else if (endpoint.getStatusCode() == 404) {
-            return '{}';
-        }
-
-        return JSON.serialize(new Map<String,Object>{
-            'status' => endpoint.getStatusCode(),
-            'error' => 'Blockfrost address total API error'
-        });
-    }
-
-    /**
      * Calls Blockfrost /addresses/{address}/utxos endpoint and returns raw JSON string (array).
      */
     @AuraEnabled(cacheable=false)
@@ -260,12 +189,6 @@ public with sharing class BlockfrostService {
             return '[]';
         }
         throw new BlockfrostEndpoint.BlockfrostAPIException('UTXO call error status '+endpoint.getStatusCode());
-    }
-
-    public static Boolean hasUtxos(String address) {
-        String body = getAddressUtxos(address);
-        List<Object> listResp = (List<Object>) JSON.deserializeUntyped(body);
-        return !listResp.isEmpty();
     }
 
     @AuraEnabled(cacheable=false)
@@ -374,42 +297,7 @@ public with sharing class BlockfrostService {
                 'error' => 'Blockfrost blocks latest API error'
             });
         }
-    }
-
-    /**
-     * Calls Blockfrost /addresses/{address}/utxos endpoint and returns detailed UTXO information
-     * including transaction hash and output index for transaction building.
-     */
-    @AuraEnabled(cacheable=false)
-    public static String getAddressUtxosDetailed(String address) {
-        if (String.isBlank(address)) {
-            throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
-        }
-        
-        String projectId = AdaWalletsService.getBlockfrostProjectId();
-        String url = ADDRESS_UTXOS_URL.replace('{address}', address);
-        
-        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
-            .get()
-            .setEndpoint(url)
-            .setHeaders(new Map<String, String>{
-                'Project_id' => projectId,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            })
-            .send();
-            
-        if (endpoint.getStatusCode() == 200) {
-            return endpoint.getResponse().getBody();
-        } else if (endpoint.getStatusCode() == 404) {
-            return '[]';
-        }
-        
-        return JSON.serialize(new Map<String,Object>{
-            'status' => endpoint.getStatusCode(),
-            'error' => 'Blockfrost address UTXOs API error'
-        });
-    }
+    }    
 
     /**
      * Fetches UTXOs for multiple addresses and returns detailed information
