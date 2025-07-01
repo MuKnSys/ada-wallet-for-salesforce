@@ -4,16 +4,24 @@
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
+                    <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>UTXO_Address__c.Get_UTXO_Address_Assets</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
                     <name>collapsed</name>
                     <value>false</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>enableActionsConfiguration</name>
-                    <value>false</value>
+                    <value>true</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>enableActionsInNative</name>
-                    <value>false</value>
+                    <value>true</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>hideChatterActions</name>
@@ -34,6 +42,29 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentInstanceProperties>
+                    <name>relatedListComponentOverride</name>
+                    <value>NONE</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>rowsToDisplay</name>
+                    <value>10</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>showActionBar</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentName>force:relatedListContainer</componentName>
+                <identifier>force_relatedListContainer</identifier>
+            </componentInstance>
+        </itemInstances>
+        <mode>Replace</mode>
+        <name>relatedTabContent</name>
+        <type>Facet</type>
+    </flexiPageRegions>
+    <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
                 <componentName>force:detailPanel</componentName>
                 <identifier>force_detailPanel</identifier>
             </componentInstance>
@@ -43,6 +74,20 @@
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>body</name>
+                    <value>relatedTabContent</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>title</name>
+                    <value>Standard.Tab.relatedLists</value>
+                </componentInstanceProperties>
+                <componentName>flexipage:tab</componentName>
+                <identifier>relatedListsTab</identifier>
+            </componentInstance>
+        </itemInstances>
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
@@ -85,6 +130,132 @@
         <type>Region</type>
     </flexiPageRegions>
     <flexiPageRegions>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>MassChangeOwner</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>New</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>maxRecordsToDisplay</name>
+                    <value>10</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>parentFieldApiName</name>
+                    <value>UTXO_Address__c.Id</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListApiName</name>
+                    <value>UTXO_Assets__r</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListDisplayType</name>
+                    <value>ADVGRID</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListFieldAliases</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>NAME</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Value__c</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Unit__c</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListLabel</name>
+                    <value>UTXO Assets</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>showActionBar</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>sortFieldAlias</name>
+                    <value>__DEFAULT__</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>sortFieldOrder</name>
+                    <value>Default</value>
+                </componentInstanceProperties>
+                <componentName>lst:dynamicRelatedList</componentName>
+                <identifier>lst_dynamicRelatedList</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
+                <componentInstanceProperties>
+                    <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>MassChangeOwner</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>New</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>maxRecordsToDisplay</name>
+                    <value>10</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>parentFieldApiName</name>
+                    <value>UTXO_Address__c.Id</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListApiName</name>
+                    <value>Inbound_Transactions__r</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListDisplayType</name>
+                    <value>ADVGRID</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListFieldAliases</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>NAME</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Transaction_Hash__c</value>
+                        </valueListItems>
+                        <valueListItems>
+                            <value>Block__c</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>relatedListLabel</name>
+                    <value>Inbound Transactions</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>showActionBar</name>
+                    <value>true</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>sortFieldAlias</name>
+                    <value>__DEFAULT__</value>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
+                    <name>sortFieldOrder</name>
+                    <value>Default</value>
+                </componentInstanceProperties>
+                <componentName>lst:dynamicRelatedList</componentName>
+                <identifier>lst_dynamicRelatedList2</identifier>
+            </componentInstance>
+        </itemInstances>
         <mode>Replace</mode>
         <name>sidebar</name>
         <type>Region</type>

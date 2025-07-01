@@ -128,16 +128,22 @@
     </actionOverrides>
     <actionOverrides>
         <actionName>View</actionName>
-        <type>Default</type>
-    </actionOverrides>
-    <actionOverrides>
-        <actionName>View</actionName>
-        <formFactor>Large</formFactor>
-        <type>Default</type>
-    </actionOverrides>
-    <actionOverrides>
-        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Inbound_Transaction_Record_Page</content>
         <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Inbound_Transaction_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
         <type>Default</type>
     </actionOverrides>
     <allowInChatterGroups>false</allowInChatterGroups>
@@ -155,9 +161,9 @@
     <externalSharingModel>ControlledByParent</externalSharingModel>
     <label>Inbound Transaction</label>
     <nameField>
+        <displayFormat>IT-{0000}</displayFormat>
         <label>Inbound Transaction Name</label>
         <type>AutoNumber</type>
-        <displayFormat>IT-{0000}</displayFormat>
     </nameField>
     <pluralLabel>Inbound Transactions</pluralLabel>
     <searchLayouts></searchLayouts>

@@ -4,16 +4,24 @@
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
+                    <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>Outbound_Transaction__c.Build_and_Sign</value>
+                        </valueListItems>
+                    </valueList>
+                </componentInstanceProperties>
+                <componentInstanceProperties>
                     <name>collapsed</name>
                     <value>false</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>enableActionsConfiguration</name>
-                    <value>false</value>
+                    <value>true</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>enableActionsInNative</name>
-                    <value>false</value>
+                    <value>true</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>hideChatterActions</name>
