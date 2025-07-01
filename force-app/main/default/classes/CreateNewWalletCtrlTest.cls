@@ -124,17 +124,6 @@ private class CreateNewWalletCtrlTest {
     }
 
     @isTest
-    static void shouldCheckIfAddressIsUsed() {
-        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock());
-        
-        Test.startTest();
-        Boolean result = CreateNewWalletCtrl.checkIsAddressUsed(TEST_ADDRESS);
-        Test.stopTest();
-
-        Assert.isNotNull(result, 'Result should not be null');
-    }    
-
-    @isTest
     static void shouldGetDecryptedSeedPhrase() {
         Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
 

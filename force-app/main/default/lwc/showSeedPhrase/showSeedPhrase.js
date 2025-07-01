@@ -5,8 +5,7 @@ import getSeedPhrase from '@salesforce/apex/ShowSeedPhraseCtrl.getSeedPhrase';
 
 export default class ShowSeedPhrase extends LightningElement {
     _recordId;
-    @track seedPhrase = '';
-    @track cardanoPrivateKey = '';
+    @track seedPhrase = '';    
 
     @api
     get recordId() {

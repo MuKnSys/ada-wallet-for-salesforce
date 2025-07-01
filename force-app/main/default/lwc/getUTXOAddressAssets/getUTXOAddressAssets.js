@@ -10,67 +10,10 @@ export default class GetUtxoAddressAssets extends LightningElement {
     @track walletId = '';
     @track error;
 
-    // UI constants
-    labels = {
-        TITLE: 'Get UTXO Address Assets',
-        SPINNER_TEXT: 'Retrieving…',
-        SUCCESS_TEXT: 'Assets retrieved successfully',
-        SUCCESS_ICON_TEXT: 'Success',
-        ERROR_TEXT: 'Failed to retrieve assets',
-        ERROR_ICON_TEXT: 'Error'
-    };
-
-    icons = {
-        SUCCESS: 'utility:success',
-        ERROR: 'utility:error'
-    };
-
-    spinnerSize = {
-        LARGE: 'large'
-    };
-
-    buttonVariants = {
-        BRAND: 'brand'
-    };
-
     @track isLoading = true;
     @track isSuccess = false;
     @track assets = [];
     @track error;
-
-    get hasNoAssets() {
-        return !this.assets || this.assets.length === 0;
-    }
-
-    get pluralSuffix() {
-        return this.assets && this.assets.length !== 1 ? 's' : '';
-    }
-
-    get assetCountSuffix() {
-        return this.assets && this.assets.length !== 1 ? 's' : '';
-    }
-
-    formatQuantity(asset) {
-        if (asset.unit === 'lovelace') {
-            return (parseInt(asset.quantity || '0', 10) / 1000000).toFixed(6) + ' ADA';
-        }
-        return asset.quantity;
-    }
-
-    getAssetName(asset) {
-        if (asset.unit === 'lovelace') {
-            return 'Cardano';
-        }
-        return asset.metadata?.name || 'N/A';
-    }
-
-    formatMetadata(metadata) {
-        try {
-            return JSON.stringify(metadata, null, 2);
-        } catch (e) {
-            return 'Unable to display metadata';
-        }
-    }
 
     @wire(getRecord, { recordId: '$recordId', fields: [WALLET_FIELD] })
     wiredRecord({ error, data }) {

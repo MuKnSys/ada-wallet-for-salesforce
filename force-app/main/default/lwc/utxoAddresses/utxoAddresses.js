@@ -22,10 +22,6 @@ import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.sync
 
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 
-/* eslint-disable no-console */
-// Set DEBUG to true to enable console logging for refresh process
-const DEBUG = true;
-
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
     @track externalAddresses = [];
@@ -408,31 +404,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         this.dispatchEvent(
             new ShowToastEvent({ title, message, variant })
         );
-    }
-
-    // Helper for refresh: verify and update UTXO keys
-    async verifyAndUpdateUTXOKeys(addressList, CardanoWasm, accountPrivateKey) {
-        for (const addr of addressList) {
-            // Parse path: m/1852'/1815'/0'/0/0
-            const pathParts = addr.Path__c.split('/');
-            const chainType = parseInt(pathParts[4]);
-            const index = parseInt(pathParts[5]);
-            console.log(`[UTXOAddresses] Verifying UTXO for path: ${addr.Path__c}`);
-            console.log(`[UTXOAddresses] Account private key (bech32): ${accountPrivateKey.to_bech32()}`);
-            const utxoPrivateKey = accountPrivateKey.derive(chainType).derive(index);
-            console.log(`[UTXOAddresses] Derived UTXO private key (bech32): ${utxoPrivateKey.to_bech32()}`);
-            const utxoPublicKey = utxoPrivateKey.to_public();
-            console.log(`[UTXOAddresses] Derived UTXO public key (bech32): ${utxoPublicKey.to_bech32()}`);
-            const utxoKeyHash = utxoPublicKey.to_raw_key().hash();
-            console.log(`[UTXOAddresses] Derived UTXO key hash: ${utxoKeyHash.to_hex()}`);
-            const keyMatch = this.verifyKeyMatch(CardanoWasm, utxoPrivateKey, addr.Address__c);
-            if (keyMatch) {
-                console.log(`[UTXOAddresses] Key verification PASSED for path: ${addr.Path__c}`);
-                // TODO: Call Apex to update Private_Key__c if needed
-            } else {
-                console.error(`[UTXOAddresses] ERROR: Key mismatch for address ${addr.Address__c} at path: ${addr.Path__c}`);
-            }
-        }
     }
 
     async handleRefreshAddressCounts() {

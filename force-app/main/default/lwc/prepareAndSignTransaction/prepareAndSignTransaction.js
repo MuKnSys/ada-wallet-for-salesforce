@@ -6,7 +6,6 @@ import getWalletUTXOs from '@salesforce/apex/TransactionController.getWalletUTXO
 import getMultipleAddressUtxosDetailed from '@salesforce/apex/BlockfrostService.getMultipleAddressUtxosDetailed';
 import getEpochParameters from '@salesforce/apex/BlockfrostService.getEpochParameters';
 import getCurrentSlotAndTTL from '@salesforce/apex/BlockfrostService.getCurrentSlotAndTTL';
-import calculateMinAdaFromAmount from '@salesforce/apex/TransactionController.calculateMinAdaFromAmount';
 import updateOutboundTransactionCbor from '@salesforce/apex/TransactionController.updateOutboundTransactionCbor';
 import getOutboundTransactionCbor from '@salesforce/apex/TransactionController.getOutboundTransactionCbor';
 import getOutboundTransactionDetails from '@salesforce/apex/TransactionController.getOutboundTransactionDetails';

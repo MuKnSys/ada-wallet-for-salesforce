@@ -114,20 +114,6 @@ public with sharing class CreateNewWalletCtrl {
         }
     }
 
-    /**
-     * Enhanced method to check if address has any transactions (receiving or outbound)
-     * This replaces the simple "used" check with a comprehensive transaction check
-     */
-    @AuraEnabled(cacheable=true)
-    public static Boolean checkIsAddressUsed(String address) {
-        try {            
-            // Use /addresses/{address}/total endpoint via BlockfrostService.isAddressUsed for accurate historical usage check
-            return BlockfrostService.isAddressUsed(address);
-        } catch (Exception e) {            
-            throw new AuraHandledException('Failed to check if address is used: ' + e.getMessage());
-        }
-    }
-
     @AuraEnabled(cacheable=true)
     public static String getDecryptedSeedPhrase(Id walletSetId) {
         try {            

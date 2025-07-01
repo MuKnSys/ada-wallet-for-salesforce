@@ -12,7 +12,6 @@ import getDecryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getDecr
 import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
-import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {

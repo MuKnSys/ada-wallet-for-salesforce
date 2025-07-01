@@ -8,7 +8,6 @@ import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getF
 import { subscribe, unsubscribe, MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 /* eslint-disable no-console */
 const DEBUG = true;
