@@ -9,8 +9,6 @@ import { subscribe, unsubscribe, MessageContext, APPLICATION_SCOPE } from 'light
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
 
-/* eslint-disable no-console */
-const DEBUG = true;
 
 export default class Wallet extends LightningElement {
     _recordId;
@@ -73,7 +71,6 @@ export default class Wallet extends LightningElement {
     }
 
     async fetchUtxoCounts() {
-        if (DEBUG) console.log('[Wallet] fetchUtxoCounts start for', this.recordId);
         try {
             // Get UTXO address counts for debugging
             const data = await getUTXOAddresses({ walletId: this.recordId });
@@ -82,14 +79,10 @@ export default class Wallet extends LightningElement {
             
             // Get asset summary using new method that properly handles ADA conversion
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
-            if (DEBUG) console.log('[Wallet] Asset summary', summary);
             
             if (summary.success) {
                 const tokens = summary.tokens || [];
                 const adaBalance = summary.adaBalance || 0;
-                
-                // Log counts for debugging
-                console.log(`UTXO summary - Receiving: ${external}, Change: ${internal}, ADA: ${adaBalance}, Tokens: ${tokens.length}`);
                 
                 // Set ADA balance (already converted from lovelace using Value__c field)
                 this.balance = this.formatNumber(adaBalance, 6); // ADA uses 6 decimal places
@@ -112,24 +105,11 @@ export default class Wallet extends LightningElement {
                         imgUrl: token.icon || null,
                         icon: 'utility:apps'
                     });
-                    
-                    if (DEBUG) {
-                        console.log(`[Wallet] Token ${token.symbol}: amount=${token.amount}, decimals=${assetDecimals}, formatted=${this.formatNumber(token.amount, assetDecimals)}`);
-                    }
                 });
                 
                 this.assets = assetRows;
                 this.hasAssets = assetRows.length > 0;
-                
-                if (DEBUG) {
-                    console.log('[Wallet] ADA Balance:', adaBalance, '(formatted:', this.balance, ')');
-                    console.log('[Wallet] Tokens found:', tokens.length);
-                    tokens.forEach(token => {
-                        console.log(`[Wallet] Token ${token.symbol}: ${token.amount} (from ${token.rawAmount} raw)`);
-                    });
-                }
             } else {
-                console.error('[Wallet] Asset summary failed:', summary.message);
                 this.balance = '0';
                 this.assets = [];
                 this.hasAssets = false;
@@ -139,11 +119,9 @@ export default class Wallet extends LightningElement {
             const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
             this.paymentAddress = payAddr ? payAddr : 'No unused address available';
             this.isAddressInvalid = !payAddr;
-            if (DEBUG) console.log('[Wallet] fetchUtxoCounts done');
         } catch (error) {
             const message = error.body?.message || error.message || 'Unknown error';
             this.showToast('Error', message, 'error');
-            console.error('[Wallet] Error in fetchUtxoCounts:', error);
         } finally {
             this.isLoading = false;
         }
@@ -194,18 +172,10 @@ export default class Wallet extends LightningElement {
     }
 
     openSendModal() {
-        if (DEBUG) console.log('[Send] openSendModal called');
         this.sendAmount = '';
         this.sendRecipient = '';
         this.errorMessage = '';
         this.isSendButtonDisabled = true;
-        
-        if (DEBUG) console.log('[Send] Modal state reset:', {
-            sendAmount: this.sendAmount,
-            sendRecipient: this.sendRecipient,
-            errorMessage: this.errorMessage,
-            isSendButtonDisabled: this.isSendButtonDisabled
-        });
         
         this.showSend = true;
     }
@@ -281,92 +251,55 @@ export default class Wallet extends LightningElement {
     }
 
     handleAmountChange(event) {
-        if (DEBUG) console.log('[Send] handleAmountChange called with event:', event);
         const newAmount = event.target.value;
-        if (DEBUG) console.log('[Send] New amount value:', newAmount, 'Type:', typeof newAmount);
         this.sendAmount = newAmount;
-        if (DEBUG) console.log('[Send] Updated sendAmount:', this.sendAmount);
         this.updateSendState();
     }
 
     handleAddressChange(event) {
-        if (DEBUG) console.log('[Send] handleAddressChange called with event:', event);
         const newAddress = event.target.value;
-        if (DEBUG) console.log('[Send] New address value:', newAddress, 'Type:', typeof newAddress);
         this.sendRecipient = newAddress;
-        if (DEBUG) console.log('[Send] Updated sendRecipient:', this.sendRecipient);
         this.updateSendState();
     }
 
     handleMaxAmount() {
-        if (DEBUG) console.log('[Send] handleMaxAmount called');
         // Set the maximum amount to the current wallet balance
         const maxAmount = parseFloat(this.balance);
-        if (DEBUG) console.log('[Send] Current wallet balance:', this.balance, 'Max amount:', maxAmount);
         
         if (maxAmount > 0) {
             this.sendAmount = maxAmount.toString();
-            if (DEBUG) console.log('[Send] Set sendAmount to max balance:', this.sendAmount);
         } else {
             this.sendAmount = '0';
-            if (DEBUG) console.log('[Send] Wallet has no balance, set to 0');
         }
         this.updateSendState();
     }
 
     updateSendState() {
-        if (DEBUG) console.log('[Send] updateSendState called with:', JSON.stringify({
-            sendAmount: this.sendAmount,
-            sendRecipient: this.sendRecipient
-        }, null, 2));
-        
         // Basic validation - just enable/disable send button based on input
         const amount = parseFloat(this.sendAmount);
         const hasAmount = !isNaN(amount) && amount > 0;
         const hasRecipient = !!this.sendRecipient && this.sendRecipient.trim() !== '';
         
-        if (DEBUG) console.log('[Send] Basic validation:', JSON.stringify({
-            hasAmount: hasAmount,
-            hasRecipient: hasRecipient,
-            amount: amount,
-            recipient: this.sendRecipient
-        }, null, 2));
-        
         // Enable send button if we have both amount and recipient
         this.isSendButtonDisabled = !(hasAmount && hasRecipient);
         this.errorMessage = ''; // Clear any error messages
-        
-        if (DEBUG) console.log('[Send] Final send state:', JSON.stringify({
-            isSendButtonDisabled: this.isSendButtonDisabled,
-            errorMessage: this.errorMessage
-        }, null, 2));
     }
 
     async handleSend() {
-        if (DEBUG) console.log('[Send] handleSend started');
-        
         // Create the outbound transaction record
         try {
-            if (DEBUG) console.log('[Send] Creating outbound transaction with:', {
-                walletId: this.recordId,
-                toAddress: this.sendRecipient,
-                amount: this.sendAmount
-            });
-            
             const transactionId = await createOutboundTransaction({
                 walletId: this.recordId,
                 toAddress: this.sendRecipient,
                 amount: this.sendAmount
             });
             
-            if (DEBUG) console.log('[Send] Outbound transaction created successfully:', transactionId);
             this.showToast('Success', 'Outbound transaction created successfully.', 'success');
             
             // Close the modal after successful creation
             this.closeSendModal();
             
         } catch (error) {
-            if (DEBUG) console.error('[Send] Error creating outbound transaction:', error);
             this.showToast('Error', `Failed to create outbound transaction: ${error.body?.message || error.message}`, 'error');
         }
     }

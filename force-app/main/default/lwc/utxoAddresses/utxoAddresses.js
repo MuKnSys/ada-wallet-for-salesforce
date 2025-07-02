@@ -273,11 +273,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             const type = this.activeTab === 'external' ? '0' : '1'; // '0' for receiving, '1' for change
             const typeLabel = type === '0' ? 'receiving' : 'change';
             
-            console.log(`[UTXOAddresses] 🔑 Generating single ${typeLabel} address for wallet: ${this.recordId}`);
-            
             // Get the next index for the specified type
             const nextIndex = await getNextUTXOIndex({ walletId: this.recordId, type: type });
-            console.log(`[UTXOAddresses] Next ${typeLabel} index: ${nextIndex}`);
 
             // Fetch wallet data
             const wallet = await getWallet({ walletId: this.recordId });
@@ -292,8 +289,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             const network = CardanoWasm.NetworkInfo.mainnet();
             const accountIndexNum = wallet.Account_Index__c;
             const chainType = type === '0' ? 0 : 1; // 0 for external (receiving), 1 for internal (change)
-
-            console.log(`[UTXOAddresses] 🔨 Deriving ${typeLabel} address #${nextIndex} for account ${accountIndexNum}`);
 
             // Derive payment key
             const utxoPrivateKey = accountPrivateKey
@@ -338,8 +333,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 path: fullPath
             };
 
-            console.log(`[UTXOAddresses] ✅ Derived ${typeLabel} address: ${bech32Address}`);
-
             // Save to database
             let newAddressId;
             if (type === '0') {
@@ -354,46 +347,20 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 });
             }
             
-            console.log(`[UTXOAddresses] 💾 Saved ${typeLabel} address to database with ID: ${newAddressId}`);
-
             // Sync only the new address
-            try {
-                console.log(`[UTXOAddresses] 🔄 Syncing new ${typeLabel} address`);
-                const syncResult = await syncAssetsAndTransactions({ utxoAddressId: newAddressId });
-                
-                if (syncResult.success) {
-                    const stats = syncResult.statistics || {};
-                    console.log(`[UTXOAddresses] ✅ Sync completed for new ${typeLabel} address:`, {
-                        assetsInserted: stats.assetsInserted || 0,
-                        assetsUpdated: stats.assetsUpdated || 0, 
-                        transactionsInserted: stats.transactionsInserted || 0,
-                        transactionsUpdated: stats.transactionsUpdated || 0
-                    });
-                } else {
-                    console.warn(`[UTXOAddresses] ⚠️ Sync completed with warnings:`, syncResult.message);
-                }
-            } catch (e) {
-                console.error(`[UTXOAddresses] ❌ Sync failed for new ${typeLabel} address:`, e);
-                // Continue anyway - address was created successfully
-            }
+            await syncAssetsAndTransactions({ utxoAddressId: newAddressId });
 
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
             
-            try {
-                publish(this.messageContext, WALLET_SYNC_CHANNEL, {
+            publish(this.messageContext, WALLET_SYNC_CHANNEL, {
                     walletId: this.recordId,
                     action: 'assetsUpdated'
                 });
-            } catch(e) {
-                console.error('[UTXOAddresses] Failed to publish wallet sync message:', e);
-            }
 
-            console.log(`[UTXOAddresses] 🎉 Successfully generated new ${typeLabel} address #${nextIndex}`);
             this.showToast('Success', `New ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Address Generated`, 'success');
 
         } catch (error) {
-            console.error('[UTXOAddresses] ❌ Error generating address:', error);
             this.showToast('Error', `Failed to generate address: ${error.message}`, 'error');
         } finally {
             this.isLoading = false;
@@ -408,9 +375,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
     async handleRefreshAddressCounts() {
         this.isLoading = true;
-
-        console.log(`[UTXOAddresses] 🚀 Starting comprehensive UTXO refresh for wallet: ${this.recordId}`);
-        console.log(`[UTXOAddresses] Current addresses - External: ${this.externalAddresses.length}, Internal: ${this.internalAddresses.length}`);
 
         try {
             if (!this.isLibraryLoaded) {
@@ -436,11 +400,9 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             const stakeCred = CardanoWasm.Credential.from_keyhash(stakeKeyHash);
 
             // Phase 1: Sync existing addresses
-            console.log(`[UTXOAddresses] 📊 Phase 1: Syncing existing addresses`);
             await this.syncExistingAddresses();
 
             // Phase 2: Ensure 20 consecutive unused addresses for both receiving and change
-            console.log(`[UTXOAddresses] 🔍 Phase 2: Ensuring 20 consecutive unused addresses`);
             
             const receivingAddressesToAdd = await this.ensureConsecutiveUnusedAddresses(
                 this.externalAddresses, 0, accountPrivateKey, stakeCred, network, accountIndexNum, 'receiving'
@@ -452,60 +414,38 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
             // Phase 3: Create new addresses if needed
             if (receivingAddressesToAdd.length > 0 || changeAddressesToAdd.length > 0) {
-                console.log(`[UTXOAddresses] 💾 Phase 3: Creating ${receivingAddressesToAdd.length} receiving and ${changeAddressesToAdd.length} change addresses`);
-                
                 const createResult = await createUTXOAddressesBulk({
                     walletId: this.recordId,
                     receivingAddresses: receivingAddressesToAdd,
                     changeAddresses: changeAddressesToAdd
                 });
 
-                console.log(`[UTXOAddresses] ✅ Created new addresses:`, createResult);
-
                 // Phase 4: Sync new addresses
-                console.log(`[UTXOAddresses] 🔄 Phase 4: Syncing new addresses`);
                 const allNewAddresses = [...(createResult.receivingAddresses || []), ...(createResult.changeAddresses || [])];
                 
                 for (const newAddr of allNewAddresses) {
-                    if (newAddr.utxoAddressId) {
-                        try {
-                            const syncResult = await syncAssetsAndTransactions({ utxoAddressId: newAddr.utxoAddressId });
-                            console.log(`[UTXOAddresses] ✅ Synced new address ${newAddr.address}:`, syncResult);
-                        } catch (syncError) {
-                            console.error(`[UTXOAddresses] ❌ Failed to sync new address ${newAddr.address}:`, syncError);
-                        }
-                    }
+                    await syncAssetsAndTransactions({ utxoAddressId: newAddr.utxoAddressId });
                 }
-            } else {
-                console.log(`[UTXOAddresses] ✅ No new addresses needed - already have 20 consecutive unused`);
             }
 
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
-            console.log(`[UTXOAddresses] 🔄 Refreshed address data`);
 
             // Broadcast update so wallet component refreshes balances
-            try {
-                publish(this.messageContext, WALLET_SYNC_CHANNEL, {
+            publish(this.messageContext, WALLET_SYNC_CHANNEL, {
                     walletId: this.recordId,
                     action: 'assetsUpdated'
                 });
-                console.log(`[UTXOAddresses] 📢 Published wallet sync message`);
-            } catch(e) {
-                console.error('[UTXOAddresses] Failed to publish message:', e);
-            }
 
             const totalNew = (receivingAddressesToAdd?.length || 0) + (changeAddressesToAdd?.length || 0);
             const message = totalNew > 0 
                 ? `UTXO refresh completed. Created ${totalNew} new addresses and synced all assets.`
                 : 'UTXO refresh completed. All assets synced for existing addresses.';
                 
-            console.log(`[UTXOAddresses] 🎉 Refresh completed successfully`);
             this.showToast('Success', message, 'success');
 
         } catch (err) {
             const msg = err.body?.message || err.message || 'Unknown error';
-            console.error('[UTXOAddresses] ❌ Error during UTXO refresh:', msg);
             this.showToast('Error', `UTXO refresh failed: ${msg}`, 'error');
         } finally {
             this.isLoading = false;
@@ -517,31 +457,24 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
      */
     async syncExistingAddresses() {
         const allAddresses = [...this.externalAddresses, ...this.internalAddresses];
-        console.log(`[UTXOAddresses] Syncing ${allAddresses.length} existing addresses`);
         
         let syncedCount = 0;
         let errorCount = 0;
         
         for (const address of allAddresses) {
             try {
-                console.log(`[UTXOAddresses] 🔄 Syncing address: ${address.Address__c} (${address.Type__c === '0' ? 'receiving' : 'change'})`);
-                
                 const syncResult = await syncAssetsAndTransactions({ utxoAddressId: address.Id });
                 
                 if (syncResult.success) {
                     syncedCount++;
-                    console.log(`[UTXOAddresses] ✅ Successfully synced ${address.Address__c}`);
                 } else {
                     errorCount++;
-                    console.error(`[UTXOAddresses] ❌ Failed to sync ${address.Address__c}:`, syncResult.message);
                 }
             } catch (syncError) {
                 errorCount++;
-                console.error(`[UTXOAddresses] ❌ Error syncing ${address.Address__c}:`, syncError);
             }
         }
         
-        console.log(`[UTXOAddresses] 📊 Sync summary - Synced: ${syncedCount}, Failed: ${errorCount}`);
         return { syncedCount, errorCount };
     }
 
@@ -550,14 +483,11 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
      */
     async ensureConsecutiveUnusedAddresses(existingAddresses, derivationPath, accountPrivateKey, stakeCred, network, accountIndexNum, typeLabel) {
         const targetConsecutive = 20;
-        console.log(`[UTXOAddresses] 🎯 Ensuring ${targetConsecutive} consecutive unused ${typeLabel} addresses`);
         
         // Sort existing addresses by index
         const sortedAddresses = existingAddresses
             .slice()
             .sort((a, b) => (a.Index__c ?? 0) - (b.Index__c ?? 0));
-        
-        console.log(`[UTXOAddresses] Current ${typeLabel} addresses: ${sortedAddresses.length}`);
         
         // Find current consecutive unused count from the end
         let consecutiveUnused = 0;
@@ -566,13 +496,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         // Check existing addresses from highest index down to find consecutive unused
         for (let i = sortedAddresses.length - 1; i >= 0; i--) {
             const address = sortedAddresses[i];
-            console.log(`[UTXOAddresses] Checking ${typeLabel} address #${address.Index__c}: ${address.Address__c}`);
             
             try {
                 const usageResult = await checkAddressUsageOnly({ address: address.Address__c });
                 const isUsed = usageResult.isUsed || false;
-                
-                console.log(`[UTXOAddresses] ${typeLabel} address #${address.Index__c} is ${isUsed ? 'USED' : 'UNUSED'}`);
                 
                 if (isUsed) {
                     lastUsedIndex = address.Index__c;
@@ -581,17 +508,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                     consecutiveUnused++;
                 }
             } catch (error) {
-                console.error(`[UTXOAddresses] ❌ Error checking ${typeLabel} address #${address.Index__c}:`, error);
                 // Assume unused if check fails
                 consecutiveUnused++;
             }
         }
         
-        console.log(`[UTXOAddresses] 📊 ${typeLabel} analysis - Consecutive unused: ${consecutiveUnused}, Last used index: ${lastUsedIndex}`);
-        
         // If we already have enough consecutive unused, return empty array
         if (consecutiveUnused >= targetConsecutive) {
-            console.log(`[UTXOAddresses] ✅ Already have ${consecutiveUnused} consecutive unused ${typeLabel} addresses`);
             return [];
         }
         
@@ -599,8 +522,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         const neededCount = targetConsecutive - consecutiveUnused;
         const nextIndex = sortedAddresses.length > 0 ? 
             Math.max(...sortedAddresses.map(a => a.Index__c ?? 0)) + 1 : 0;
-        
-        console.log(`[UTXOAddresses] 🔨 Need to derive ${neededCount} more ${typeLabel} addresses starting from index ${nextIndex}`);
         
         // Derive new addresses
         const newAddresses = [];
@@ -610,8 +531,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             const currentIndex = nextIndex + i;
             
             try {
-                console.log(`[UTXOAddresses] 🔑 Deriving ${typeLabel} address #${currentIndex}`);
-                
                 // Derive payment key
                 const utxoPrivateKey = accountPrivateKey
                     .derive(derivationPath)
@@ -646,15 +565,12 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 };
                 
                 newAddresses.push(addressData);
-                console.log(`[UTXOAddresses] ✅ Derived ${typeLabel} address #${currentIndex}: ${bech32Address}`);
                 
             } catch (error) {
-                console.error(`[UTXOAddresses] ❌ Failed to derive ${typeLabel} address #${currentIndex}:`, error);
                 throw error;
             }
         }
         
-        console.log(`[UTXOAddresses] 🎉 Derived ${newAddresses.length} new ${typeLabel} addresses`);
         return newAddresses;
     }
 }
