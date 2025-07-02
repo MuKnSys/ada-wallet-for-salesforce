@@ -159,8 +159,11 @@ export default class Wallet extends LightningElement {
         try {
             const qrCodeElement = this.template.querySelector('.qr-code-canvas');
             if (qrCodeElement) {
-                // Clear previous QR code
-                qrCodeElement.innerHTML = '';
+                // Clear previous QR code by removing all child elements
+                while (qrCodeElement.firstChild) {
+                    qrCodeElement.removeChild(qrCodeElement.firstChild);
+                }
+                
                 // Generate new QR code
                 new QRCode(qrCodeElement, {
                     text: this.paymentAddress,

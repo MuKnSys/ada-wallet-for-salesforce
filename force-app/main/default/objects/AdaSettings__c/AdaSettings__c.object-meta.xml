@@ -3,5 +3,5 @@
     <customSettingsType>Hierarchy</customSettingsType>
     <enableFeeds>false</enableFeeds>
     <label>AdaSettings</label>
-    <visibility>Public</visibility>
+    <visibility>Protected</visibility>
 </CustomObject>
