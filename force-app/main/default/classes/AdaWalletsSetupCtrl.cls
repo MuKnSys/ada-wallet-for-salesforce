@@ -5,7 +5,8 @@ public with sharing class AdaWalletsSetupCtrl {
             return new SetupData()                
                 .withPrivateKey(AdaWalletsService.getPrivateKey())
                 .withBlockfrostProjectId(AdaWalletsService.getBlockfrostProjectId())
-                .withTransactionApprovalsEnabled(getTransactionApprovalsEnabled());
+                .withTransactionApprovalsEnabled(getTransactionApprovalsEnabled())
+                .withIsEncryptionKeySet(AdaWalletsService.isEncryptionKeySet());
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
@@ -23,6 +24,11 @@ public with sharing class AdaWalletsSetupCtrl {
     @AuraEnabled
     public static SetupData generatePrivateKey() {
         try {
+            // Check if key is already set (immutable)
+            if (AdaWalletsService.isEncryptionKeySet()) {
+                throw new AuraHandledException('Encryption key is already set and cannot be changed for security reasons');
+            }
+            
             String privateKey = EncodingUtil.convertToHex(Crypto.generateAesKey(128));
             AdaWalletsService.setPrivateKey(privateKey);
             return getSetup();
@@ -47,6 +53,8 @@ public with sharing class AdaWalletsSetupCtrl {
         public String blockfrostProjectId { get; set; }
         @AuraEnabled
         public Boolean isTransactionApprovalsEnabled { get; set; }
+        @AuraEnabled
+        public Boolean isEncryptionKeySet { get; set; }
 
         public SetupData withPrivateKey(String value) {
             privateKey = enrich(value);
@@ -54,7 +62,7 @@ public with sharing class AdaWalletsSetupCtrl {
         }
 
         public SetupData withBlockfrostProjectId(String value) {
-            blockfrostProjectId = enrich(value);
+            blockfrostProjectId = value;
             return this;
         }
 
@@ -62,9 +70,17 @@ public with sharing class AdaWalletsSetupCtrl {
             isTransactionApprovalsEnabled = value;
             return this;
         }
+        
+        public SetupData withIsEncryptionKeySet(Boolean value) {
+            isEncryptionKeySet = value;
+            return this;
+        }
 
         private String enrich(String value) {
-            return value == null ? '' : value;
+            if (String.isBlank(value)) {
+                return '';
+            }
+            return value;
         }
     }
 
@@ -89,7 +105,7 @@ public with sharing class AdaWalletsSetupCtrl {
     @AuraEnabled
     public static void updateTransactionApprovals(Boolean isEnabled) {
         try {
-            AdaSettings__c adaSettings = AdaSettings__c.getInstance();
+            AdaSettings__c adaSettings = AdaSettings__c.getOrgDefaults();
             if (adaSettings == null) {
                 adaSettings = new AdaSettings__c();
             }
@@ -101,11 +117,7 @@ public with sharing class AdaWalletsSetupCtrl {
     }
 
     private static Boolean getTransactionApprovalsEnabled() {
-        try {
-            AdaSettings__c adaSettings = AdaSettings__c.getInstance();
-            return adaSettings != null ? adaSettings.Transaction_approvals_enabled__c : false;
-        } catch (Exception e) {
-            return false;
-        }
+        AdaSettings__c adaSettings = AdaSettings__c.getOrgDefaults();
+        return adaSettings.Transaction_approvals_enabled__c != null ? adaSettings.Transaction_approvals_enabled__c : false;
     }
 }
