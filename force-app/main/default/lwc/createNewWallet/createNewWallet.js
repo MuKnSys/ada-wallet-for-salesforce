@@ -91,29 +91,31 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
     async handleWalletSetChange(event) {
         const newWalletSetId = event.detail.recordId || '';
+        const validation = this.validateWalletSetId(newWalletSetId);
         
-        if (newWalletSetId && !/^[a-zA-Z0-9]{15,18}$/.test(newWalletSetId)) {
-            this.pickerErrorMessage = 'Invalid Wallet Set ID selected';
+        if (!validation.isValid) {
+            this.pickerErrorMessage = validation.error;
             this.selectedWalletSetId = '';
             this.accountIndex = '0';
             this.accountIndexErrorMessage = '';
-        } else {
-            this.selectedWalletSetId = newWalletSetId;
-            this.pickerErrorMessage = newWalletSetId ? '' : 'Please select a Wallet Set';
-            if (newWalletSetId) {
-                try {
-                    const nextIndex = await getNextAccountIndex({ walletSetId: newWalletSetId });
-                    this.accountIndex = String(nextIndex);
-                    this.accountIndexErrorMessage = '';
-                } catch (error) {
-                    this.errorMessage = 'Failed to fetch next account index: ' + (error.body?.message || error.message);
-                    this.showToast('Error', this.errorMessage, 'error');
-                    this.accountIndex = '0';
-                }
-            } else {
-                this.accountIndex = '0';
+            return;
+        }
+        
+        this.selectedWalletSetId = newWalletSetId;
+        this.pickerErrorMessage = '';
+        
+        if (newWalletSetId) {
+            try {
+                const nextIndex = await getNextAccountIndex({ walletSetId: newWalletSetId });
+                this.accountIndex = String(nextIndex);
                 this.accountIndexErrorMessage = '';
+            } catch (error) {
+                this.handleError(error, 'Failed to fetch next account index');
+                this.accountIndex = '0';
             }
+        } else {
+            this.accountIndex = '0';
+            this.accountIndexErrorMessage = '';
         }
     }
 
@@ -124,9 +126,17 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     async handleAccountIndexChange(event) {
         const newIndex = event.target.value || '0';
         this.accountIndex = newIndex;
+        
+        // Client-side validation first
+        const validation = this.validateAccountIndex(newIndex);
+        if (!validation.isValid) {
+            this.accountIndexErrorMessage = validation.error;
+            return;
+        }
+        
         this.accountIndexErrorMessage = '';
 
-        if (this.selectedWalletSetId && !isNaN(newIndex)) {
+        if (this.selectedWalletSetId) {
             try {
                 const errorMessage = await isIndexValid({ walletSetId: this.selectedWalletSetId, accountIndex: parseInt(newIndex) });
                 if (errorMessage) {
@@ -134,8 +144,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                     this.showToast('Error', errorMessage, 'error');
                 }
             } catch (error) {
-                this.accountIndexErrorMessage = 'Failed to validate account index: ' + (error.body?.message || error.message);
-                this.showToast('Error', this.accountIndexErrorMessage, 'error');
+                this.handleError(error, 'Failed to validate account index');
             }
         }
     }
@@ -499,5 +508,49 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.dispatchEvent(
             new ShowToastEvent({ title, message, variant })
         );
+    }
+
+    // Validation helper methods
+    validateWalletSetId(walletSetId) {
+        if (!walletSetId) return { isValid: false, error: 'Please select a Wallet Set' };
+        if (!/^[a-zA-Z0-9]{15,18}$/.test(walletSetId)) {
+            return { isValid: false, error: 'Invalid Wallet Set ID selected' };
+        }
+        return { isValid: true, error: '' };
+    }
+
+    validateWalletName(walletName) {
+        if (!walletName || !walletName.trim()) {
+            return { isValid: false, error: 'Wallet Name is required' };
+        }
+        if (walletName.length > 255) {
+            return { isValid: false, error: 'Wallet Name must be 255 characters or less' };
+        }
+        return { isValid: true, error: '' };
+    }
+
+    validateAccountIndex(accountIndex) {
+        if (!accountIndex || isNaN(accountIndex)) {
+            return { isValid: false, error: 'Account Index must be a number' };
+        }
+        if (parseInt(accountIndex) < 0) {
+            return { isValid: false, error: 'Account Index must be non-negative' };
+        }
+        return { isValid: true, error: '' };
+    }
+
+    // Error handling helper
+    handleError(error, context = '') {
+        const message = error.body?.message || error.message || 'Unknown error';
+        const fullMessage = context ? `${context}: ${message}` : message;
+        this.errorMessage = fullMessage;
+        this.showToast('Error', fullMessage, 'error');
+        return fullMessage;
+    }
+
+    // Progress update helper
+    updateProgress(step, message = '') {
+        this.currentStep = step;
+        this.progressMessage = message;
     }
 }
