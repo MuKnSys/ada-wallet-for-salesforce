@@ -1,5 +1,5 @@
 @SuppressWarnings('PMD')
-public inherited sharing abstract class TriggerHandler {
+public inherited sharing abstract class TriggerHandlerADA {
     //Entry method called from the trigger itself
     public virtual void onTrigger() {
         if (Trigger.isBefore) {

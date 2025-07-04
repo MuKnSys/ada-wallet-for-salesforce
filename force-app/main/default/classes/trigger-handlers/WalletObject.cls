@@ -1,4 +1,4 @@
-public with sharing class Wallet extends TriggerHandler {
+public with sharing class WalletObject extends TriggerHandlerADA {
     public override void beforeInsert(List<SObject> records) {        
         validateWalletSetIndexUniqueness((List<Wallet__c>) records, null);
     }

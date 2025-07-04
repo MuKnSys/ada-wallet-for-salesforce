@@ -1,5 +1,5 @@
 @isTest
-private class WalletTest {
+private class WalletObjectTest {
     private static final String ASSERT_MESSAGE_ERROR = 'Should throw an error for duplicate index';
     private static final String ASSERT_MESSAGE_NO_ERROR = 'Should not throw an error for unique index';
     private static final String TEST_WALLET_NAME = 'Test Wallet';
