@@ -15,6 +15,17 @@ import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
+    // Configuration constants
+    TARGET_CONSECUTIVE_ADDRESSES = 20;
+    ADDRESS_TYPES = {
+        RECEIVING: 0,
+        CHANGE: 1
+    };
+    DERIVATION_PATHS = {
+        RECEIVING: 0,
+        CHANGE: 1
+    };
+
     @track librariesLoaded = false;
     @track selectedWalletSetId = '';
     @track walletName = '';
@@ -194,126 +205,139 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
      * Phase 3: Sync assets and transactions for each address (callouts + DML per address)
      */
     async generateAddressesUntilUnused(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, walletId) {
-        const targetConsecutive = 20;
-        const typeLabel = derivationPath === 0 ? 'receiving' : 'change';
+        const targetConsecutive = this.TARGET_CONSECUTIVE_ADDRESSES;
+        const typeLabel = derivationPath === this.DERIVATION_PATHS.RECEIVING ? 'receiving' : 'change';
 
-        this.currentStep = `Generating ${typeLabel} addresses`;
-        this.progressMessage = `Finding ${targetConsecutive} consecutive unused addresses...`;
+        this.updateProgress(`Generating ${typeLabel} addresses`, `Finding ${targetConsecutive} consecutive unused addresses...`);
 
-        // PHASE 1: Derive addresses and check usage (CALLOUTS ONLY)
+        // Phase 1: Generate and check addresses
+        const addresses = await this.generateAndCheckAddresses(
+            accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, typeLabel, targetConsecutive
+        );
+
+        // Phase 2: Create UTXO records
+        await this.createUTXORecords(addresses, typeLabel, walletId);
+
+        // Phase 3: Sync assets and transactions
+        await this.syncAddresses(addresses, typeLabel);
+
+        return addresses;
+    }
+
+    async generateAndCheckAddresses(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, typeLabel, targetConsecutive) {
         const addresses = [];
         let consecutiveUnused = 0;
         let index = 0;
 
         while (consecutiveUnused < targetConsecutive) {
-            // Update progress
-            this.progressMessage = `Phase 1 - Deriving address #${index}, ${consecutiveUnused}/${targetConsecutive} consecutive unused found`;
+            this.updateProgress(`Checking ${typeLabel} address #${index}`, 
+                `Phase 1 - ${consecutiveUnused}/${targetConsecutive} consecutive unused found`);
 
-            // Derive the address
-            const privateKey = accountKey
-                .derive(derivationPath)
-                .derive(index);
-            const publicKey = privateKey.to_public();
-            const keyHash = publicKey.to_raw_key().hash();
-            const cred = window.cardanoSerialization.Credential.from_keyhash(keyHash);
-
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                cred,
-                stakeCred
+            const addressData = await this.deriveAndVerifyAddress(
+                accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, index, typeLabel
             );
-            const bech32Address = baseAddress.to_address().to_bech32();
 
-            // Key verification
-            const keyMatch = this.verifyKeyMatch(window.cardanoSerialization, privateKey, bech32Address);
-            if (!keyMatch) {
-                throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${index}`);
-            }
-
-            const fullPath = `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${index}`;
-            const addressData = {
-                index: index,
-                publicKey: publicKey.to_bech32(),
-                privateKey: privateKey.to_bech32(),
-                address: bech32Address,
-                stakingKeyHash: stakeKeyHash.to_hex(),
-                path: fullPath
-            };
-
-            // Check usage via callouts only (no DML)
-            try {
-                this.currentStep = `Checking ${typeLabel} address #${index}`;
-                this.progressMessage = 'Checking blockchain for address usage...';
-
-                const usageResult = await checkAddressUsageOnly({ address: bech32Address });
-                
-                const isUsed = usageResult.isUsed || false;
-                
-                if (isUsed) {
-                    consecutiveUnused = 0;
-                } else {
-                    consecutiveUnused++;
-                }
-
-                // Store the address with usage information
-                addresses.push({
-                    ...addressData,
-                    isUsed: isUsed,
-                    usageResult: usageResult
-                });
-
-                // Update progress message with usage info
-                this.progressMessage = `Address #${index} ${isUsed ? 'USED' : 'UNUSED'} - ${consecutiveUnused}/${targetConsecutive} consecutive unused`;
-
-            } catch (usageError) {
-                // Update progress message with error info
-                this.progressMessage = `Usage check failed: ${usageError.message} - assuming unused`;
-                
-                // If usage check fails, assume address is unused and continue
+            const usageResult = await this.checkAddressUsage(addressData.address, index, typeLabel);
+            
+            if (usageResult.isUsed) {
+                consecutiveUnused = 0;
+            } else {
                 consecutiveUnused++;
-                
-                addresses.push({
-                    ...addressData,
-                    isUsed: false,
-                    usageError: usageError.message,
-                    usageResult: null
-                });
             }
 
+            addresses.push({
+                ...addressData,
+                isUsed: usageResult.isUsed,
+                usageResult: usageResult.result,
+                usageError: usageResult.error
+            });
+
+            this.updateProgress(`Address #${index} ${usageResult.isUsed ? 'USED' : 'UNUSED'}`, 
+                `${consecutiveUnused}/${targetConsecutive} consecutive unused`);
+            
             index++;
         }
 
-        // PHASE 2: Create all UTXO records in bulk (DML ONLY)
-        this.currentStep = `Creating ${typeLabel} UTXO records`;
-        this.progressMessage = `Creating ${addresses.length} ${typeLabel} addresses in Salesforce...`;
+        return addresses;
+    }
+
+    async deriveAndVerifyAddress(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, index, typeLabel) {
+        const privateKey = accountKey.derive(derivationPath).derive(index);
+        const publicKey = privateKey.to_public();
+        const keyHash = publicKey.to_raw_key().hash();
+        const cred = window.cardanoSerialization.Credential.from_keyhash(keyHash);
+
+        const baseAddress = window.cardanoSerialization.BaseAddress.new(
+            network.network_id(),
+            cred,
+            stakeCred
+        );
+        const bech32Address = baseAddress.to_address().to_bech32();
+
+        // Verify key match
+        const keyMatch = this.verifyKeyMatch(window.cardanoSerialization, privateKey, bech32Address);
+        if (!keyMatch) {
+            throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${index}`);
+        }
+
+        const fullPath = `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${index}`;
+        
+        return {
+            index: index,
+            publicKey: publicKey.to_bech32(),
+            privateKey: privateKey.to_bech32(),
+            address: bech32Address,
+            stakingKeyHash: stakeKeyHash.to_hex(),
+            path: fullPath
+        };
+    }
+
+    async checkAddressUsage(address, index, typeLabel) {
+        try {
+            this.updateProgress(`Checking ${typeLabel} address #${index}`, 'Checking blockchain for address usage...');
+            
+            const usageResult = await checkAddressUsageOnly({ address });
+            const isUsed = usageResult.isUsed || false;
+            
+            return { isUsed, result: usageResult, error: null };
+        } catch (error) {
+            this.updateProgress(`Usage check failed for ${typeLabel} address #${index}`, 
+                `Assuming unused due to error: ${error.message}`);
+            
+            return { isUsed: false, result: null, error: error.message };
+        }
+    }
+
+    async createUTXORecords(addresses, typeLabel, walletId) {
+        this.updateProgress(`Creating ${typeLabel} UTXO records`, 
+            `Creating ${addresses.length} ${typeLabel} addresses in Salesforce...`);
 
         try {
             const createResult = await createUTXOAddressesBulk({
                 walletId: walletId,
-                receivingAddresses: derivationPath === 0 ? addresses : [],
-                changeAddresses: derivationPath === 1 ? addresses : []
+                receivingAddresses: typeLabel === 'receiving' ? addresses : [],
+                changeAddresses: typeLabel === 'change' ? addresses : []
             });
 
-            // Merge the creation results with the usage data
-            const addressResults = derivationPath === 0 ? 
+            const addressResults = typeLabel === 'receiving' ? 
                 createResult.receivingAddresses : 
                 createResult.changeAddresses;
 
+            // Merge creation results with address data
             for (let i = 0; i < addresses.length && i < addressResults.length; i++) {
                 addresses[i].utxoAddressId = addressResults[i].utxoAddressId;
                 addresses[i].createResult = addressResults[i];
             }
 
-            this.progressMessage = `Successfully created ${addresses.length} ${typeLabel} addresses`;
-
-        } catch (createError) {
-            this.progressMessage = `Failed to create ${typeLabel} records: ${createError.message}`;
-            throw new Error(`Failed to create ${typeLabel} UTXO records: ${createError.message}`);
+            this.updateProgress(`Successfully created ${addresses.length} ${typeLabel} addresses`);
+        } catch (error) {
+            throw new Error(`Failed to create ${typeLabel} UTXO records: ${error.message}`);
         }
+    }
 
-        // PHASE 3: Sync assets and transactions for all created addresses
-        this.currentStep = `Syncing ${typeLabel} assets & transactions`;
-        this.progressMessage = `Syncing blockchain data for ${addresses.length} addresses...`;
+    async syncAddresses(addresses, typeLabel) {
+        this.updateProgress(`Syncing ${typeLabel} assets & transactions`, 
+            `Syncing blockchain data for ${addresses.length} addresses...`);
 
         let syncedCount = 0;
         let totalUsedAddresses = 0;
@@ -321,49 +345,46 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         for (let i = 0; i < addresses.length; i++) {
             const address = addresses[i];
             
-            if (!address.utxoAddressId) {
-                continue;
-            }
+            if (!address.utxoAddressId) continue;
 
-            this.progressMessage = `Syncing ${typeLabel} address #${address.index} (${i + 1}/${addresses.length})...`;
+            this.updateProgress(`Syncing ${typeLabel} address #${address.index}`, 
+                `${i + 1}/${addresses.length}...`);
             
             try {
                 const syncResult = await syncAssetsAndTransactions({ utxoAddressId: address.utxoAddressId });
                 
-                // Store sync results
                 address.syncResult = syncResult;
                 address.syncSuccess = syncResult.success;
                 
-                // Determine if address is actually used based on sync results
                 if (syncResult.success && syncResult.statistics) {
                     const stats = syncResult.statistics;
-                    const assetsInserted = stats.assetsInserted || 0;
-                    const assetsUpdated = stats.assetsUpdated || 0;
-                    const transactionsInserted = stats.transactionsInserted || 0;
-                    const transactionsUpdated = stats.transactionsUpdated || 0;
-                    
-                    const actuallyUsed = assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
+                    const actuallyUsed = this.isAddressActuallyUsed(stats);
                     address.actuallyUsed = actuallyUsed;
                     
-                    if (actuallyUsed) {
-                        totalUsedAddresses++;
-                    }
+                    if (actuallyUsed) totalUsedAddresses++;
                 }
                 
                 syncedCount++;
-                
-            } catch (syncError) {
-                address.syncError = syncError.message;
+            } catch (error) {
+                address.syncError = error.message;
                 address.syncSuccess = false;
                 
-                // Continue syncing other addresses even if one fails
-                this.progressMessage = `Sync failed for address #${address.index}: ${syncError.message}`;
+                this.updateProgress(`Sync failed for ${typeLabel} address #${address.index}`, 
+                    error.message);
             }
         }
 
-        this.progressMessage = `Synced ${syncedCount}/${addresses.length} ${typeLabel} addresses (${totalUsedAddresses} actually used)`;
+        this.updateProgress(`Synced ${syncedCount}/${addresses.length} ${typeLabel} addresses`, 
+            `${totalUsedAddresses} actually used`);
+    }
 
-        return addresses;
+    isAddressActuallyUsed(stats) {
+        const assetsInserted = stats.assetsInserted || 0;
+        const assetsUpdated = stats.assetsUpdated || 0;
+        const transactionsInserted = stats.transactionsInserted || 0;
+        const transactionsUpdated = stats.transactionsUpdated || 0;
+        
+        return assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
     }
 
     async createWallet() {
