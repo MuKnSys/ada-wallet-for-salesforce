@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>NowOverride__c</fullName>
+    <description>Overrides the &quot;now&quot; datetime used by all Aquiva apex code. If this is set, then Today Override is ignored.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Overrides the &quot;now&quot; datetime used by all Aquiva apex code. If this is set, then Today Override is ignored.</inlineHelpText>
+    <label>Now Override</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

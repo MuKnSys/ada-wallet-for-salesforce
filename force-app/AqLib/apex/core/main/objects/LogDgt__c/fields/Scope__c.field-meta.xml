@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Scope__c</fullName>
+    <description>Use to indicate the area that the event refers to, such as the related field or fields or the JSON path.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Use to indicate the area that the event refers to, such as the related field or fields or the JSON path.</inlineHelpText>
+    <label>Scope</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

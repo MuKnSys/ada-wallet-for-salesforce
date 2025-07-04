@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Recent</fullName>
+    <columns>NAME</columns>
+    <columns>LogDate__c</columns>
+    <columns>Level__c</columns>
+    <columns>Severity__c</columns>
+    <columns>RelatedRecord__c</columns>
+    <columns>Message__c</columns>
+    <columns>ResultType__c</columns>
+    <columns>Status__c</columns>
+    <columns>Source__c</columns>
+    <columns>Scope__c</columns>
+    <columns>Code__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>CREATED_DATE</field>
+        <operation>greaterOrEqual</operation>
+        <value>YESTERDAY</value>
+    </filters>
+    <label>Recent</label>
+</ListView>
