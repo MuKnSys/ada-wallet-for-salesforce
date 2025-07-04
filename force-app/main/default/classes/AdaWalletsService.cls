@@ -10,6 +10,10 @@ public with sharing class AdaWalletsService {
     }
 
     public static String getPrivateKey() {
+        if (!hasRequiredPermissions()) {
+            throw new SecurityException('Access denied: insufficient permissions to access encryption key');
+        }
+        
         AdaSettings__c adaSettings = getSettings();
         return adaSettings.Private_Key__c != null ? adaSettings.Private_Key__c : '';
     }
@@ -50,6 +54,26 @@ public with sharing class AdaWalletsService {
     public static void validateEncryptionKey() {
         if (!isEncryptionKeySet()) {
             throw new SecurityException('Encryption key is not configured. Please set up the encryption key first.');
+        }
+    }
+    
+    private static Boolean hasRequiredPermissions() {
+        return hasPermissionSet('Ada_Wallet_Seed_Phrase');
+    }
+    
+    private static Boolean hasPermissionSet(String permissionSetName) {
+        try {
+            Set<Id> userPermissionSets = new Set<Id>();
+            for (PermissionSetAssignment psa : [SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()]) {
+                userPermissionSets.add(psa.PermissionSetId);
+            }
+            
+            Id requiredPsId = [SELECT Id FROM PermissionSet WHERE Name = :permissionSetName LIMIT 1].Id;
+            
+            return userPermissionSets.contains(requiredPsId);
+        } catch (Exception e) {
+            Logger.logError('Error checking permission set: ' + e.getMessage());
+            return false;
         }
     }
 }

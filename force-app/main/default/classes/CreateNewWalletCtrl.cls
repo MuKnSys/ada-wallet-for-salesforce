@@ -92,25 +92,16 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static String isIndexValid(String walletSetId, Integer accountIndex) {
         try {
-            // Fetch Wallet_Set__c Name for error message
-            Wallet_Set__c walletSet = WalletSetSelector.getWalletSetById(walletSetId);
-
             // Check if the index is already used
             List<Wallet__c> wallets = WalletSelector.getWalletByWalletSetAndAccountIndex(walletSetId, accountIndex);
 
             if (!wallets.isEmpty()) {
-                String errorMessage = 'Account ' + accountIndex + ' already exists for Wallet Set ' + walletSet.Name + '. Try a different wallet set or Account Index.';
-                Logger.logInfo('Validation failed for Wallet Set: ' + walletSetId + ', Account Index: ' + accountIndex + ': ' + errorMessage);
+                String errorMessage = 'Account ' + accountIndex + ' already exists for this Wallet Set. Try a different wallet set or Account Index.';
                 return errorMessage;
             }
-
-            Logger.logInfo('Account Index ' + accountIndex + ' is valid for Wallet Set: ' + walletSetId);
             return null;
-        } catch (Exception e) {
-            Logger.logError('Error validating account index for Wallet Set: ' + walletSetId + ', Account Index: ' + accountIndex + ': ' + e.getMessage());
+        } catch (Exception e) {            
             throw new AuraHandledException('Error validating account index: ' + e.getMessage());
-        } finally {
-            Logger.commitLogs();
         }
     }
 
@@ -130,8 +121,6 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static Map<String, Object> checkAddressUsageOnly(String address) {
         try {
-            Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] 🔍 Checking usage for address: ' + address);
-            
             // Call Blockfrost directly to check if address is used
             Boolean isUsed = BlockfrostService.isAddressUsed(address);
             
@@ -145,27 +134,18 @@ public with sharing class CreateNewWalletCtrl {
             };
             
             if (isUsed) {
-                try {
-                    // Try to get more details about what makes it "used"
-                    String utxosJson = BlockfrostService.getAddressUtxos(address);
-                    List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxosJson);
-                    result.put('hasAssets', !utxoList.isEmpty());
-                    
-                    String transactionsJson = BlockfrostService.getAddressTransactions(address);
-                    List<Object> transactionList = (List<Object>) JSON.deserializeUntyped(transactionsJson);
-                    result.put('hasTransactions', !transactionList.isEmpty());
-                    
-                    Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] 📊 Address ' + address + ' usage details: UTXOs=' + utxoList.size() + ', Transactions=' + transactionList.size());
-                } catch (Exception detailsError) {
-                    Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] ⚠️ Could not get detailed usage for ' + address + ': ' + detailsError.getMessage());
-                }
+                // Try to get more details about what makes it "used"
+                String utxosJson = BlockfrostService.getAddressUtxos(address);
+                List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxosJson);
+                result.put('hasAssets', !utxoList.isEmpty());
+                
+                String transactionsJson = BlockfrostService.getAddressTransactions(address);
+                List<Object> transactionList = (List<Object>) JSON.deserializeUntyped(transactionsJson);
+                result.put('hasTransactions', !transactionList.isEmpty());
             }
-            
-            Logger.logInfo('[CreateNewWalletCtrl.checkAddressUsageOnly] ✅ Address ' + address + ' check complete: isUsed=' + isUsed);
             return result;
             
         } catch (Exception e) {
-            Logger.logError('[CreateNewWalletCtrl.checkAddressUsageOnly] ❌ Error checking address usage: ' + e.getMessage());
             throw new AuraHandledException('Failed to check address usage: ' + e.getMessage());
         }
     }
@@ -176,9 +156,6 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static Map<String, Object> createUTXOAddressesBulk(String walletId, List<UTXOAddressData> receivingAddresses, List<UTXOAddressData> changeAddresses) {
         try {
-            Logger.logInfo('[CreateNewWalletCtrl.createUTXOAddressesBulk] 📍 Creating UTXO addresses in bulk for wallet: ' + walletId);
-            Long startTime = System.now().getTime();
-            
             // Validate inputs
             if (receivingAddresses == null || changeAddresses == null) {
                 throw new AuraHandledException('Address lists cannot be null');
@@ -253,19 +230,13 @@ public with sharing class CreateNewWalletCtrl {
                 'changeAddresses' => changeResults,
                 'statistics' => new Map<String, Object>{
                     'totalReceivingCreated' => receivingAddresses.size(),
-                    'totalChangeCreated' => changeAddresses.size(),
-                    'processingTimeMs' => System.now().getTime() - startTime
+                    'totalChangeCreated' => changeAddresses.size()
                 }
             };
-
-            Logger.logInfo('[CreateNewWalletCtrl.createUTXOAddressesBulk] ✅ Created ' + allAddresses.size() + ' UTXO addresses in bulk');
             return result;
             
         } catch (Exception e) {
-            Logger.logError('[CreateNewWalletCtrl.createUTXOAddressesBulk] ❌ Error: ' + e.getMessage());
             throw new AuraHandledException('Error creating UTXO addresses in bulk: ' + e.getMessage());
-        } finally {
-            Logger.commitLogs();
         }
     }
 }
