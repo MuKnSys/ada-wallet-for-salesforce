@@ -400,35 +400,22 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         }
 
         this.currentStep = 'Retrieving seed phrase';
-        let mnemonic;
-        try {
-            mnemonic = await getDecryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });            
-            if (!mnemonic) {
-                throw new Error('Seed phrase is empty or null');
-            }
-            if (!window.bip39.validateMnemonic(mnemonic)) {
-                throw new Error('Decrypted mnemonic is invalid');
-            }
-        } catch (error) {
-            throw new Error('Failed to retrieve seed phrase: ' + (error.body?.message || error.message));
+        const mnemonic = await getDecryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });
+        
+        if (!mnemonic) {
+            throw new Error('Seed phrase is empty or null');
+        }
+        if (!window.bip39.validateMnemonic(mnemonic)) {
+            throw new Error('Decrypted mnemonic is invalid');
         }
 
         this.currentStep = 'Deriving cryptographic keys';
         const entropy = window.bip39.mnemonicToEntropy(mnemonic);
         const seed = Buffer.from(entropy, 'hex');
-
-        let rootKey;
-        try {
-            rootKey = window.cardanoSerialization.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
-        } catch (error) {
-            throw new Error('Failed to derive root key: ' + error.message);
-        }
+        const rootKey = window.cardanoSerialization.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
 
         const harden = (num) => 0x80000000 + num;
 
-        if (accountIndexNum < 0) {
-            throw new Error('Account Index must be non-negative');
-        }
         const accountKey = rootKey
             .derive(harden(1852))
             .derive(harden(1815))
@@ -450,38 +437,33 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         const network = window.cardanoSerialization.NetworkInfo.mainnet();
 
         this.currentStep = 'Creating wallet record';
-        let recordId;
-        try {
-            const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
-            const paymentCred = window.cardanoSerialization.Credential.from_keyhash(paymentKeyHash);
+        const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
+        const paymentCred = window.cardanoSerialization.Credential.from_keyhash(paymentKeyHash);
 
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                paymentCred,
-                stakeCred
-            );
-            const bech32Address = baseAddress.to_address().to_bech32();
+        const baseAddress = window.cardanoSerialization.BaseAddress.new(
+            network.network_id(),
+            paymentCred,
+            stakeCred
+        );
+        const bech32Address = baseAddress.to_address().to_bech32();
 
-            recordId = await createWallet({
-                walletSetId: this.selectedWalletSetId,
-                walletName: this.walletName,
-                address: bech32Address,
-                accountPrivateKey: paymentPrivateKey.to_bech32(),
-                accountPublicKey: paymentPublicKey.to_bech32(),
-                accountIndex: accountIndexNum
-            });
+        const recordId = await createWallet({
+            walletSetId: this.selectedWalletSetId,
+            walletName: this.walletName,
+            address: bech32Address,
+            accountPrivateKey: paymentPrivateKey.to_bech32(),
+            accountPublicKey: paymentPublicKey.to_bech32(),
+            accountIndex: accountIndexNum
+        });
 
-            if (!recordId) {
-                throw new Error('Error creating wallet record');
-            }
-        } catch (error) {
-            throw new Error('Failed to save wallet: ' + (error.body?.message || error.message));
+        if (!recordId) {
+            throw new Error('Error creating wallet record');
         }
 
         // Generate receiving addresses with full syncing (usage check, creation, and asset/transaction sync)
         const receivingAddresses = await this.generateAddressesUntilUnused(
             accountKey,
-            0, // derivation path for receiving addresses
+            this.DERIVATION_PATHS.RECEIVING, // derivation path for receiving addresses
             accountIndexNum,
             stakeCred,
             network,
@@ -492,7 +474,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         // Generate change addresses with full syncing (usage check, creation, and asset/transaction sync)
         const changeAddresses = await this.generateAddressesUntilUnused(
             accountKey,
-            1, // derivation path for change addresses
+            this.DERIVATION_PATHS.CHANGE, // derivation path for change addresses
             accountIndexNum,
             stakeCred,
             network,
