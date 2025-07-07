@@ -16,3 +16,34 @@
 .slds-p-around_medium {
     padding: 1rem;
 }
+
+/* Seed phrase verification styles */
+.seed-input-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.seed-input-field {
+    margin-bottom: 0.5rem;
+}
+
+.seed-input-field lightning-input {
+    font-size: 0.875rem;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .seed-input-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .seed-input-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+}

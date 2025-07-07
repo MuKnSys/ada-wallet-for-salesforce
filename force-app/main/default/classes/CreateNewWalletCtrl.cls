@@ -106,9 +106,9 @@ public with sharing class CreateNewWalletCtrl {
     }
 
     @AuraEnabled(cacheable=true)
-    public static String getDecryptedSeedPhrase(Id walletSetId) {
+    public static String getEncryptedSeedPhrase(Id walletSetId) {
         try {            
-            return EncryptedDataService.getDecryptedSeedPhrase(walletSetId);
+            return EncryptedDataService.getEncryptedSeedPhrase(walletSetId);
         } catch (Exception e) {            
             throw new AuraHandledException('Failed to get seed phrase: ' + e.getMessage());
         }
@@ -237,6 +237,45 @@ public with sharing class CreateNewWalletCtrl {
             
         } catch (Exception e) {
             throw new AuraHandledException('Error creating UTXO addresses in bulk: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * Verify user-entered seed phrase against the encrypted seed phrase stored in the database
+     */
+    @AuraEnabled
+    public static Boolean verifySeedPhrase(String walletSetId, String userSeedPhrase) {
+        try {
+            if (String.isBlank(walletSetId)) {
+                throw new AuraHandledException('Wallet Set ID is required');
+            }
+            if (String.isBlank(userSeedPhrase)) {
+                throw new AuraHandledException('Seed phrase is required');
+            }
+
+            // Get the Wallet Set record with encrypted seed phrase
+            Wallet_Set__c walletSet = [
+                SELECT Id, Seed_Phrase__c
+                FROM Wallet_Set__c
+                WHERE Id = :walletSetId
+                LIMIT 1
+            ];
+
+            if (walletSet == null) {
+                throw new AuraHandledException('Wallet Set not found');
+            }
+
+            if (String.isBlank(walletSet.Seed_Phrase__c)) {
+                throw new AuraHandledException('Seed phrase not found for this Wallet Set');
+            }
+
+            // Verify the user-entered seed phrase using HMAC
+            Boolean isValid = DataEncryptor.verifyHmac(userSeedPhrase, walletSet.Seed_Phrase__c);            
+
+            return isValid;
+
+        } catch (Exception e) {            
+            throw new AuraHandledException('Error verifying seed phrase: ' + e.getMessage());
         }
     }
 }

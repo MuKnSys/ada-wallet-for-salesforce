@@ -39,9 +39,9 @@ public with sharing class UTXOController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static String getDecryptedSeedPhrase(Id walletSetId) {
+    public static String getEncryptedSeedPhrase(Id walletSetId) {
         try {            
-            return EncryptedDataService.getDecryptedSeedPhrase(walletSetId);
+            return EncryptedDataService.getEncryptedSeedPhrase(walletSetId);
         } catch (Exception e) {            
             throw new AuraHandledException('Failed to get seed phrase: ' + e.getMessage());
         }

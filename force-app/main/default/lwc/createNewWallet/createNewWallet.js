@@ -8,10 +8,11 @@ import bip39Library from '@salesforce/resourceUrl/bip39';
 
 import checkAddressUsageOnly from '@salesforce/apex/CreateNewWalletCtrl.checkAddressUsageOnly';
 import createUTXOAddressesBulk from '@salesforce/apex/CreateNewWalletCtrl.createUTXOAddressesBulk';
-import getDecryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getDecryptedSeedPhrase';
+import getEncryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getEncryptedSeedPhrase';
 import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
+import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
@@ -36,6 +37,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track isLoading = false;
     @track currentStep = '';
     @track progressMessage = '';
+    @track showSeedPhraseVerification = false;
+    @track seedPhraseInputs = [];
+    @track seedPhraseErrorMessage = '';
+    @track originalSeedPhrase = [];
 
     get isCreateDisabled() {
         return !(
@@ -109,6 +114,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.selectedWalletSetId = '';
             this.accountIndex = '0';
             this.accountIndexErrorMessage = '';
+            this.showSeedPhraseVerification = false;
+            this.seedPhraseInputs = [];
+            this.originalSeedPhrase = [];
+            this.seedPhraseErrorMessage = '';
             return;
         }
         
@@ -120,6 +129,9 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 const nextIndex = await getNextAccountIndex({ walletSetId: newWalletSetId });
                 this.accountIndex = String(nextIndex);
                 this.accountIndexErrorMessage = '';
+                
+                // Initialize seed phrase verification
+                await this.initializeSeedPhraseVerification();
             } catch (error) {
                 this.handleError(error, 'Failed to fetch next account index');
                 this.accountIndex = '0';
@@ -127,6 +139,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         } else {
             this.accountIndex = '0';
             this.accountIndexErrorMessage = '';
+            this.showSeedPhraseVerification = false;
+            this.seedPhraseInputs = [];
+            this.originalSeedPhrase = [];
+            this.seedPhraseErrorMessage = '';
         }
     }
 
@@ -173,6 +189,40 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             return;
         }
 
+        // If seed phrase verification is required, validate it on server first
+        if (this.showSeedPhraseVerification) {
+            const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim()).join(' ');
+            
+            if (!enteredPhrase || enteredPhrase.split(' ').length !== 24) {
+                this.seedPhraseErrorMessage = 'Please enter all 24 words correctly.';
+                this.showToast('Error', this.seedPhraseErrorMessage, 'error');
+                this.isLoading = false;
+                return;
+            }
+
+            try {
+                this.currentStep = 'Verifying seed phrase';
+                this.progressMessage = 'Checking seed phrase on server...';
+                
+                const isValid = await verifySeedPhrase({ 
+                    walletSetId: this.selectedWalletSetId, 
+                    userSeedPhrase: enteredPhrase 
+                });
+                
+                if (!isValid) {
+                    this.seedPhraseErrorMessage = 'Seed phrase is incorrect. Please check your entries.';
+                    this.showToast('Error', this.seedPhraseErrorMessage, 'error');
+                    this.isLoading = false;
+                    return;
+                }
+            } catch (error) {
+                this.seedPhraseErrorMessage = 'Error verifying seed phrase: ' + (error.body?.message || error.message);
+                this.showToast('Error', this.seedPhraseErrorMessage, 'error');
+                this.isLoading = false;
+                return;
+            }
+        }
+
         try {
             await this.createWallet();
             this.showToast('Success', `Wallet "${this.walletName}" created successfully`, 'success');
@@ -185,6 +235,45 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.currentStep = '';
             this.progressMessage = '';
         }
+    }
+
+    // Seed phrase verification methods
+    async initializeSeedPhraseVerification() {
+        if (!this.selectedWalletSetId) return;
+
+        try {
+            // Create input fields for 24 words (no need to get original phrase from server)
+            this.seedPhraseInputs = Array.from({ length: 24 }, (_, index) => {
+                return {
+                    label: `Word ${index + 1}`,
+                    value: ''
+                };
+            });
+
+            this.showSeedPhraseVerification = true;
+            this.seedPhraseErrorMessage = '';
+            this.originalSeedPhrase = []; // Not needed for server-side verification
+        } catch (error) {
+            this.errorMessage = 'Failed to initialize seed phrase verification: ' + (error.message || error);
+            this.showToast('Error', this.errorMessage, 'error');
+        }
+    }
+
+    handleSeedPhraseChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.seedPhraseInputs[index].value = event.target.value.toLowerCase().trim();
+        this.seedPhraseInputs = [...this.seedPhraseInputs];
+        this.seedPhraseErrorMessage = '';
+    }
+
+    isSeedPhraseValid() {
+        if (!this.showSeedPhraseVerification) {
+            return true;
+        }
+
+        // Basic client-side validation: check if all fields are filled
+        const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim());
+        return enteredPhrase.every(word => word.length > 0) && enteredPhrase.length === 24;
     }
 
     // Helper to verify private key matches address payment key hash
@@ -399,8 +488,17 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             throw new Error('Failed to validate account index: ' + (error.body?.message || error.message));
         }
 
-        this.currentStep = 'Retrieving seed phrase';
-        const mnemonic = await getDecryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });
+        // Use the seed phrase entered by user (already verified on server)
+        let mnemonic;
+        if (this.showSeedPhraseVerification) {
+            // Use the verified seed phrase from user input
+            const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim());
+            mnemonic = enteredPhrase.join(' ');
+        } else {
+            // Fallback to getting from database (for backward compatibility)
+            this.currentStep = 'Retrieving seed phrase';
+            mnemonic = await getEncryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });
+        }
         
         if (!mnemonic) {
             throw new Error('Seed phrase is empty or null');
@@ -505,6 +603,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.accountIndexErrorMessage = '';
         this.currentStep = '';
         this.progressMessage = '';
+        this.showSeedPhraseVerification = false;
+        this.seedPhraseInputs = [];
+        this.originalSeedPhrase = [];
+        this.seedPhraseErrorMessage = '';
     }
 
     showToast(title, message, variant) {

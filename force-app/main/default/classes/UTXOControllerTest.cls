@@ -40,11 +40,11 @@ private class UTXOControllerTest {
     }
     
     @isTest
-    static void shouldGetDecryptedSeedPhrase() {
+    static void shouldGetEncryptedSeedPhrase() {
         Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
 
         Test.startTest();
-        String result = UTXOController.getDecryptedSeedPhrase(walletSet.Id);
+        String result = UTXOController.getEncryptedSeedPhrase(walletSet.Id);
         Test.stopTest();
 
         Assert.areEqual(TEST_SEED_PHRASE, result, 'Decrypted seed phrase should match mock value');

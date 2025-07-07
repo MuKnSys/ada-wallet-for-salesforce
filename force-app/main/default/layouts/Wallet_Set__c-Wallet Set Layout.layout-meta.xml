@@ -52,12 +52,7 @@
         <style>CustomLinks</style>
     </layoutSections>
     <platformActionList>
-        <actionListContext>Record</actionListContext>
-        <platformActionListItems>
-            <actionName>Wallet_Set__c.Show_Seed_Phrase</actionName>
-            <actionType>QuickAction</actionType>
-            <sortOrder>0</sortOrder>
-        </platformActionListItems>        
+        <actionListContext>Record</actionListContext>        
         <platformActionListItems>
             <actionName>Edit</actionName>
             <actionType>StandardButton</actionType>

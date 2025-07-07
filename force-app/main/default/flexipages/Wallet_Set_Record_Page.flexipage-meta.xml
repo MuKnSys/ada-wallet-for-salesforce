@@ -5,17 +5,7 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>actionNames</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>Wallet_Set__c.Show_Seed_Phrase</value>
-                            <visibilityRule>
-                                <criteria>
-                                    <leftValue>{!$Permission.CustomPermission.See_seed_phrase}</leftValue>
-                                    <operator>EQUAL</operator>
-                                    <rightValue>true</rightValue>
-                                </criteria>
-                            </visibilityRule>
-                        </valueListItems>
+                    <valueList>                        
                         <valueListItems>
                             <value>Edit</value>
                         </valueListItems>

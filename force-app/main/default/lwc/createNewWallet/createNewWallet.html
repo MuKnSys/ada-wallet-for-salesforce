@@ -34,6 +34,32 @@
                 error-message={accountIndexErrorMessage}
             ></lightning-input>
             
+            <!-- Seed Phrase Verification Section -->
+            <template lwc:if={showSeedPhraseVerification}>
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">Verify Your Seed Phrase</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">
+                        Please enter your seed phrase to verify wallet ownership.
+                    </p>
+                    <div class="seed-input-grid">
+                        <template for:each={seedPhraseInputs} for:item="input" for:index="idx">
+                            <lightning-input 
+                                key={input.label}
+                                label={input.label}
+                                value={input.value}
+                                onchange={handleSeedPhraseChange}
+                                data-index={idx}
+                                class="seed-input-field"
+                                placeholder="Enter word">
+                            </lightning-input>
+                        </template>
+                    </div>
+                    <template lwc:if={seedPhraseErrorMessage}>
+                        <div class="slds-text-color_error slds-m-top_small">{seedPhraseErrorMessage}</div>
+                    </template>
+                </div>
+            </template>
+            
             <!-- Progress Display -->
             <template lwc:if={progressDisplay}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_small">
