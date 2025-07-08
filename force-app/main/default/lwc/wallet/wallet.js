@@ -24,6 +24,7 @@ export default class Wallet extends LightningElement {
     @track qrCodeError = false;
     @track assets = [];
     @track hasAssets = false;
+    @track transactions = [];
     @track sendAmount = '';
     @track sendRecipient = '';
     @track errorMessage = '';
@@ -113,6 +114,7 @@ export default class Wallet extends LightningElement {
         this.balance = '0';
         this.assets = [];
         this.hasAssets = false;
+        this.transactions = [];
     }
 
     async updatePaymentAddress() {
@@ -253,8 +255,7 @@ export default class Wallet extends LightningElement {
     }
 
     handleAddressChange(event) {
-        const newAddress = event.target.value;
-        this.sendRecipient = newAddress;
+        this.sendRecipient = event.target.value;
         this.updateSendState();
     }
 

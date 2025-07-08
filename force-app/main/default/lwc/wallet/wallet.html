@@ -174,7 +174,7 @@
                         </div>
                         <div class="form-field">
                             <label class="form-label" for="send-address">Recipient Address</label>
-                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address" value={sendRecipient} onchange={handleAddressChange}></textarea>
+                            <textarea id="send-address" class="form-input form-textarea" placeholder="Enter recipient address" oninput={handleAddressChange}></textarea>
                         </div>
                         <template lwc:if={errorMessage}>
                             <div class="error-message slds-text-color_destructive">{errorMessage}</div>
