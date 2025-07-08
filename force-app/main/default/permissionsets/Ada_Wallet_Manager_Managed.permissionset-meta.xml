@@ -15,11 +15,7 @@
     <classAccesses>
         <apexClass>UTXOController</apexClass>
         <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>WalletCtrl</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
+    </classAccesses>    
     <classAccesses>
         <apexClass>WalletSetCtrl</apexClass>
         <enabled>true</enabled>

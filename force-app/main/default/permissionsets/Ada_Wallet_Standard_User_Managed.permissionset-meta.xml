@@ -7,11 +7,7 @@
     <classAccesses>
         <apexClass>UTXOController</apexClass>
         <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>WalletCtrl</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
+    </classAccesses>    
     <customSettingAccesses>
         <enabled>true</enabled>
         <name>AdaSettings__c</name>
