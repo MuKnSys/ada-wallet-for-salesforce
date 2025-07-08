@@ -471,7 +471,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             const address = sortedAddresses[i];
             
             try {
-                const usageResult = await checkAddressUsageOnly({ address: address.Address__c });
+                const usageResult = address.Is_Used__c ? true : await checkAddressUsageOnly({ address: address.Address__c });
                 const isUsed = usageResult.isUsed || false;
                 
                 if (isUsed) {

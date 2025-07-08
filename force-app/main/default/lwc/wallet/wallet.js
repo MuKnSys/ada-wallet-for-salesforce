@@ -1,11 +1,13 @@
-import { LightningElement, track, api, wire } from 'lwc';
+import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
+import { subscribe, unsubscribe } from 'lightning/empApi';
+
 import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
+
 import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
 import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
 import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
-import { subscribe, unsubscribe } from 'lightning/empApi';
 
 
 export default class Wallet extends LightningElement {
