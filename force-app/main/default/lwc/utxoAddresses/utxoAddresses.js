@@ -3,7 +3,6 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
-import { publish, MessageContext } from 'lightning/messageService';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -19,8 +18,6 @@ import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOA
 import checkAddressUsageOnly from '@salesforce/apex/CreateNewWalletCtrl.checkAddressUsageOnly';
 import createUTXOAddressesBulk from '@salesforce/apex/CreateNewWalletCtrl.createUTXOAddressesBulk';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
-
-import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -40,7 +37,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     displayLimit = 5; // Limit to 5 addresses per tab
     wiredAddressesResult; // To store the wired result for refresh
     viewLess = true;
-    @wire(MessageContext) messageContext;
 
     // Datatable columns
     columns = [
@@ -346,17 +342,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                     changeAddress: newAddress
                 });
             }
-            
-            // Sync only the new address
-            await syncAssetsAndTransactions({ utxoAddressId: newAddressId });
-
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
-            
-            publish(this.messageContext, WALLET_SYNC_CHANNEL, {
-                    walletId: this.recordId,
-                    action: 'assetsUpdated'
-                });
 
             this.showToast('Success', `New ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Address Generated`, 'success');
 
@@ -419,27 +406,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                     receivingAddresses: receivingAddressesToAdd,
                     changeAddresses: changeAddressesToAdd
                 });
-
-                // Phase 4: Sync new addresses
-                const allNewAddresses = [...(createResult.receivingAddresses || []), ...(createResult.changeAddresses || [])];
-                
-                for (const newAddr of allNewAddresses) {
-                    await syncAssetsAndTransactions({ utxoAddressId: newAddr.utxoAddressId });
-                }
             }
 
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
-
-            // Broadcast update so wallet component refreshes balances
-            publish(this.messageContext, WALLET_SYNC_CHANNEL, {
-                    walletId: this.recordId,
-                    action: 'assetsUpdated'
-                });
-
             const totalNew = (receivingAddressesToAdd?.length || 0) + (changeAddressesToAdd?.length || 0);
             const message = totalNew > 0 
-                ? `UTXO refresh completed. Created ${totalNew} new addresses and synced all assets.`
+                ? `UTXO refresh completed. Created ${totalNew} new addresses.`
                 : 'UTXO refresh completed. All assets synced for existing addresses.';
                 
             this.showToast('Success', message, 'success');

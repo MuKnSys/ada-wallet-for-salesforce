@@ -2,16 +2,18 @@ import { LightningElement, track, api, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
-import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
 import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
 import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
-import { subscribe, unsubscribe, MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
-import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
+import { subscribe, unsubscribe } from 'lightning/empApi';
 
 
 export default class Wallet extends LightningElement {
+    CHANNEL_NAME = '/event/WalletSyncEvent__e';
+    
     _recordId;
+    eventSubscription = null;
+    
     @track balance = '0';
     @track paymentAddress = 'Loading payment address...';
     @track showReceive = false;
@@ -22,8 +24,6 @@ export default class Wallet extends LightningElement {
     @track qrCodeError = false;
     @track assets = [];
     @track hasAssets = false;
-    @wire(MessageContext) messageContext;
-    subscription = null;
     @track sendAmount = '';
     @track sendRecipient = '';
     @track errorMessage = '';
@@ -72,59 +72,53 @@ export default class Wallet extends LightningElement {
 
     async fetchUtxoCounts() {
         try {
-            // Get UTXO address counts for debugging
-            const data = await getUTXOAddresses({ walletId: this.recordId });
-            const external = data.filter(addr => addr.Type__c === '0').length;
-            const internal = data.filter(addr => addr.Type__c === '1').length;
-            
-            // Get asset summary using new method that properly handles ADA conversion
-            const summary = await getWalletAssetSummary({ walletId: this.recordId });
-            
-            if (summary.success) {
-                const tokens = summary.tokens || [];
-                const adaBalance = summary.adaBalance || 0;
-                
-                // Set ADA balance (already converted from lovelace using Value__c field)
-                this.balance = this.formatNumber(adaBalance, 6); // ADA uses 6 decimal places
-
-                // Build assets list for tokens (non-ADA assets)
-                const assetRows = [];
-                tokens.forEach(token => {
-                    // Use the actual decimals from the asset metadata, fallback to 0 if not available
-                    const assetDecimals = token.decimals !== null && token.decimals !== undefined ? token.decimals : 0;
-                    
-                    assetRows.push({
-                        id: token.unit || token.symbol,
-                        name: token.name || token.symbol,
-                        symbol: token.symbol || token.unit,
-                        amount: this.formatNumber(token.amount, assetDecimals), // Use actual asset decimals
-                        rawAmount: token.rawAmount, // Keep raw amount for reference
-                        decimals: token.decimals,
-                        policyId: token.policyId,
-                        fingerprint: token.fingerprint,
-                        imgUrl: token.icon || null,
-                        icon: 'utility:apps'
-                    });
-                });
-                
-                this.assets = assetRows;
-                this.hasAssets = assetRows.length > 0;
-            } else {
-                this.balance = '0';
-                this.assets = [];
-                this.hasAssets = false;
-            }
-
-            // Fetch payment address
-            const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
-            this.paymentAddress = payAddr ? payAddr : 'No unused address available';
-            this.isAddressInvalid = !payAddr;
+            await this.updateWalletBalance();
+            await this.updatePaymentAddress();
         } catch (error) {
             const message = error.body?.message || error.message || 'Unknown error';
             this.showToast('Error', message, 'error');
         } finally {
             this.isLoading = false;
         }
+    }
+
+    async updateWalletBalance() {
+        const summary = await getWalletAssetSummary({ walletId: this.recordId });
+        
+        if (summary.success) {
+            this.balance = this.formatNumber(summary.adaBalance || 0, 6);
+            this.assets = this.buildAssetRows(summary.tokens || []);
+            this.hasAssets = this.assets.length > 0;
+        } else {
+            this.resetWalletData();
+        }
+    }
+
+    buildAssetRows(tokens) {
+        return tokens.map(token => ({
+            id: token.unit || token.symbol,
+            name: token.name || token.symbol,
+            symbol: token.symbol || token.unit,
+            amount: this.formatNumber(token.amount, token.decimals || 0),
+            rawAmount: token.rawAmount,
+            decimals: token.decimals,
+            policyId: token.policyId,
+            fingerprint: token.fingerprint,
+            imgUrl: token.icon || null,
+            icon: 'utility:apps'
+        }));
+    }
+
+    resetWalletData() {
+        this.balance = '0';
+        this.assets = [];
+        this.hasAssets = false;
+    }
+
+    async updatePaymentAddress() {
+        const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
+        this.paymentAddress = payAddr || 'No unused address available';
+        this.isAddressInvalid = !payAddr;
     }
 
     generateQrCode() {
@@ -221,31 +215,33 @@ export default class Wallet extends LightningElement {
     }
 
     connectedCallback() {
-        this.subscribeToMessageChannel();
+        this.subscribeToWalletSyncEvent();
     }
 
     disconnectedCallback() {
-        this.unsubscribeToMessageChannel();
+        this.unsubscribeFromWalletSyncEvent();
     }
 
-    subscribeToMessageChannel() {
-        if (!this.subscription) {
-            this.subscription = subscribe(
-                this.messageContext,
-                WALLET_SYNC_CHANNEL,
-                (message) => this.handleMessage(message),
-                { scope: APPLICATION_SCOPE }
-            );
+    subscribeToWalletSyncEvent() {
+        if (!this.eventSubscription) {
+            const replayId = -1; // -1 for all retained events
+            
+            this.eventSubscription = subscribe(this.CHANNEL_NAME, replayId, (event) => {
+                this.handleWalletSyncEvent(event);
+            });
         }
     }
 
-    unsubscribeToMessageChannel() {
-        unsubscribe(this.subscription);
-        this.subscription = null;
+    unsubscribeFromWalletSyncEvent() {
+        if (this.eventSubscription) {
+            unsubscribe(this.eventSubscription);
+            this.eventSubscription = null;
+        }
     }
 
-    handleMessage(message) {
-        if (message.recordId === this.recordId) {
+    handleWalletSyncEvent(event) {
+        const { WalletId__c } = event.data.payload;
+        if (WalletId__c === this.recordId) {
             this.fetchUtxoCounts();
         }
     }
