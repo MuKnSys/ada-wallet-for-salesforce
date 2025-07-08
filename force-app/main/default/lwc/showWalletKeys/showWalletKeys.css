@@ -16,14 +16,3 @@
     border-radius: 4px; /* Rounded corners */
     border: 1px solid #d8dde6; /* Subtle border */
 }
-
-/* Ensure the card content is responsive */
-.slds-p-around_medium {
-    box-sizing: border-box;
-}
-
-/* Add spacing between buttons and content */
-.slds-m-bottom_medium {
-    display: flex;
-    gap: 8px; /* Space between buttons */
-}
