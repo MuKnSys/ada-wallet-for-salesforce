@@ -41,6 +41,26 @@
                     <p class="slds-text-body_small slds-m-bottom_medium">
                         Please enter your seed phrase to verify wallet ownership.
                     </p>
+                    
+                    <!-- Word Count Selection -->
+                    <div class="slds-m-bottom_medium">
+                        <fieldset class="slds-form-element">
+                            <legend class="slds-form-element__legend slds-form-element__label">
+                                Seed Phrase Length
+                            </legend>
+                            <div class="slds-form-element__control">
+                                <lightning-radio-group
+                                    name="wordCount"
+                                    label=""
+                                    options={wordCountOptions}
+                                    value={selectedWordCount}
+                                    onchange={handleSeedPhraseWordCountChange}
+                                    type="radio">
+                                </lightning-radio-group>
+                            </div>
+                        </fieldset>
+                    </div>
+                    
                     <div class="seed-input-grid">
                         <template for:each={seedPhraseInputs} for:item="input" for:index="idx">
                             <lightning-input 
