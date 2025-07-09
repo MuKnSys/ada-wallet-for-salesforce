@@ -5,7 +5,7 @@ import { labels } from './labels';
 import { TOAST_VARIANT, TOAST_MODE, STEPS } from 'c/constants';
 
 import getSetup from '@salesforce/apex/AdaWalletsSetupCtrl.getSetup';
-import generatePrivateKey from '@salesforce/apex/AdaWalletsSetupCtrl.generatePrivateKey';
+import generatePrivateAndHmacKey from '@salesforce/apex/AdaWalletsSetupCtrl.generatePrivateAndHmacKey';
 import enableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.enableLogging';
 import disableLogging from '@salesforce/apex/AdaWalletsSetupCtrl.disableLogging';
 import saveBlockfrostProjectId from '@salesforce/apex/AdaWalletsSetupCtrl.saveBlockfrostProjectId';
@@ -153,7 +153,7 @@ export default class AdaWalletSetup extends LightningElement {
     async handlePrivateKey() {
         this.isLoading = true;
         try {
-            const result = await generatePrivateKey();
+            const result = await generatePrivateAndHmacKey();
             this.processSetupData(result);
             this.showToast(this.labels.CORE.Success, this.labels.CORE.Success_Info, TOAST_VARIANT.SUCCESS, TOAST_MODE.SUCCESS);
         } catch (error) {

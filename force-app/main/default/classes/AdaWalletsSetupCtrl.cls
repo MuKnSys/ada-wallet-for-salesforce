@@ -6,7 +6,8 @@ public with sharing class AdaWalletsSetupCtrl {
                 .withPrivateKey(AdaWalletsService.getPrivateKey())
                 .withBlockfrostProjectId(AdaWalletsService.getBlockfrostProjectId())
                 .withTransactionApprovalsEnabled(getTransactionApprovalsEnabled())
-                .withIsEncryptionKeySet(AdaWalletsService.isEncryptionKeySet());
+                .withIsEncryptionKeySet(AdaWalletsService.isEncryptionKeySet())
+                .withIsHmacKeySet(AdaWalletsService.isHmacKeySet());
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
@@ -22,15 +23,20 @@ public with sharing class AdaWalletsSetupCtrl {
     }
 
     @AuraEnabled
-    public static SetupData generatePrivateKey() {
+    public static SetupData generatePrivateAndHmacKey() {
         try {
             // Check if key is already set (immutable)
             if (AdaWalletsService.isEncryptionKeySet()) {
                 throw new AuraHandledException('Encryption key is already set and cannot be changed for security reasons');
             }
+            if (AdaWalletsService.isHmacKeySet()) {
+                throw new AuraHandledException('Hmac key is already set and cannot be changed for security reasons');
+            }
             
-            String privateKey = EncodingUtil.convertToHex(Crypto.generateAesKey(128));
+            String privateKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+            String hmacKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
             AdaWalletsService.setPrivateKey(privateKey);
+            AdaWalletsService.setHmacKey(hmacKey);
             return getSetup();
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
@@ -55,6 +61,8 @@ public with sharing class AdaWalletsSetupCtrl {
         public Boolean isTransactionApprovalsEnabled { get; set; }
         @AuraEnabled
         public Boolean isEncryptionKeySet { get; set; }
+        @AuraEnabled
+        public Boolean isHmacKeySet { get; set; }
 
         public SetupData withPrivateKey(String value) {
             privateKey = enrich(value);
@@ -73,6 +81,11 @@ public with sharing class AdaWalletsSetupCtrl {
         
         public SetupData withIsEncryptionKeySet(Boolean value) {
             isEncryptionKeySet = value;
+            return this;
+        }
+
+        public SetupData withIsHmacKeySet(Boolean value) {
+            isHmacKeySet = value;
             return this;
         }
 
