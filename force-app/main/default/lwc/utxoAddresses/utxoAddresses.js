@@ -15,8 +15,6 @@ import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissio
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
-import checkAddressUsageOnly from '@salesforce/apex/CreateNewWalletCtrl.checkAddressUsageOnly';
-import createUTXOAddressesBulk from '@salesforce/apex/CreateNewWalletCtrl.createUTXOAddressesBulk';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
@@ -367,53 +365,11 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             if (!this.isLibraryLoaded) {
                 throw new Error('Cardano libraries not loaded yet. Please wait and try again.');
             }
-
-            // Fetch wallet and setup crypto
-            const wallet = await getWallet({ walletId: this.recordId });
-            if (!wallet || !wallet.Account_Private_Key__c) {
-                throw new Error('Wallet record or Account Private Key not found');
-            }
-
-            const accountPrivateKeyBech32 = await decrypt({ encryptedText: wallet.Account_Private_Key__c });
-            const CardanoWasm = window.cardanoSerialization;
-            const accountPrivateKey = CardanoWasm.Bip32PrivateKey.from_bech32(accountPrivateKeyBech32);
-            const network = CardanoWasm.NetworkInfo.mainnet();
-            const accountIndexNum = wallet.Account_Index__c;
-            
-            // Derive stake key for new addresses
-            const stakePrivateKey = accountPrivateKey.derive(2).derive(0).to_raw_key();
-            const stakePublicKey = stakePrivateKey.to_public();
-            const stakeKeyHash = stakePublicKey.hash();
-            const stakeCred = CardanoWasm.Credential.from_keyhash(stakeKeyHash);
-
-            // Phase 1: Sync existing addresses
             await this.syncExistingAddresses();
 
-            // Phase 2: Ensure 20 consecutive unused addresses for both receiving and change
-            
-            const receivingAddressesToAdd = await this.ensureConsecutiveUnusedAddresses(
-                this.externalAddresses, 0, accountPrivateKey, stakeCred, network, accountIndexNum, 'receiving'
-            );
-            
-            const changeAddressesToAdd = await this.ensureConsecutiveUnusedAddresses(
-                this.internalAddresses, 1, accountPrivateKey, stakeCred, network, accountIndexNum, 'change'
-            );
-
-            // Phase 3: Create new addresses if needed
-            if (receivingAddressesToAdd.length > 0 || changeAddressesToAdd.length > 0) {
-                const createResult = await createUTXOAddressesBulk({
-                    walletId: this.recordId,
-                    receivingAddresses: receivingAddressesToAdd,
-                    changeAddresses: changeAddressesToAdd
-                });
-            }
-
-            // Refresh data and notify other components
+            // Refresh data
             await refreshApex(this.wiredAddressesResult);
-            const totalNew = (receivingAddressesToAdd?.length || 0) + (changeAddressesToAdd?.length || 0);
-            const message = totalNew > 0 
-                ? `UTXO refresh completed. Created ${totalNew} new addresses.`
-                : 'UTXO refresh completed. All assets synced for existing addresses.';
+            const message = 'UTXO refresh completed.';
                 
             this.showToast('Success', message, 'success');
 
@@ -449,101 +405,5 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         }
         
         return { syncedCount, errorCount };
-    }
-
-    /**
-     * Ensure 20 consecutive unused addresses exist, derive new ones if needed
-     */
-    async ensureConsecutiveUnusedAddresses(existingAddresses, derivationPath, accountPrivateKey, stakeCred, network, accountIndexNum, typeLabel) {
-        const targetConsecutive = 20;
-        
-        // Sort existing addresses by index
-        const sortedAddresses = existingAddresses
-            .slice()
-            .sort((a, b) => (a.Index__c ?? 0) - (b.Index__c ?? 0));
-        
-        // Find current consecutive unused count from the end
-        let consecutiveUnused = 0;
-        let lastUsedIndex = -1;
-        
-        // Check existing addresses from highest index down to find consecutive unused
-        for (let i = sortedAddresses.length - 1; i >= 0; i--) {
-            const address = sortedAddresses[i];
-            
-            try {
-                const usageResult = address.Is_Used__c ? true : await checkAddressUsageOnly({ address: address.Address__c });
-                const isUsed = usageResult.isUsed || false;
-                
-                if (isUsed) {
-                    lastUsedIndex = address.Index__c;
-                    break; // Stop when we find a used address
-                } else {
-                    consecutiveUnused++;
-                }
-            } catch (error) {
-                // Assume unused if check fails
-                consecutiveUnused++;
-            }
-        }
-        
-        // If we already have enough consecutive unused, return empty array
-        if (consecutiveUnused >= targetConsecutive) {
-            return [];
-        }
-        
-        // Calculate how many more we need and starting index
-        const neededCount = targetConsecutive - consecutiveUnused;
-        const nextIndex = sortedAddresses.length > 0 ? 
-            Math.max(...sortedAddresses.map(a => a.Index__c ?? 0)) + 1 : 0;
-        
-        // Derive new addresses
-        const newAddresses = [];
-        const CardanoWasm = window.cardanoSerialization;
-        
-        for (let i = 0; i < neededCount; i++) {
-            const currentIndex = nextIndex + i;
-            
-            try {
-                // Derive payment key
-                const utxoPrivateKey = accountPrivateKey
-                    .derive(derivationPath)
-                    .derive(currentIndex);
-                const utxoPublicKey = utxoPrivateKey.to_public();
-                const utxoKeyHash = utxoPublicKey.to_raw_key().hash();
-                const utxoCred = CardanoWasm.Credential.from_keyhash(utxoKeyHash);
-
-                // Create base address
-                const baseAddress = CardanoWasm.BaseAddress.new(
-                    network.network_id(),
-                    utxoCred,
-                    stakeCred
-                );
-                const bech32Address = baseAddress.to_address().to_bech32();
-
-                // Key verification
-                const keyMatch = this.verifyKeyMatch(CardanoWasm, utxoPrivateKey, bech32Address);
-                if (!keyMatch) {
-                    throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${currentIndex}`);
-                }
-
-                const fullPath = `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${currentIndex}`;
-                
-                const addressData = {
-                    index: currentIndex,
-                    publicKey: utxoPublicKey.to_bech32(),
-                    privateKey: utxoPrivateKey.to_bech32(),
-                    address: bech32Address,
-                    stakingKeyHash: stakeCred.to_keyhash().to_hex(),
-                    path: fullPath
-                };
-                
-                newAddresses.push(addressData);
-                
-            } catch (error) {
-                throw error;
-            }
-        }
-        
-        return newAddresses;
     }
 }
