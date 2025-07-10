@@ -8,7 +8,6 @@ import bip39Library from '@salesforce/resourceUrl/bip39';
 
 import checkAddressUsageOnly from '@salesforce/apex/CreateNewWalletCtrl.checkAddressUsageOnly';
 import createUTXOAddressesBulk from '@salesforce/apex/CreateNewWalletCtrl.createUTXOAddressesBulk';
-import getEncryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getEncryptedSeedPhrase';
 import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
@@ -68,8 +67,15 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track seedPhraseInputs = [];
     @track seedPhraseErrorMessage = '';
     @track originalSeedPhrase = [];
+    @track seedPhraseWordCount = 24;
 
     get isCreateDisabled() {
+        const isSeedPhraseValid = !this.showSeedPhraseVerification ||
+            (
+                this.seedPhraseInputs.length === this.seedPhraseWordCount &&
+                this.seedPhraseInputs.every(input => input.value && input.value.trim().length > 0)
+            );
+
         return !(
             this.selectedWalletSetId &&
             this.walletName.trim() &&
@@ -77,7 +83,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             !isNaN(this.accountIndex) &&
             !this.accountIndexErrorMessage &&
             this.librariesLoaded &&
-            !this.isLoading
+            !this.isLoading &&
+            isSeedPhraseValid
         );
     }
 
@@ -90,6 +97,17 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             return `${this.currentStep}${this.progressMessage ? ': ' + this.progressMessage : ''}`;
         }
         return '';
+    }
+
+    get selectedWordCount() {
+        return this.seedPhraseWordCount.toString();
+    }
+
+    get wordCountOptions() {
+        return [
+            { label: '15 words', value: '15' },
+            { label: '24 words', value: '24' }
+        ];
     }
 
     renderedCallback() {
@@ -216,12 +234,18 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             return;
         }
 
-        // If seed phrase verification is required, validate it on server first
+        if (!this.selectedWalletSetId) {
+            this.pickerErrorMessage = 'Please select a Wallet Set.';
+            this.showToast('Error', this.pickerErrorMessage, 'error');
+            this.isLoading = false;
+            return;
+        }
+        
         if (this.showSeedPhraseVerification) {
             const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim()).join(' ');
-            
-            if (!enteredPhrase || enteredPhrase.split(' ').length !== 24) {
-                this.seedPhraseErrorMessage = 'Please enter all 24 words correctly.';
+            const wordCount = enteredPhrase.split(' ').length;
+            if (!enteredPhrase || wordCount !== this.seedPhraseWordCount) {
+                this.seedPhraseErrorMessage = `Please enter all ${this.seedPhraseWordCount} words correctly.`;
                 this.showToast('Error', this.seedPhraseErrorMessage, 'error');
                 this.isLoading = false;
                 return;
@@ -230,12 +254,12 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             try {
                 this.currentStep = 'Verifying seed phrase';
                 this.progressMessage = 'Checking seed phrase on server...';
-                
-                const isValid = await verifySeedPhrase({ 
-                    walletSetId: this.selectedWalletSetId, 
-                    userSeedPhrase: enteredPhrase 
+
+                const isValid = await verifySeedPhrase({
+                    walletSetId: this.selectedWalletSetId,
+                    userSeedPhrase: enteredPhrase
                 });
-                
+
                 if (!isValid) {
                     this.seedPhraseErrorMessage = 'Seed phrase is incorrect. Please check your entries.';
                     this.showToast('Error', this.seedPhraseErrorMessage, 'error');
@@ -243,7 +267,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                     return;
                 }
             } catch (error) {
-                this.seedPhraseErrorMessage = 'Error verifying seed phrase: ' + (error.body?.message || error.message);
+                this.seedPhraseErrorMessage = error.body?.message || error.message;
                 this.showToast('Error', this.seedPhraseErrorMessage, 'error');
                 this.isLoading = false;
                 return;
@@ -269,8 +293,13 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         if (!this.selectedWalletSetId) return;
 
         try {
+<<<<<<< HEAD
             // Create empty input fields for 24 words (no prefilling)
             this.seedPhraseInputs = Array.from({ length: 24 }, (_, index) => {
+=======
+            // Create input fields based on selected word count
+            this.seedPhraseInputs = Array.from({ length: this.seedPhraseWordCount }, (_, index) => {
+>>>>>>> be4ce91ad91a6caeef48624266cc71660352a8a1
                 return {
                     label: `Word ${index + 1}`,
                     value: '' // Empty input field - user must enter seed phrase
@@ -283,6 +312,21 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         } catch (error) {
             this.errorMessage = 'Failed to initialize seed phrase verification: ' + (error.message || error);
             this.showToast('Error', this.errorMessage, 'error');
+        }
+    }
+
+    handleSeedPhraseWordCountChange(event) {
+        this.seedPhraseWordCount = parseInt(event.target.value);
+        
+        // Reinitialize seed phrase inputs if verification is already shown
+        if (this.showSeedPhraseVerification) {
+            this.seedPhraseInputs = Array.from({ length: this.seedPhraseWordCount }, (_, index) => {
+                return {
+                    label: `Word ${index + 1}`,
+                    value: ''
+                };
+            });
+            this.seedPhraseErrorMessage = '';
         }
     }
 
@@ -299,8 +343,9 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         }
 
         // Basic client-side validation: check if all fields are filled
-        const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim());
-        return enteredPhrase.every(word => word.length > 0) && enteredPhrase.length === 24;
+        const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim()).filter(word => word.length > 0);
+        const wordCount = enteredPhrase.length;
+        return wordCount === this.seedPhraseWordCount && enteredPhrase.every(word => word.length > 0);
     }
 
     // Helper to verify private key matches address payment key hash
@@ -516,16 +561,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         }
 
         // Use the seed phrase entered by user (already verified on server)
-        let mnemonic;
-        if (this.showSeedPhraseVerification) {
-            // Use the verified seed phrase from user input
-            const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim());
-            mnemonic = enteredPhrase.join(' ');
-        } else {
-            // Fallback to getting from database (for backward compatibility)
-            this.currentStep = 'Retrieving seed phrase';
-            mnemonic = await getEncryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });
-        }
+        const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim());
+        let mnemonic = enteredPhrase.join(' ');
         
         if (!mnemonic) {
             throw new Error('Seed phrase is empty or null');
@@ -634,6 +671,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.seedPhraseInputs = [];
         this.originalSeedPhrase = [];
         this.seedPhraseErrorMessage = '';
+        this.seedPhraseWordCount = 24;
     }
 
     showToast(title, message, variant) {

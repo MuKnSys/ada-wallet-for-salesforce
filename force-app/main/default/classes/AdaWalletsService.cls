@@ -1,6 +1,7 @@
 public with sharing class AdaWalletsService {
     private static AdaSettings__c adaSettings;
-    private static final String KEY_ALREADY_SET_ERROR = 'Encryption key is already set and cannot be changed for security reasons';
+    private static final String PRIVATE_KEY_ALREADY_SET_ERROR = 'Encryption key is already set and cannot be changed for security reasons';
+    private static final String HMAC_KEY_ALREADY_SET_ERROR = 'Hmac key is already set and cannot be changed for security reasons';
 
     private static AdaSettings__c getSettings() {
         if (adaSettings == null) {
@@ -18,6 +19,15 @@ public with sharing class AdaWalletsService {
         return adaSettings.Private_Key__c != null ? adaSettings.Private_Key__c : '';
     }
 
+    public static String getHmacKey() {
+        if (!hasRequiredPermissions()) {
+            throw new SecurityException('Access denied: insufficient permissions to access encryption key');
+        }
+        
+        AdaSettings__c adaSettings = getSettings();
+        return adaSettings.Hmac_Key__c != null ? adaSettings.Hmac_Key__c : '';
+    }
+
     public static String getBlockfrostProjectId() {
         AdaSettings__c adaSettings = getSettings();
         return adaSettings.BlockfrostProjectId__c != null ? adaSettings.BlockfrostProjectId__c : '';
@@ -28,15 +38,52 @@ public with sharing class AdaWalletsService {
         
         // Immutable check: prevent key changes if already set
         if (String.isNotBlank(adaSettings.Private_Key__c)) {
-            throw new SecurityException(KEY_ALREADY_SET_ERROR);
+            throw new SecurityException(PRIVATE_KEY_ALREADY_SET_ERROR);
         }
         
-        // Validate key length (32 characters = 128 bits)
-        if (String.isBlank(key) || key.length() != 32) {
-            throw new IllegalArgumentException('Encryption key must be exactly 32 characters (128 bits)');
+        if (String.isBlank(key)) {
+            throw new IllegalArgumentException('Private key must not be blank');
+        }
+
+        Blob keyBlob;
+        try {
+            keyBlob = EncodingUtil.base64Decode(key);
+        } catch(Exception e) {
+            throw new IllegalArgumentException('Private key is not valid Base64');
+        }
+
+        if (keyBlob.size() != 32) {
+            throw new IllegalArgumentException('Private key must be exactly 32 bytes (256 bits)');
         }
         
         adaSettings.Private_Key__c = key;
+        upsert adaSettings;
+    }
+
+    public static void setHmacKey(String key) {
+        AdaSettings__c adaSettings = getSettings();
+        
+        // Immutable check: prevent key changes if already set
+        if (String.isNotBlank(adaSettings.Hmac_Key__c)) {
+            throw new SecurityException(HMAC_KEY_ALREADY_SET_ERROR);
+        }
+
+        if (String.isBlank(key)) {
+            throw new IllegalArgumentException('Hmac key must not be blank');
+        }
+
+        Blob keyBlob;
+        try {
+            keyBlob = EncodingUtil.base64Decode(key);
+        } catch(Exception e) {
+            throw new IllegalArgumentException('Hmac key is not valid Base64');
+        }
+
+        if (keyBlob.size() != 32) {
+            throw new IllegalArgumentException('Hmac key must be exactly 32 bytes (256 bits)');
+        }
+        
+        adaSettings.Hmac_Key__c = key;
         upsert adaSettings;
     }
 
@@ -45,16 +92,24 @@ public with sharing class AdaWalletsService {
         adaSettings.BlockfrostProjectId__c = blockfrostProjectId;
         upsert adaSettings;
     }
+
+    public static void validateEncryptionKey() {
+        if (!isEncryptionKeySet()) {
+            throw new SecurityException('Encryption key is not configured. Please set up the encryption key first.');
+        }
+        if (!isHmacKeySet()) {
+            throw new SecurityException('Hmac key is not configured. Please set up the hmac key first.');
+        }
+    }
     
     public static Boolean isEncryptionKeySet() {
         AdaSettings__c adaSettings = getSettings();
         return String.isNotBlank(adaSettings.Private_Key__c);
     }
-    
-    public static void validateEncryptionKey() {
-        if (!isEncryptionKeySet()) {
-            throw new SecurityException('Encryption key is not configured. Please set up the encryption key first.');
-        }
+
+    public static Boolean isHmacKeySet() {
+        AdaSettings__c adaSettings = getSettings();
+        return String.isNotBlank(adaSettings.Hmac_Key__c);
     }
     
     private static Boolean hasRequiredPermissions() {

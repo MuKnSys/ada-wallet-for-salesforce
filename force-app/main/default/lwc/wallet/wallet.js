@@ -1,18 +1,23 @@
-import { LightningElement, track, api, wire } from 'lwc';
+import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
+import { subscribe, unsubscribe } from 'lightning/empApi';
+
 import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
-import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
+
 import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
 import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
-import getEpochParameters from '@salesforce/apex/BlockfrostService.getEpochParameters';
-import { subscribe, unsubscribe, MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
+import { MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
-import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
+import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
 
 
 export default class Wallet extends LightningElement {
+    CHANNEL_NAME = '/event/WalletSyncEvent__e';
+    
     _recordId;
+    eventSubscription = null;
+    
     @track balance = '0';
     @track paymentAddress = 'Loading payment address...';
     @track showReceive = false;
@@ -23,8 +28,7 @@ export default class Wallet extends LightningElement {
     @track qrCodeError = false;
     @track assets = [];
     @track hasAssets = false;
-    @wire(MessageContext) messageContext;
-    subscription = null;
+    @track transactions = [];
     @track sendAmount = '';
     @track sendRecipient = '';
     @track errorMessage = '';
@@ -38,7 +42,6 @@ export default class Wallet extends LightningElement {
     @track adaAmount = '';
     @track tokens = [];
     @track tokenOptions = [];
-    @track epochParameters = null;
 
     @api
     get recordId() {
@@ -122,11 +125,6 @@ export default class Wallet extends LightningElement {
 
     async fetchUtxoCounts() {
         try {
-            // Get UTXO address counts for debugging
-            const data = await getUTXOAddresses({ walletId: this.recordId });
-            const external = data.filter(addr => addr.Type__c === '0').length;
-            const internal = data.filter(addr => addr.Type__c === '1').length;
-            
             // Get asset summary using new method that properly handles ADA conversion
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
             
@@ -169,15 +167,52 @@ export default class Wallet extends LightningElement {
             const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
             this.paymentAddress = payAddr ? payAddr : 'No unused address available';
             this.isAddressInvalid = !payAddr;
-
-            // Fetch epoch parameters after wallet data is loaded
-            await this.fetchEpochParameters();
         } catch (error) {
             const message = error.body?.message || error.message || 'Unknown error';
             this.showToast('Error', message, 'error');
         } finally {
             this.isLoading = false;
         }
+    }
+
+    async updateWalletBalance() {
+        const summary = await getWalletAssetSummary({ walletId: this.recordId });
+        
+        if (summary.success) {
+            this.balance = this.formatNumber(summary.adaBalance || 0, 6);
+            this.assets = this.buildAssetRows(summary.tokens || []);
+            this.hasAssets = this.assets.length > 0;
+        } else {
+            this.resetWalletData();
+        }
+    }
+
+    buildAssetRows(tokens) {
+        return tokens.map(token => ({
+            id: token.unit || token.symbol,
+            name: token.name || token.symbol,
+            symbol: token.symbol || token.unit,
+            amount: this.formatNumber(token.amount, token.decimals || 0),
+            rawAmount: token.rawAmount,
+            decimals: token.decimals,
+            policyId: token.policyId,
+            fingerprint: token.fingerprint,
+            imgUrl: token.icon || null,
+            icon: 'utility:apps'
+        }));
+    }
+
+    resetWalletData() {
+        this.balance = '0';
+        this.assets = [];
+        this.hasAssets = false;
+        this.transactions = [];
+    }
+
+    async updatePaymentAddress() {
+        const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
+        this.paymentAddress = payAddr || 'No unused address available';
+        this.isAddressInvalid = !payAddr;
     }
 
     generateQrCode() {
@@ -282,31 +317,33 @@ export default class Wallet extends LightningElement {
     }
 
     connectedCallback() {
-        this.subscribeToMessageChannel();
+        this.subscribeToWalletSyncEvent();
     }
 
     disconnectedCallback() {
-        this.unsubscribeToMessageChannel();
+        this.unsubscribeFromWalletSyncEvent();
     }
 
-    subscribeToMessageChannel() {
-        if (!this.subscription) {
-            this.subscription = subscribe(
-                this.messageContext,
-                WALLET_SYNC_CHANNEL,
-                (message) => this.handleMessage(message),
-                { scope: APPLICATION_SCOPE }
-            );
+    subscribeToWalletSyncEvent() {
+        if (!this.eventSubscription) {
+            const replayId = -1; // -1 for all retained events
+            
+            this.eventSubscription = subscribe(this.CHANNEL_NAME, replayId, (event) => {
+                this.handleWalletSyncEvent(event);
+            });
         }
     }
 
-    unsubscribeToMessageChannel() {
-        unsubscribe(this.subscription);
-        this.subscription = null;
+    unsubscribeFromWalletSyncEvent() {
+        if (this.eventSubscription) {
+            unsubscribe(this.eventSubscription);
+            this.eventSubscription = null;
+        }
     }
 
-    handleMessage(message) {
-        if (message.recordId === this.recordId) {
+    handleWalletSyncEvent(event) {
+        const { WalletId__c } = event.data.payload;
+        if (WalletId__c === this.recordId) {
             this.fetchUtxoCounts();
         }
     }
@@ -318,8 +355,7 @@ export default class Wallet extends LightningElement {
     }
 
     handleAddressChange(event) {
-        const newAddress = event.target.value;
-        this.sendRecipient = newAddress;
+        this.sendRecipient = event.target.value;
         this.updateSendState();
     }
 
@@ -471,24 +507,19 @@ export default class Wallet extends LightningElement {
         if (this.isSendButtonDisabled) return;
         this.isLoading = true;
         try {
-            // Gather all assets (ADA and tokens)
-            const assets = [];
-            if (this.adaAmount && parseFloat(this.adaAmount) > 0) {
-                assets.push({ amount: this.adaAmount, asset: 'ADA' });
-            }
-            for (const token of this.tokens) {
-                if (token.asset && token.amount && parseFloat(token.amount) > 0) {
-                    assets.push({ amount: token.amount, asset: token.asset });
-                }
-            }
-            console.log('[SEND] Prepared assets array:', JSON.stringify(assets));
-            console.log('[SEND] Sending to Apex with walletId:', this.recordId, 'recipient:', this.sendRecipient);
-            // Call new Apex method
-            const outboundId = await createMultiAssetOutboundTransaction({
+            // Use the selected asset and amount for the transaction
+            const amount = this.selectedAsset === 'ADA' ? this.adaAmount : this.sendAmount;
+            const asset = this.selectedAsset;
+            
+            console.log('[SEND] Sending to Apex with walletId:', this.recordId, 'recipient:', this.sendRecipient, 'amount:', amount, 'asset:', asset);
+            
+            const outboundId = await createOutboundTransaction({
                 walletId: this.recordId,
                 toAddress: this.sendRecipient,
-                assets
+                amount: amount,
+                asset: asset
             });
+            
             console.log('[SEND] Apex returned outboundId:', outboundId);
             this.showToast('Success', 'Transaction created successfully!', 'success');
             this.showSend = false;
@@ -639,34 +670,7 @@ export default class Wallet extends LightningElement {
         });
     }
 
-    async fetchEpochParameters() {
-        try {
-            console.log('[Wallet] Fetching epoch parameters...');
-            const epochParamsJson = await getEpochParameters();
-            
-            // Parse the JSON response
-            const epochParams = JSON.parse(epochParamsJson);
-            
-            // Store the epoch parameters
-            this.epochParameters = epochParams;
-            
-            // Log the epoch parameters
-            console.log('[Wallet] Epoch parameters loaded:', epochParams);
-            console.log('[Wallet] Current epoch:', epochParams.epoch);
-            console.log('[Wallet] Min fee A:', epochParams.min_fee_a);
-            console.log('[Wallet] Min fee B:', epochParams.min_fee_b);
-            console.log('[Wallet] Max tx size:', epochParams.max_tx_size);
-            console.log('[Wallet] Max val size:', epochParams.max_val_size);
-            console.log('[Wallet] Key deposit:', epochParams.key_deposit);
-            console.log('[Wallet] Pool deposit:', epochParams.pool_deposit);
-            console.log('[Wallet] Protocol major:', epochParams.protocol_major);
-            console.log('[Wallet] Protocol minor:', epochParams.protocol_minor);
-            
-        } catch (error) {
-            console.error('[Wallet] Error fetching epoch parameters:', error);
-            this.showToast('Warning', 'Failed to fetch epoch parameters: ' + (error.body?.message || error.message), 'warning');
-        }
-    }
+
 
     handleSendMaxToken(event) {
         const index = parseInt(event.target.dataset.index, 10);

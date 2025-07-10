@@ -3,7 +3,6 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
-import { publish, MessageContext } from 'lightning/messageService';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -16,11 +15,7 @@ import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissio
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
-import checkAddressUsageOnly from '@salesforce/apex/CreateNewWalletCtrl.checkAddressUsageOnly';
-import createUTXOAddressesBulk from '@salesforce/apex/CreateNewWalletCtrl.createUTXOAddressesBulk';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
-
-import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -40,7 +35,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     displayLimit = 5; // Limit to 5 addresses per tab
     wiredAddressesResult; // To store the wired result for refresh
     viewLess = true;
-    @wire(MessageContext) messageContext;
 
     // Datatable columns
     columns = [
@@ -346,17 +340,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                     changeAddress: newAddress
                 });
             }
-            
-            // Sync only the new address
-            await syncAssetsAndTransactions({ utxoAddressId: newAddressId });
-
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
-            
-            publish(this.messageContext, WALLET_SYNC_CHANNEL, {
-                    walletId: this.recordId,
-                    action: 'assetsUpdated'
-                });
 
             this.showToast('Success', `New ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Address Generated`, 'success');
 
@@ -380,67 +365,11 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             if (!this.isLibraryLoaded) {
                 throw new Error('Cardano libraries not loaded yet. Please wait and try again.');
             }
-
-            // Fetch wallet and setup crypto
-            const wallet = await getWallet({ walletId: this.recordId });
-            if (!wallet || !wallet.Account_Private_Key__c) {
-                throw new Error('Wallet record or Account Private Key not found');
-            }
-
-            const accountPrivateKeyBech32 = await decrypt({ encryptedText: wallet.Account_Private_Key__c });
-            const CardanoWasm = window.cardanoSerialization;
-            const accountPrivateKey = CardanoWasm.Bip32PrivateKey.from_bech32(accountPrivateKeyBech32);
-            const network = CardanoWasm.NetworkInfo.mainnet();
-            const accountIndexNum = wallet.Account_Index__c;
-            
-            // Derive stake key for new addresses
-            const stakePrivateKey = accountPrivateKey.derive(2).derive(0).to_raw_key();
-            const stakePublicKey = stakePrivateKey.to_public();
-            const stakeKeyHash = stakePublicKey.hash();
-            const stakeCred = CardanoWasm.Credential.from_keyhash(stakeKeyHash);
-
-            // Phase 1: Sync existing addresses
             await this.syncExistingAddresses();
 
-            // Phase 2: Ensure 20 consecutive unused addresses for both receiving and change
-            
-            const receivingAddressesToAdd = await this.ensureConsecutiveUnusedAddresses(
-                this.externalAddresses, 0, accountPrivateKey, stakeCred, network, accountIndexNum, 'receiving'
-            );
-            
-            const changeAddressesToAdd = await this.ensureConsecutiveUnusedAddresses(
-                this.internalAddresses, 1, accountPrivateKey, stakeCred, network, accountIndexNum, 'change'
-            );
-
-            // Phase 3: Create new addresses if needed
-            if (receivingAddressesToAdd.length > 0 || changeAddressesToAdd.length > 0) {
-                const createResult = await createUTXOAddressesBulk({
-                    walletId: this.recordId,
-                    receivingAddresses: receivingAddressesToAdd,
-                    changeAddresses: changeAddressesToAdd
-                });
-
-                // Phase 4: Sync new addresses
-                const allNewAddresses = [...(createResult.receivingAddresses || []), ...(createResult.changeAddresses || [])];
-                
-                for (const newAddr of allNewAddresses) {
-                    await syncAssetsAndTransactions({ utxoAddressId: newAddr.utxoAddressId });
-                }
-            }
-
-            // Refresh data and notify other components
+            // Refresh data
             await refreshApex(this.wiredAddressesResult);
-
-            // Broadcast update so wallet component refreshes balances
-            publish(this.messageContext, WALLET_SYNC_CHANNEL, {
-                    walletId: this.recordId,
-                    action: 'assetsUpdated'
-                });
-
-            const totalNew = (receivingAddressesToAdd?.length || 0) + (changeAddressesToAdd?.length || 0);
-            const message = totalNew > 0 
-                ? `UTXO refresh completed. Created ${totalNew} new addresses and synced all assets.`
-                : 'UTXO refresh completed. All assets synced for existing addresses.';
+            const message = 'UTXO refresh completed.';
                 
             this.showToast('Success', message, 'success');
 

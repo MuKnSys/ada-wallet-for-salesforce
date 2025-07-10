@@ -29,6 +29,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>UTXO_Address__c.Is_Used__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>UTXO_Address__c.Path__c</field>
         <readable>true</readable>
     </fieldPermissions>

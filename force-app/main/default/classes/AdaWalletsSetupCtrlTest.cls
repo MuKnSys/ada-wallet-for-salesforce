@@ -40,7 +40,7 @@ public class AdaWalletsSetupCtrlTest {
 
     @isTest
     static void testGeneratePrivateKey() {        
-        AdaWalletsSetupCtrl.SetupData setupData = AdaWalletsSetupCtrl.generatePrivateKey();
+        AdaWalletsSetupCtrl.SetupData setupData = AdaWalletsSetupCtrl.generatePrivateAndHmacKey();
         
         Assert.areNotEqual(null, setupData.privateKey, 'Private key should not be null after generation.');
         Assert.areEqual(setupData.privateKey, AdaWalletsService.getPrivateKey(), 'The generated private key should match the service value.');

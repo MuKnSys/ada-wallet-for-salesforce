@@ -503,4 +503,12 @@ public with sharing class BlockfrostService {
         public Integer code;
         public String message;
     }
+
+    public static void publishWalletSyncEvent(Id walletId, String action) {
+        WalletSyncEvent__e event = new WalletSyncEvent__e(
+                WalletId__c = walletId,
+                Action__c = action
+            );
+        EventBus.publish(event);
+    }
 }

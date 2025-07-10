@@ -105,16 +105,6 @@
     background: transparent;
 }
 
-.slds-box.slds-theme_error {
-    background-color: #fef7f7;
-    border-color: #ea001e;
-}
-
-.slds-box.slds-theme_default {
-    background-color: #f8f9fa;
-    border-color: #dddbda;
-}
-
 .cbor-display {
     background-color: #f3f2f2;
     border: 1px solid #dddbda;

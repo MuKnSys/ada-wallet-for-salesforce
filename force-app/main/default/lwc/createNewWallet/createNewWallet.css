@@ -1,22 +1,3 @@
-.slds-card {
-    border: 1px solid #dddbda;
-    border-radius: 0.25rem;
-}
-
-.slds-text-color_error {
-    color: #c23934;
-}
-
-/* Ensure consistent spacing for inputs and button */
-.slds-m-bottom_small {
-    margin-bottom: 0.5rem;
-}
-
-/* Optional: Adjust card padding if needed */
-.slds-p-around_medium {
-    padding: 1rem;
-}
-
 /* Seed phrase verification styles */
 .seed-input-grid {
     display: grid;
@@ -31,19 +12,4 @@
 
 .seed-input-field lightning-input {
     font-size: 0.875rem;
-}
-
-/* Responsive design for smaller screens */
-@media (max-width: 768px) {
-    .seed-input-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .seed-input-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-    }
 }
