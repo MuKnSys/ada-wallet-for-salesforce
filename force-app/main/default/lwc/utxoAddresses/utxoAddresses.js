@@ -16,6 +16,7 @@ import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
+import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -28,6 +29,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @track activeTab = 'external';
     @track currentTabLabel = 'External';
     @track currentTabCount = 0;
+    @track currentUnusedCount = 0;
     @track hasSeedPhrasePermission = false;
     @track dummyState = false; // For forcing re-render
     @track filterText = '';
@@ -153,6 +155,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.displayedExternalAddresses = [];
             this.displayedInternalAddresses = [];
             this.currentTabCount = 0;
+            this.currentUnusedCount = 0;
             this.showToast('Error Loading Addresses', this.error, 'error');
         }
         this.isLoading = false;
@@ -182,10 +185,12 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     updateTabState(tab) {
         if (tab === 'external') {
             this.currentTabLabel = 'External';
-            this.currentTabCount = this.externalAddresses.length; // Use full list for count
+            this.currentTabCount = this.externalAddresses.length;
+            this.currentUnusedCount = this.externalAddresses.filter(addr => !addr.Is_Used__c).length;
         } else if (tab === 'internal') {
             this.currentTabLabel = 'Internal';
-            this.currentTabCount = this.internalAddresses.length; // Use full list for count
+            this.currentTabCount = this.internalAddresses.length;
+            this.currentUnusedCount = this.internalAddresses.filter(addr => !addr.Is_Used__c).length;
         }
         this.dummyState = !this.dummyState;
     }
@@ -399,11 +404,34 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 } else {
                     errorCount++;
                 }
+
+                if (syncResult.success && syncResult.statistics) {
+                    const stats = syncResult.statistics;
+                    address.isUsed = this.isAddressActuallyUsed(stats);
+                }
             } catch (syncError) {
                 errorCount++;
             }
         }
         
+        const usedAddressesIds = [];
+        for (const address of allAddresses) {
+            if (address.isUsed) {
+                usedAddressesIds.push(address.utxoAddressId);
+            }
+        }        
+
+        await setAddressesUsed({ utxoAddressIds: usedAddressesIds });
+        
         return { syncedCount, errorCount };
+    }
+
+    isAddressActuallyUsed(stats) {
+        const assetsInserted = stats.assetsInserted || 0;
+        const assetsUpdated = stats.assetsUpdated || 0;
+        const transactionsInserted = stats.transactionsInserted || 0;
+        const transactionsUpdated = stats.transactionsUpdated || 0;
+        
+        return assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
     }
 }

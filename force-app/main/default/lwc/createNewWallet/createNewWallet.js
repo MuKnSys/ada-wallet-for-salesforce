@@ -12,7 +12,6 @@ import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     // Configuration constants
@@ -347,9 +346,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         // Phase 2: Create UTXO records
         await this.createUTXORecords(addresses, typeLabel, walletId);
 
-        // Phase 3: Sync assets and transactions
-        await this.syncAddresses(addresses, typeLabel);
-
         return addresses;
     }
 
@@ -464,57 +460,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         }
     }
 
-    async syncAddresses(addresses, typeLabel) {
-        this.updateProgress(`Syncing ${typeLabel} assets & transactions`, 
-            `Syncing blockchain data for ${addresses.length} addresses...`);
-
-        let syncedCount = 0;
-        let totalUsedAddresses = 0;
-
-        for (let i = 0; i < addresses.length; i++) {
-            const address = addresses[i];
-            
-            if (!address.utxoAddressId) continue;
-
-            this.updateProgress(`Syncing ${typeLabel} address #${address.index}`, 
-                `${i + 1}/${addresses.length}...`);
-            
-            try {
-                const syncResult = await syncAssetsAndTransactions({ utxoAddressId: address.utxoAddressId });
-                
-                address.syncResult = syncResult;
-                address.syncSuccess = syncResult.success;
-                
-                if (syncResult.success && syncResult.statistics) {
-                    const stats = syncResult.statistics;
-                    const actuallyUsed = this.isAddressActuallyUsed(stats);
-                    address.actuallyUsed = actuallyUsed;
-                    
-                    if (actuallyUsed) totalUsedAddresses++;
-                }
-                
-                syncedCount++;
-            } catch (error) {
-                address.syncError = error.message;
-                address.syncSuccess = false;
-                
-                this.updateProgress(`Sync failed for ${typeLabel} address #${address.index}`, 
-                    error.message);
-            }
-        }
-
-        this.updateProgress(`Synced ${syncedCount}/${addresses.length} ${typeLabel} addresses`, 
-            `${totalUsedAddresses} actually used`);
-    }
-
-    isAddressActuallyUsed(stats) {
-        const assetsInserted = stats.assetsInserted || 0;
-        const assetsUpdated = stats.assetsUpdated || 0;
-        const transactionsInserted = stats.transactionsInserted || 0;
-        const transactionsUpdated = stats.transactionsUpdated || 0;
-        
-        return assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
-    }
 
     async createWallet() {
         // Validate account index before proceeding

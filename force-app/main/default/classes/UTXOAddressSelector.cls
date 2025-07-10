@@ -12,7 +12,7 @@ public with sharing class UTXOAddressSelector {
     }
     
     public static List<UTXO_Address__c> getUTXOAddressesByWalletId(Id walletId, Set<String> types) {
-        String query = 'SELECT Id, Name, Address__c, Public_Key__c, Path__c, Staking_Key_Hash__c, Index__c, Type__c, Private_Key__c' + 
+        String query = 'SELECT Id, Name, Address__c, Is_Used__c, Public_Key__c, Path__c, Staking_Key_Hash__c, Index__c, Type__c, Private_Key__c' + 
             ' FROM UTXO_Address__c' +
             ' WHERE Wallet__c = :walletId';
             

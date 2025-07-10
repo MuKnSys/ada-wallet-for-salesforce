@@ -489,4 +489,34 @@ public with sharing class UTXOAssetController {
             throw new AuraHandledException('Failed to get wallet asset summary: ' + e.getMessage());
         }
     }
+
+    @AuraEnabled
+    public static void setAddressesUsed(List<Id> utxoAddressIds) {
+        if (utxoAddressIds == null || utxoAddressIds.isEmpty()) {
+            return;
+        }
+        List<UTXO_Address__c> addresses = [
+            SELECT Id, Is_Used__c
+            FROM UTXO_Address__c
+            WHERE Id IN :utxoAddressIds
+            WITH SECURITY_ENFORCED
+        ];
+        if (addresses.isEmpty()) {
+            return;
+        }
+        List<UTXO_Address__c> addressesToUpdate = new List<UTXO_Address__c>();
+        for (UTXO_Address__c addr : addresses) {
+            if (!addr.Is_Used__c) {
+                addr.Is_Used__c = true;
+                addressesToUpdate.add(addr);
+            }
+        }
+        if (!addressesToUpdate.isEmpty()) {
+            if (Schema.sObjectType.UTXO_Address__c.isUpdateable() && Schema.sObjectType.UTXO_Address__c.fields.Is_Used__c.isUpdateable()) {
+                update addressesToUpdate;
+            } else {
+                throw new AuraHandledException('Insufficient permissions to update UTXO addresses');
+            }
+        }
+    }
 } 
