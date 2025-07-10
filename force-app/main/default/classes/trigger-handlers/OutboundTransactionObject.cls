@@ -29,6 +29,8 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
         
         return newRecord.Transaction_Status__c == STATUS_READY_TO_SEND && 
                 newRecord.Approved__c == APPROVAL_STATUS_APPROVED &&
+                String.isNotBlank(newRecord.Signed_Transaction_CBOR__c) &&
+                String.isBlank(newRecord.Transaction_Hash__c) &&
                 (oldRecord == null || 
                 oldRecord.Transaction_Status__c != STATUS_READY_TO_SEND || 
                 oldRecord.Approved__c != APPROVAL_STATUS_APPROVED);
