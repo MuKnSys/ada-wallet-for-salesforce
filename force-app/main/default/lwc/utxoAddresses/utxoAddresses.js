@@ -1,5 +1,4 @@
 import { LightningElement, api, wire, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
@@ -9,7 +8,6 @@ import bip39Library from '@salesforce/resourceUrl/bip39';
 
 import getWallet from '@salesforce/apex/UTXOController.getWallet';
 import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
-
 import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
 import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissions';
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
