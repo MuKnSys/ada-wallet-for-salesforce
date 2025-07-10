@@ -17,6 +17,7 @@ import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivin
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
+import { isAddressActuallyUsed, truncateText, showToast } from 'c/utils';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -113,7 +114,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.isLibraryLoaded = true;
         } catch (error) {
             this.error = 'Library loading failed: ' + (error.message || error);
-            this.showToast('Error', this.error, 'error');
+            showToast(this, 'Error', this.error, 'error');
             setTimeout(() => this.loadLibraries(), 2000);
         }
     }
@@ -139,8 +140,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 ...addr,
                 recordLink: `/lightning/r/UTXO_Address__c/${addr.Id}/view`,
                 cardanoScanLink: `https://cardanoscan.io/address/${addr.Address__c}`,
-                truncatedAddress: this.truncateText(addr.Address__c, 40, 20, 10),
-                truncatedStakingKeyHash: this.truncateText(addr.Staking_Key_Hash__c, 40, 20, 10)
+                truncatedAddress: truncateText(addr.Address__c, 40, 20, 10),
+                truncatedStakingKeyHash: truncateText(addr.Staking_Key_Hash__c, 40, 20, 10)
             }));
             this.externalAddresses = addresses.filter(addr => addr.Type__c === '0');
             this.internalAddresses = addresses.filter(addr => addr.Type__c === '1');
@@ -156,18 +157,9 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.displayedInternalAddresses = [];
             this.currentTabCount = 0;
             this.currentUnusedCount = 0;
-            this.showToast('Error Loading Addresses', this.error, 'error');
+            showToast(this, 'Error Loading Addresses', this.error, 'error');
         }
         this.isLoading = false;
-    }
-
-    truncateText(text, maxLength, firstChars, lastChars) {
-        if (!text || text.length <= maxLength) {
-            return text;
-        }
-        const firstPart = text.substring(0, firstChars);
-        const lastPart = text.substring(text.length - lastChars);
-        return `${firstPart}...${lastPart}`;
     }
 
     handleExternalTabActive() {
@@ -348,19 +340,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
 
-            this.showToast('Success', `New ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Address Generated`, 'success');
+            showToast(this, 'Success', `New ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Address Generated`, 'success');
 
         } catch (error) {
-            this.showToast('Error', `Failed to generate address: ${error.message}`, 'error');
+            showToast(this, 'Error', `Failed to generate address: ${error.message}`, 'error');
         } finally {
             this.isLoading = false;
         }
-    }
-
-    showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({ title, message, variant })
-        );
     }
 
     async handleRefreshAddressCounts() {
@@ -376,11 +362,11 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             await refreshApex(this.wiredAddressesResult);
             const message = 'UTXO refresh completed.';
                 
-            this.showToast('Success', message, 'success');
+            showToast(this, 'Success', message, 'success');
 
         } catch (err) {
             const msg = err.body?.message || err.message || 'Unknown error';
-            this.showToast('Error', `UTXO refresh failed: ${msg}`, 'error');
+            showToast(this, 'Error', `UTXO refresh failed: ${msg}`, 'error');
         } finally {
             this.isLoading = false;
         }
@@ -407,7 +393,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
                 if (syncResult.success && syncResult.statistics) {
                     const stats = syncResult.statistics;
-                    address.isUsed = this.isAddressActuallyUsed(stats);
+                    address.isUsed = isAddressActuallyUsed(stats);
                 }
             } catch (syncError) {
                 errorCount++;
@@ -424,14 +410,5 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         await setAddressesUsed({ utxoAddressIds: usedAddressesIds });
         
         return { syncedCount, errorCount };
-    }
-
-    isAddressActuallyUsed(stats) {
-        const assetsInserted = stats.assetsInserted || 0;
-        const assetsUpdated = stats.assetsUpdated || 0;
-        const transactionsInserted = stats.transactionsInserted || 0;
-        const transactionsUpdated = stats.transactionsUpdated || 0;
-        
-        return assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
     }
 }

@@ -1,7 +1,7 @@
 import { LightningElement, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
+import { showToast } from 'c/utils';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -117,7 +117,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         } catch (error) {
             this.errorMessage = 'Library loading failed: ' + (error.message || error);
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
             setTimeout(() => this.loadLibraries(), 2000);
         }
     }
@@ -185,7 +185,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 const errorMessage = await isIndexValid({ walletSetId: this.selectedWalletSetId, accountIndex: parseInt(newIndex) });
                 if (errorMessage) {
                     this.accountIndexErrorMessage = errorMessage;
-                    this.showToast('Error', errorMessage, 'error');
+                    showToast(this, 'Error', errorMessage, 'error');
                 }
             } catch (error) {
                 this.handleError(error, 'Failed to validate account index');
@@ -248,7 +248,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         try {
             await this.createWallet();
-            this.showToast('Success', `Wallet "${this.walletName}" created successfully`, 'success');
+            showToast(this, 'Success', `Wallet "${this.walletName}" created successfully`, 'success');
             this.resetForm();
         } catch (error) {
             this.errorMessage = 'Wallet creation failed: ' + (error.message || error);
@@ -587,11 +587,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.seedPhraseWordCount = 24;
     }
 
-    showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({ title, message, variant })
-        );
-    }
+
 
     // Validation helper methods
     validateWalletSetId(walletSetId) {

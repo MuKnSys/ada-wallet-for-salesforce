@@ -1,10 +1,11 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { getRecord } from 'lightning/uiRecordApi';
+import WALLET_FIELD from '@salesforce/schema/UTXO_Address__c.Wallet__c';
 
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
+import { isAddressActuallyUsed } from 'c/utils';
 
-const WALLET_FIELD = 'UTXO_Address__c.Wallet__c';
 const LOVELACE_UNIT = 'lovelace';
 const ADA_DIVISOR = 1000000;
 const ADA_DECIMAL_PLACES = 6;
@@ -36,7 +37,7 @@ export default class GetUtxoAddressAssets extends LightningElement {
                 this.assets = this.flattenAssets(syncResult.assets || []);
                 this.isSuccess = true;
                 
-                if (syncResult.statistics && this.isAddressActuallyUsed(syncResult.statistics)) {
+                if (syncResult.statistics && isAddressActuallyUsed(syncResult.statistics)) {
                     await setAddressesUsed({ utxoAddressIds: [this.recordId] });
                 }
             } else {
@@ -100,11 +101,6 @@ export default class GetUtxoAddressAssets extends LightningElement {
         } catch (e) {
             return 'Unable to display metadata';
         }
-    }
-
-    isAddressActuallyUsed(stats) {
-        const { assetsInserted = 0, assetsUpdated = 0, transactionsInserted = 0, transactionsUpdated = 0 } = stats;
-        return assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
     }
 
     handleError(error) {
