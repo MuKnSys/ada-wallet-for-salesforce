@@ -2,7 +2,9 @@ import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
+
 import bipLibrary from '@salesforce/resourceUrl/bip39';
+
 import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
 
 export default class GenerateSeedPhrase extends NavigationMixin(LightningElement) {
@@ -184,6 +186,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     // Common method to process import
     async processImport(enteredWords) {
         const seedPhraseString = enteredWords.join(' ');
+        if (!window.bip39.validateMnemonic(seedPhraseString)) {
+            this.showToast('Error', 'Seed phrase is invalid', 'error');
+            return;
+        }
         
         this.isLoading = true;
 
