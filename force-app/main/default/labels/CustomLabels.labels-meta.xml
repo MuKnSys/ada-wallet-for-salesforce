@@ -215,5 +215,61 @@
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Success Info</shortDescription>
         <value>Saved Ada Wallets settings</value>
-    </labels>   
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_SyncButton</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Sync Button Label</shortDescription>
+        <value>Sync Assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_LoadingText</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Loading Text</shortDescription>
+        <value>Fetching UTXO assets...</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_SuccessMessage</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Success Message</shortDescription>
+        <value>Assets synchronized successfully</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_ErrorPrefix</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Error Prefix</shortDescription>
+        <value>Error fetching assets:</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_DefaultError</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Default Error</shortDescription>
+        <value>Failed to fetch assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_UnknownError</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Unknown Error</shortDescription>
+        <value>An error occurred</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_CardTitle</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Card Title</shortDescription>
+        <value>UTXO Assets</value>
+    </labels>
 </CustomLabels>

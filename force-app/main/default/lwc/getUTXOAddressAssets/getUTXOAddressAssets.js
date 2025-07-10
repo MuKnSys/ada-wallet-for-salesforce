@@ -1,7 +1,10 @@
 import { LightningElement, api, track } from 'lwc';
+import { isAddressActuallyUsed, showToast } from 'c/utils';
+
+import { labels } from './labels';
+
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
-import { isAddressActuallyUsed, showToast } from 'c/utils';
 
 const LOVELACE_UNIT = 'lovelace';
 const ADA_DIVISOR = 1000000;
@@ -12,6 +15,8 @@ export default class GetUtxoAddressAssets extends LightningElement {
     @track isLoading = false;
     @track assets = [];
     @track error;
+
+    labels = labels;
 
     async handleSyncAssets() {
         this.isLoading = true;
@@ -27,9 +32,9 @@ export default class GetUtxoAddressAssets extends LightningElement {
                     await setAddressesUsed({ utxoAddressIds: [this.recordId] });
                 }
                 
-                showToast(this, 'Success', 'Assets synchronized successfully', 'success');
+                showToast(this, 'Success', this.labels.SYNC.SuccessMessage, 'success');
             } else {
-                this.error = syncResult?.message || 'Failed to fetch assets';
+                this.error = syncResult?.message || this.labels.ERROR.Default;
             }            
         } catch (error) {            
             this.handleError(error);
@@ -82,7 +87,7 @@ export default class GetUtxoAddressAssets extends LightningElement {
     }
 
     handleError(error) {
-        this.error = error.body?.message || error.message || 'An error occurred';
+        this.error = error.body?.message || error.message || this.labels.ERROR.Unknown;
         this.isLoading = false;
     }
 }
