@@ -4,8 +4,9 @@ import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 
 import bipLibrary from '@salesforce/resourceUrl/bip39';
-
 import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
+
+import { labels } from './labels';
 
 export default class GenerateSeedPhrase extends NavigationMixin(LightningElement) {
     @track step0 = true;
@@ -23,10 +24,9 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track originalSeedPhrase = [];
     @track isCreatingNew = false;
     @track selectedWordCount = '24';
-    @track wordCountOptions = [
-        { label: '15 Words', value: '15' },
-        { label: '24 Words', value: '24' }
-    ];
+    @track wordCountOptions = [];
+
+    labels = labels;
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -54,6 +54,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.step3 = false;
         this.isCreatingNew = false;
         this.selectedWordCount = '24';
+        this.wordCountOptions = [
+            { label: this.labels.WORD_COUNT.Option15, value: '15' },
+            { label: this.labels.WORD_COUNT.Option24, value: '24' }
+        ];
         this.initializeImportInputs();
     }
 
@@ -73,25 +77,21 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 this.isLibraryLoaded = true;                
             })
             .catch(error => {                
-                this.showToast('Error', 'Failed to load Bip library: ' + error.message, 'error');
+                this.showToast('Error', this.labels.ERROR.BipLibrary + ' ' + error.message, 'error');
             });
     }
 
-    // New method to handle "Create New Wallet Set" option
     handleCreateNew() {
         this.isCreatingNew = true;
         this.step0 = false;
         this.step1 = true;
     }
 
-    // New method to handle "Import Existing Wallet Set" option
     handleImportExisting() {
         this.isCreatingNew = false;
         this.step0 = false;
         this.step1 = true;
     }
-
-
 
     handleWalletNameChange(event) {
         this.walletName = event.target.value;
@@ -100,39 +100,34 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     handleNextFromStep1() {
         if (this.walletName) {
             if (this.isCreatingNew) {
-                // Create new wallet flow
                 if (!this.isLibraryLoaded || !window.bip39) {
-                    this.showToast('Error', 'Cardano library not loaded yet. Please try again.', 'error');
+                    this.showToast('Error', this.labels.ERROR.Library, 'error');
                     return;
                 }
 
                 try {
-                    // Generate a new 24-word mnemonic using bip39
                     const mnemonic = window.bip39.generateMnemonic(256);
 
                     if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
                         throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
                     }
 
-                    // Transform the seed phrase into an array of objects with displayIndex
                     this.seedPhrase = mnemonic.split(' ').map((word, index) => {
                         const item = {
                             word: word,
-                            displayIndex: index + 1 // Start numbering from 1
+                            displayIndex: index + 1
                         };
                         return item;
                     });
 
-                    // Store original seed phrase words for verification
                     this.originalSeedPhrase = mnemonic.split(' ');
 
                     this.step1 = false;
                     this.step2 = true;
                 } catch (error) {
-                    this.showToast('Error', 'Failed to generate seed phrase: ' + error.message, 'error');
+                    this.showToast('Error', this.labels.ERROR.Generate + ' ' + error.message, 'error');
                 }
             } else {
-                // Import existing wallet set flow
                 this.step1 = false;
                 this.step3Import = true;
                 this.initializeImportInputs();
@@ -140,29 +135,25 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         }
     }
 
-    // Method to handle word count change
     handleWordCountChange(event) {
         this.selectedWordCount = event.detail.value;
         this.initializeImportInputs();
     }
 
-    // Method to initialize import inputs based on selected word count
     initializeImportInputs() {
         const wordCount = parseInt(this.selectedWordCount);
         this.importInputs = Array.from({ length: wordCount }, (_, i) => ({
-            label: `Word ${i + 1}`,
+            label: `${this.labels.UI.WordLabel} ${i + 1}`,
             value: ''
         }));
     }
 
-    // Method to handle import input changes
     handleImportInputChange(event) {
         const index = parseInt(event.target.dataset.index);
         this.importInputs[index].value = event.target.value.toLowerCase().trim();
         this.importInputs = [...this.importInputs];
     }
 
-    // Method to handle import submit
     async handleImportSubmit() {
         try {
             const enteredWords = this.importInputs
@@ -171,36 +162,33 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
             const expectedLength = parseInt(this.selectedWordCount);
             if (enteredWords.length !== expectedLength) {
-                this.errorMessage = `Seed phrase must contain exactly ${expectedLength} words.`;
+                this.errorMessage = `${this.labels.ERROR.WordCount} ${expectedLength} words.`;
                 this.showToast('Error', this.errorMessage, 'error');
                 return;
             }
 
             await this.processImport(enteredWords);
         } catch (error) {
-            this.errorMessage = 'Error importing Wallet Set: ' + (error.body?.message || error.message);
+            this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message);
             this.showToast('Error', this.errorMessage, 'error');
         }
     }
 
-    // Common method to process import
     async processImport(enteredWords) {
         const seedPhraseString = enteredWords.join(' ');
         if (!window.bip39.validateMnemonic(seedPhraseString)) {
-            this.showToast('Error', 'Seed phrase is invalid', 'error');
+            this.showToast('Error', this.labels.ERROR.Invalid, 'error');
             return;
         }
         
         this.isLoading = true;
 
         try {
-            // Call Apex to create the Wallet_Set__c record
             const recordId = await createWalletSet({
                 walletName: this.walletName,
                 seedPhrase: seedPhraseString
             });            
 
-            // Navigate directly to the newly created Wallet_Set__c record detail page                
             this[NavigationMixin.Navigate]({
                 type: 'standard__recordPage',
                 attributes: {
@@ -209,10 +197,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     actionName: 'view'
                 }
             }, true);
-            this.showToast('Success', `Wallet Set imported successfully`, 'success');
+            this.showToast('Success', this.labels.SUCCESS.Import, 'success');
 
         } catch (error) {
-            this.errorMessage = 'Error importing Wallet Set: ' + (error.body?.message || error.message || 'Unknown error');
+            this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message || 'Unknown error');
             this.showToast('Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;
@@ -233,14 +221,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     handleNextFromStep2() {
         this.verificationInputs = this.seedPhrase.map((item, i) => {
             return {
-                label: `Word ${i + 1}`,
-                value: '' // Do not autofill; user must enter manually
+                label: `${this.labels.UI.WordLabel} ${i + 1}`,
+                value: ''
             };
         });
 
         this.step2 = false;
         this.step3 = true;
-        // Clear seed phrase from memory but keep originalSeedPhrase for verification
         this.seedPhrase = [];
     }
 
@@ -252,28 +239,23 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     async handleSubmit() {
         const enteredPhrase = this.verificationInputs.map(input => input.value.trim());
-        const originalPhrase = this.originalSeedPhrase; // Use stored original phrase
+        const originalPhrase = this.originalSeedPhrase;
         const isValid = enteredPhrase.every((word, i) => word === originalPhrase[i]);
 
         if (isValid) {
-            // Prepare the seed phrase as a string
             const seedPhraseString = enteredPhrase.join(' ');
 
             try {
                 this.isLoading = true;
-                // Create WalletSet object after verification
                 const WalletSet = {};
 
-                // Set mnemonic
                 WalletSet.mnemonic = seedPhraseString;
 
-                // Call Apex to create the Wallet_Set__c record
                 const recordId = await createWalletSet({
                     walletName: this.walletName,
                     seedPhrase: seedPhraseString
                 });
 
-                // Navigate directly to the newly created Wallet_Set__c record detail page                
                 this[NavigationMixin.Navigate]({
                     type: 'standard__recordPage',
                     attributes: {
@@ -282,15 +264,15 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                         actionName: 'view'
                     }
                 }, true);
-                this.showToast('Success', `Wallet Set created successfully`, 'success');
+                this.showToast('Success', this.labels.SUCCESS.Create, 'success');
             } catch (error) {
-                this.errorMessage = 'Error creating Wallet Set or navigating: ' + (error.body?.message || error.message);
+                this.errorMessage = this.labels.ERROR.Create + ' ' + (error.body?.message || error.message);
                 this.showToast('Error', this.errorMessage, 'error');
             } finally {
                 this.isLoading = false;
             }
         } else {
-            this.errorMessage = 'Invalid seed phrase. Please check your entries.';
+            this.errorMessage = this.labels.ERROR.Verification;
             this.showToast('Error', this.errorMessage, 'error');
         }
     }

@@ -1,35 +1,35 @@
 <template>
-    <lightning-card title="Create New Wallet Set" icon-name="standard:account">
+    <lightning-card title={labels.UI.CardTitle} icon-name="standard:account">
         <lightning-spinner lwc:if={isLoading}></lightning-spinner>
         <div class="slds-p-around_medium">
             
             <!-- Step 0: Choose Option -->
             <template lwc:if={step0}>
                 <div class="slds-p-around_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_large">Choose Wallet Set Creation Method</h3>
+                    <h3 class="slds-text-heading_small slds-m-bottom_large">{labels.UI.ChooseMethodHeader}</h3>
                     <div class="slds-box slds-theme_shade slds-m-bottom_medium">
                         <div class="slds-p-around_medium">                            
                             <lightning-button 
-                                label="Create New Wallet Set" 
+                                label={labels.OPTIONS.CreateNew} 
                                 variant="brand" 
                                 onclick={handleCreateNew}
                                 class="slds-m-bottom_x-small">
                             </lightning-button>
                             <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
-                                Generate a new 24-word seed phrase for a fresh wallet set.
+                                {labels.UI.CreateNewDescription}
                             </div>
                         </div>
                     </div>
                     <div class="slds-box slds-theme_shade">
                         <div class="slds-p-around_medium">                            
                             <lightning-button 
-                                label="Import Existing Wallet Set" 
+                                label={labels.OPTIONS.ImportExisting} 
                                 variant="neutral" 
                                 onclick={handleImportExisting}
                                 class="slds-m-bottom_x-small">
                             </lightning-button>
                             <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
-                                Import your existing 15 or 24-word seed phrase to restore your wallet set.
+                                {labels.UI.ImportExistingDescription}
                             </div>
                         </div>
                     </div>
@@ -38,9 +38,9 @@
 
             <!-- Step 1: Wallet Name -->
             <template lwc:if={step1}>
-                <h3 class="slds-text-heading_small slds-m-bottom_small">Enter Wallet Name</h3>
+                <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.EnterWalletNameHeader}</h3>
                 <lightning-input 
-                    label="Wallet Name" 
+                    label={labels.UI.WalletNameLabel} 
                     value={walletName} 
                     onchange={handleWalletNameChange}
                     required
@@ -48,7 +48,7 @@
                     message-when-value-missing="Wallet Name is required">
                 </lightning-input>
                 <lightning-button 
-                    label="Next" 
+                    label={labels.UI.NextButton} 
                     variant="brand" 
                     onclick={handleNextFromStep1}
                     disabled={isNextDisabled}
@@ -59,8 +59,8 @@
             <!-- Step 2: Seed Phrase Display (for new wallet) -->
             <template lwc:if={step2}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">Your Seed Phrase</h3>
-                    <p class="slds-text-color_error slds-text-body_small slds-m-bottom_medium">Store this safely - you won't see it again!</p>
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.SeedPhraseHeader}</h3>
+                    <p class="slds-text-color_error slds-text-body_small slds-m-bottom_medium">{labels.UI.SeedPhraseWarning}</p>
                     <div class="seed-grid">
                         <template for:each={seedPhrase} for:item="item">
                             <div key={item.word} class="seed-word">
@@ -71,13 +71,13 @@
                 </div>
                 <div class="slds-m-bottom_medium">
                     <lightning-button 
-                        label="Download as Text" 
+                        label={labels.UI.DownloadButton} 
                         variant="neutral" 
                         onclick={downloadSeedPhrase}
                         class="slds-m-right_small">
                     </lightning-button>                    
                     <lightning-button 
-                        label="Next" 
+                        label={labels.UI.NextButton} 
                         variant="brand" 
                         onclick={handleNextFromStep2}>
                     </lightning-button>
@@ -87,12 +87,12 @@
             <!-- Step 3 Import: Enter Seed Phrase -->
             <template lwc:if={step3Import}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">Enter Your Seed Phrase</h3>
-                    <p class="slds-text-body_small slds-m-bottom_medium">Enter your seed phrase to import your existing wallet set.</p>
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.EnterSeedPhraseHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">{labels.UI.EnterSeedPhraseDescription}</p>
                     
                     <lightning-radio-group 
                         name="wordCount" 
-                        label="Seed Phrase Length"
+                        label={labels.UI.WordCountLabel}
                         options={wordCountOptions}
                         value={selectedWordCount}
                         onchange={handleWordCountChange}
@@ -117,7 +117,7 @@
                     <div class="slds-text-color_error slds-m-bottom_small">{errorMessage}</div>
                 </template>
                 <lightning-button 
-                    label="Import Wallet Set" 
+                    label={labels.UI.ImportButton} 
                     variant="brand" 
                     onclick={handleImportSubmit}
                     disabled={isImportDisabled}
@@ -128,8 +128,8 @@
             <!-- Step 3: Seed Phrase Verification (for new wallet) -->
             <template lwc:if={step3}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">Verify Your Seed Phrase</h3>
-                    <p class="slds-text-body_small slds-m-bottom_medium">Please enter your seed phrase to verify wallet ownership.</p>
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.VerifySeedPhraseHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">{labels.UI.VerifySeedPhraseDescription}</p>
                     <div class="seed-input-grid">
                         <template for:each={verificationInputs} for:item="input" for:index="idx">
                             <lightning-input 
@@ -148,7 +148,7 @@
                     <div class="slds-text-color_error slds-m-bottom_small">{errorMessage}</div>
                 </template>
                 <lightning-button 
-                    label="Submit" 
+                    label={labels.UI.SubmitButton} 
                     variant="brand" 
                     onclick={handleSubmit}
                     disabled={isSubmitDisabled}
