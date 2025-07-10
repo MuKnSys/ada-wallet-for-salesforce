@@ -68,8 +68,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             cellAttributes: { class: 'slds-text-link address-link' }
         },
         {
-            label: 'Staking Key Hash',
-            fieldName: 'truncatedStakingKeyHash',
+            label: 'Payment Key Hash',
+            fieldName: 'truncatedPaymentKeyHash',
             type: 'text'
         }
     ];
@@ -144,7 +144,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 recordLink: `/lightning/r/UTXO_Address__c/${addr.Id}/view`,
                 cardanoScanLink: `https://cardanoscan.io/address/${addr.Address__c}`,
                 truncatedAddress: this.truncateText(addr.Address__c, 40, 20, 10),
-                truncatedStakingKeyHash: this.truncateText(addr.Staking_Key_Hash__c, 40, 20, 10)
+                truncatedPaymentKeyHash: this.truncateText(addr.Payment_Key_Hash__c, 40, 20, 10)
             }));
             this.externalAddresses = addresses.filter(addr => addr.Type__c === '0');
             this.internalAddresses = addresses.filter(addr => addr.Type__c === '1');
@@ -323,13 +323,13 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
             const fullPath = `m/1852'/1815'/${accountIndexNum}'/${chainType}/${nextIndex}`;
 
-            // Create address data
+            // Create address data (using xpub/xpriv like create new wallet LWC)
             const newAddress = {
                 index: nextIndex,
-                publicKey: utxoPublicKey.to_bech32(),
-                privateKey: utxoPrivateKey.to_bech32(),
+                publicKey: utxoPrivateKey.to_public().to_bech32(), // xpub
+                privateKey: utxoPrivateKey.to_bech32(),            // xprv
                 address: bech32Address,
-                stakingKeyHash: stakeKeyHash.to_hex(),
+                paymentKeyHash: utxoPublicKey.to_raw_key().hash().to_hex(), // Use payment key hash, not stake key hash
                 path: fullPath
             };
 
@@ -557,10 +557,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 
                 const addressData = {
                     index: currentIndex,
-                    publicKey: utxoPublicKey.to_bech32(),
-                    privateKey: utxoPrivateKey.to_bech32(),
+                    publicKey: utxoPrivateKey.to_public().to_bech32(), // xpub
+                    privateKey: utxoPrivateKey.to_bech32(),            // xprv
                     address: bech32Address,
-                    stakingKeyHash: stakeCred.to_keyhash().to_hex(),
+                    paymentKeyHash: utxoPublicKey.to_raw_key().hash().to_hex(), // Use payment key hash, not stake key hash
                     path: fullPath
                 };
                 

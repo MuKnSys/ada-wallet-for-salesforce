@@ -36,7 +36,7 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Staking_Key_Hash__c</field>
+                <field>Payment_Key_Hash__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>

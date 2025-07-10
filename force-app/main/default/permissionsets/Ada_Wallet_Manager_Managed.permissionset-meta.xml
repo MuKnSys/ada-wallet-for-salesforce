@@ -17,10 +17,6 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>WalletCtrl</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
         <apexClass>WalletSetCtrl</apexClass>
         <enabled>true</enabled>
     </classAccesses>    
@@ -54,11 +50,6 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
-        <field>Outbound_Transaction__c.To_Address__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
         <editable>false</editable>
         <field>Outbound_Transaction__c.Approved__c</field>
         <readable>true</readable>
@@ -80,7 +71,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>UTXO_Address__c.Staking_Key_Hash__c</field>
+        <field>UTXO_Address__c.Payment_Key_Hash__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -110,7 +101,7 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>UTXO_Asset__c.Unit__c</field>
+        <field>UTXO_Asset__c.Asset__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -118,11 +109,7 @@
         <field>UTXO_Asset__c.UTXO_Address__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>UTXO_Asset__c.Asset_Name__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
+
     <fieldPermissions>
         <editable>true</editable>
         <field>UTXO_Asset__c.Name__c</field>
@@ -232,6 +219,15 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>UTXO_Asset__c</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Outbound_Transaction_Line__c</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <tabSettings>

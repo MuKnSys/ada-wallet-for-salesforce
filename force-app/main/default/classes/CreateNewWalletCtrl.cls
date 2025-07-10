@@ -30,7 +30,7 @@ public with sharing class CreateNewWalletCtrl {
         @AuraEnabled public String publicKey { get; set; }
         @AuraEnabled public String privateKey { get; set; }
         @AuraEnabled public String address { get; set; }
-        @AuraEnabled public String stakingKeyHash { get; set; }
+        @AuraEnabled public String paymentKeyHash { get; set; }
         @AuraEnabled public String path { get; set; }
     }
 
@@ -172,7 +172,7 @@ public with sharing class CreateNewWalletCtrl {
                     Address__c = addr.address,
                     Index__c = addr.index,
                     Public_Key__c = addr.publicKey,
-                    Staking_Key_Hash__c = addr.stakingKeyHash,
+                    Payment_Key_Hash__c = addr.paymentKeyHash,
                     Path__c = addr.path,
                     Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
                     Type__c = '0'
@@ -194,7 +194,7 @@ public with sharing class CreateNewWalletCtrl {
                     Address__c = addr.address,
                     Index__c = addr.index,
                     Public_Key__c = addr.publicKey,
-                    Staking_Key_Hash__c = addr.stakingKeyHash,
+                    Payment_Key_Hash__c = addr.paymentKeyHash,
                     Path__c = addr.path,
                     Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
                     Type__c = '1'

@@ -6,9 +6,9 @@ public with sharing class UTXOAssetController {
     // Place this at the class level, outside of any method
     private static void populateAssetFields(UTXO_Asset__c asset, String unit, Decimal totalAmount, String assetName, String displayUnit, Map<String, Object> metadata) {
         asset.Amount__c = totalAmount;
-        asset.Unit__c = (unit == 'lovelace' ? 'ADA' : displayUnit);
+        asset.Asset__c = (unit == 'lovelace' ? 'ADA' : displayUnit);
         asset.Name__c = (unit == 'lovelace' ? 'Cardano' : assetName);
-        asset.Asset_Name__c = displayUnit;
+        
         if (unit == 'lovelace') {
             asset.Decimals__c = 6;
         } else if (metadata != null) {
@@ -227,9 +227,9 @@ public with sharing class UTXOAssetController {
             for (String unit : allUnits) {
                 if (unit != 'lovelace') {
                     try {
-                        String metadata = BlockfrostService.getAssetMetadata(unit);
-                        if (metadata != null && metadata != '{}') {
-                            unitToMetadata.put(unit, metadata);
+                        Map<String, Object> assetData = BlockfrostService.getAssetInfo(unit);
+                        if (assetData != null && !assetData.isEmpty()) {
+                            unitToMetadata.put(unit, JSON.serialize(assetData));
                         }
                     } catch (Exception e) {
                         Logger.logError('[UTXOAssetController.syncAssetsAndTransactions] ❌ Failed to fetch metadata for unit: ' + unit + ' - ' + e.getMessage());
@@ -264,7 +264,7 @@ public with sharing class UTXOAssetController {
             
             // Get existing assets and transactions
             List<UTXO_Asset__c> existingAssets = [
-                SELECT Id, Unit__c, Amount__c, UTXO_Address__c
+                SELECT Id, Asset__c, Amount__c, UTXO_Address__c
                 FROM UTXO_Asset__c
                 WHERE UTXO_Address__c = :utxoAddress.Id
             ];
@@ -282,7 +282,7 @@ public with sharing class UTXOAssetController {
             // We need to handle cases where existing records might have old or new unit formats
             Map<String, UTXO_Asset__c> unitToExistingAsset = new Map<String, UTXO_Asset__c>();
             for (UTXO_Asset__c existingAsset : existingAssets) {
-                unitToExistingAsset.put(existingAsset.Unit__c, existingAsset);
+                unitToExistingAsset.put(existingAsset.Asset__c, existingAsset);
             }
             
             // Prepare asset operations
@@ -340,9 +340,9 @@ public with sharing class UTXOAssetController {
             }
             // After all upserts, clean up any assets not in the current sync
             List<UTXO_Asset__c> assetsToDelete = [
-                SELECT Id, Unit__c FROM UTXO_Asset__c
+                SELECT Id, Asset__c FROM UTXO_Asset__c
                 WHERE UTXO_Address__c = :utxoAddress.Id
-                AND Unit__c NOT IN :validUnits
+                AND Asset__c NOT IN :validUnits
             ];
             Integer deletedCount = 0;
             if (!assetsToDelete.isEmpty()) {
@@ -421,17 +421,17 @@ public with sharing class UTXOAssetController {
                 utxoAddressIds.add(addr.Id);
             }
             
-            // Get all assets for these addresses, aggregated by Unit
+            // Get all assets for these addresses, aggregated by Asset
             AggregateResult[] assetAggregates = [
-                SELECT Unit__c, SUM(Amount__c) totalAmount, SUM(Value__c) totalValue, 
-                       MAX(Name__c) assetName, MAX(Asset_Name__c) displayName, 
+                SELECT Asset__c, SUM(Amount__c) totalAmount, SUM(Value__c) totalValue, 
+                       MAX(Name__c) assetName, 
                        MAX(Decimals__c) decimals, MAX(Policy_ID__c) policyId,
                        MAX(Fingerprint__c) fingerprint
                 FROM UTXO_Asset__c
                 WHERE UTXO_Address__c IN :utxoAddressIds
                 AND Amount__c > 0
-                GROUP BY Unit__c
-                ORDER BY Unit__c
+                GROUP BY Asset__c
+                ORDER BY Asset__c
             ];
             
             Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] 📊 Found ' + assetAggregates.size() + ' aggregated assets');
@@ -440,7 +440,7 @@ public with sharing class UTXOAssetController {
             List<Map<String, Object>> tokens = new List<Map<String, Object>>();
             
             for (AggregateResult ar : assetAggregates) {
-                String unit = String.valueOf(ar.get('Unit__c'));
+                String unit = String.valueOf(ar.get('Asset__c'));
                 Decimal totalAmount = (Decimal) ar.get('totalAmount');
                 Decimal totalValue = (Decimal) ar.get('totalValue');
                 String assetName = String.valueOf(ar.get('assetName'));

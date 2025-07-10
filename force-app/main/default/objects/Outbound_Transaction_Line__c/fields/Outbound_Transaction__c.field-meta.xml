@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Outbound_Transaction__c</fullName>
+    <externalId>false</externalId>
+    <label>Outbound Transaction</label>
+    <referenceTo>Outbound_Transaction__c</referenceTo>
+    <relationshipLabel>Transaction Lines</relationshipLabel>
+    <relationshipName>Outbound_Transaction_Lines</relationshipName>
+    <type>MasterDetail</type>
+</CustomField> 

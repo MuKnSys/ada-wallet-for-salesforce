@@ -27,6 +27,33 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         CHANGE: 1
     };
 
+    // Helper: Get Ed25519 raw private key (hex) from Bip32PrivateKey
+    getRawEd25519PrivateKeyHex(bip32priv) {
+        try {
+            // Check if this is a valid BIP32 private key that can be converted to raw Ed25519
+            if (!bip32priv || typeof bip32priv.to_raw_key !== 'function') {
+                throw new Error('Invalid BIP32 private key provided');
+            }
+            
+            // Get the raw key that was used to generate the address
+            const rawKey = bip32priv.to_raw_key();
+            if (!rawKey || typeof rawKey.as_bytes !== 'function') {
+                throw new Error('Failed to extract raw key from BIP32 private key');
+            }
+            
+            const keyBytes = rawKey.as_bytes();
+            if (!keyBytes || keyBytes.length < 32) {
+                throw new Error('Raw key bytes are invalid or too short');
+            }
+            
+            // Only use the first 32 bytes (the actual private key)
+            const privateKeyBytes = keyBytes.slice(0, 32);
+            return Buffer.from(privateKeyBytes).toString('hex');
+        } catch (error) {
+            throw new Error(`Failed to extract Ed25519 private key: ${error.message}`);
+        }
+    }
+
     @track librariesLoaded = false;
     @track selectedWalletSetId = '';
     @track walletName = '';
@@ -242,17 +269,17 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         if (!this.selectedWalletSetId) return;
 
         try {
-            // Create input fields for 24 words (no need to get original phrase from server)
+            // Create empty input fields for 24 words (no prefilling)
             this.seedPhraseInputs = Array.from({ length: 24 }, (_, index) => {
                 return {
                     label: `Word ${index + 1}`,
-                    value: ''
+                    value: '' // Empty input field - user must enter seed phrase
                 };
             });
 
             this.showSeedPhraseVerification = true;
             this.seedPhraseErrorMessage = '';
-            this.originalSeedPhrase = []; // Not needed for server-side verification
+            this.originalSeedPhrase = []; // No original seed phrase stored
         } catch (error) {
             this.errorMessage = 'Failed to initialize seed phrase verification: ' + (error.message || error);
             this.showToast('Error', this.errorMessage, 'error');
@@ -293,7 +320,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
      * Phase 2: Create all UTXO records in bulk (DML only)
      * Phase 3: Sync assets and transactions for each address (callouts + DML per address)
      */
-    async generateAddressesUntilUnused(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, walletId) {
+    async generateAddressesUntilUnused(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, walletId) {
         const targetConsecutive = this.TARGET_CONSECUTIVE_ADDRESSES;
         const typeLabel = derivationPath === this.DERIVATION_PATHS.RECEIVING ? 'receiving' : 'change';
 
@@ -301,7 +328,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         // Phase 1: Generate and check addresses
         const addresses = await this.generateAndCheckAddresses(
-            accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, typeLabel, targetConsecutive
+            accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, typeLabel, targetConsecutive
         );
 
         // Phase 2: Create UTXO records
@@ -313,7 +340,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         return addresses;
     }
 
-    async generateAndCheckAddresses(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, typeLabel, targetConsecutive) {
+    async generateAndCheckAddresses(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, typeLabel, targetConsecutive) {
         const addresses = [];
         let consecutiveUnused = 0;
         let index = 0;
@@ -323,7 +350,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 `Phase 1 - ${consecutiveUnused}/${targetConsecutive} consecutive unused found`);
 
             const addressData = await this.deriveAndVerifyAddress(
-                accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, index, typeLabel
+                accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, index, typeLabel
             );
 
             const usageResult = await this.checkAddressUsage(addressData.address, index, typeLabel);
@@ -350,7 +377,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         return addresses;
     }
 
-    async deriveAndVerifyAddress(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, index, typeLabel) {
+    async deriveAndVerifyAddress(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, index, typeLabel) {
         const privateKey = accountKey.derive(derivationPath).derive(index);
         const publicKey = privateKey.to_public();
         const keyHash = publicKey.to_raw_key().hash();
@@ -373,10 +400,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         
         return {
             index: index,
-            publicKey: publicKey.to_bech32(),
-            privateKey: privateKey.to_bech32(),
+            publicKey: privateKey.to_public().to_bech32(), // xpub
+            privateKey: privateKey.to_bech32(),            // xprv
             address: bech32Address,
-            stakingKeyHash: stakeKeyHash.to_hex(),
+            paymentKeyHash: publicKey.to_raw_key().hash().to_hex(),
             path: fullPath
         };
     }
@@ -565,7 +592,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             accountIndexNum,
             stakeCred,
             network,
-            stakeKeyHash,
+            paymentKeyHash,
             recordId
         );
 
@@ -576,7 +603,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             accountIndexNum,
             stakeCred,
             network,
-            stakeKeyHash,
+            paymentKeyHash,
             recordId
         );
 

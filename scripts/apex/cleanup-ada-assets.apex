@@ -1,7 +1,7 @@
 // Apex script to update ADA assets
-List<UTXO_Asset__c> adaAssets = [SELECT Id, Unit__c, Name__c, Decimals__c FROM UTXO_Asset__c WHERE Unit__c = 'lovelace'];
+List<UTXO_Asset__c> adaAssets = [SELECT Id, Asset__c, Name__c, Decimals__c FROM UTXO_Asset__c WHERE Asset__c = 'lovelace'];
 for (UTXO_Asset__c asset : adaAssets) {
-    asset.Unit__c = 'ADA';
+    asset.Asset__c = 'ADA';
     asset.Name__c = 'Cardano';
     asset.Decimals__c = 6;
 }

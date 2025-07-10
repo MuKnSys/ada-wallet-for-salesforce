@@ -4,7 +4,7 @@
     <columns>NAME</columns>
     <columns>Path__c</columns>
     <columns>Address__c</columns>
-    <columns>Staking_Key_Hash__c</columns>
+    <columns>Payment_Key_Hash__c</columns>
     <columns>Type__c</columns>
     <columns>Wallet__c</columns>
     <filterScope>Everything</filterScope>

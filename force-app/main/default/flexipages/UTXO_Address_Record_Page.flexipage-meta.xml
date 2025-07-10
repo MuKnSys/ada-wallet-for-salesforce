@@ -169,7 +169,7 @@
                             <value>Value__c</value>
                         </valueListItems>
                         <valueListItems>
-                            <value>Unit__c</value>
+                            <value>Asset__c</value>
                         </valueListItems>
                     </valueList>
                 </componentInstanceProperties>

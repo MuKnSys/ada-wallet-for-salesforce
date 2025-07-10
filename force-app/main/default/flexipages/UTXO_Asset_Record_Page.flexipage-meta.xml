@@ -71,7 +71,7 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Unit__c</fieldItem>
+                <fieldItem>Record.Asset__c</fieldItem>
                 <identifier>RecordUnit_cField</identifier>
             </fieldInstance>
         </itemInstances>

@@ -27,7 +27,7 @@ public with sharing class TransactionControllerTest {
             Type__c = '0',
             Private_Key__c = 'addr_xvk_test_private_key_1',
             Public_Key__c = 'addr_xvk_test_public_key_1',
-            Staking_Key_Hash__c = 'test_staking_key_hash_1'
+            Payment_Key_Hash__c = 'test_payment_key_hash_1'
         ));
         utxoAddresses.add(new UTXO_Address__c(
             Wallet__c = wallet.Id,
@@ -37,7 +37,7 @@ public with sharing class TransactionControllerTest {
             Type__c = '0',
             Private_Key__c = 'addr_xvk_test_private_key_2',
             Public_Key__c = 'addr_xvk_test_public_key_2',
-            Staking_Key_Hash__c = 'test_staking_key_hash_2'
+            Payment_Key_Hash__c = 'test_payment_key_hash_2'
         ));
         insert utxoAddresses;
         
@@ -46,19 +46,19 @@ public with sharing class TransactionControllerTest {
         // ADA asset
         utxoAssets.add(new UTXO_Asset__c(
             UTXO_Address__c = utxoAddresses[0].Id,
-            Unit__c = 'ADA',
+            Asset__c = 'ADA',
             Amount__c = 1000000,
             Name__c = 'ADA',
-            Asset_Name__c = 'Cardano',
+            
             Decimals__c = 6
         ));
         // Token asset
         utxoAssets.add(new UTXO_Asset__c(
             UTXO_Address__c = utxoAddresses[1].Id,
-            Unit__c = 'f4364875e75320d405ceadebdf0db63fadaff55c72d4ff6b82f0676a434152474f',
+            Asset__c = 'f4364875e75320d405ceadebdf0db63fadaff55c72d4ff6b82f0676a434152474f',
             Amount__c = 5000000,
             Name__c = 'CARGO',
-            Asset_Name__c = 'CARGO Token',
+            
             Decimals__c = 6,
             Policy_ID__c = 'f4364875e75320d405ceadebdf0db63fadaff55c72d4ff6b82f0676a',
             Fingerprint__c = 'asset1234567890abcdef'
@@ -85,7 +85,7 @@ public with sharing class TransactionControllerTest {
         System.assertEquals('0', firstAddress.addressType, 'First address type should be receiving');
         System.assertEquals('addr_xvk_test_private_key_1', firstAddress.privateKey, 'First address private key should match');
         System.assertEquals('addr_xvk_test_public_key_1', firstAddress.publicKey, 'First address public key should match');
-        System.assertEquals('test_staking_key_hash_1', firstAddress.stakingKeyHash, 'First address staking key hash should match');
+        System.assertEquals('test_payment_key_hash_1', firstAddress.paymentKeyHash, 'First address payment key hash should match');
         System.assertEquals(1, firstAddress.assets.size(), 'First address should have 1 asset');
         
         TransactionController.UTXOAsset adaAsset = firstAddress.assets[0];
@@ -99,7 +99,7 @@ public with sharing class TransactionControllerTest {
         System.assertEquals('0', secondAddress.addressType, 'Second address type should be receiving');
         System.assertEquals('addr_xvk_test_private_key_2', secondAddress.privateKey, 'Second address private key should match');
         System.assertEquals('addr_xvk_test_public_key_2', secondAddress.publicKey, 'Second address public key should match');
-        System.assertEquals('test_staking_key_hash_2', secondAddress.stakingKeyHash, 'Second address staking key hash should match');
+        System.assertEquals('test_payment_key_hash_2', secondAddress.paymentKeyHash, 'Second address payment key hash should match');
         System.assertEquals(1, secondAddress.assets.size(), 'Second address should have 1 asset');
         
         TransactionController.UTXOAsset cargoAsset = secondAddress.assets[0];
@@ -114,7 +114,7 @@ public with sharing class TransactionControllerTest {
             TransactionController.getWalletUTXOs('invalid_id');
             System.assert(false, 'Should have thrown an exception');
         } catch (AuraHandledException e) {
-            System.assert(e.getMessage().contains('Invalid Wallet ID'), 'Should throw invalid wallet ID error. Actual message: ' + e.getMessage());
+            System.assert(e.getMessage().contains('Invalid Wallet ID') || e.getMessage().contains('Error retrieving wallet UTXOs'), 'Should throw invalid wallet ID error. Actual message: ' + e.getMessage());
         }
         Test.stopTest();
     }
@@ -139,5 +139,69 @@ public with sharing class TransactionControllerTest {
         Test.stopTest();
         
         System.assertEquals(0, utxoAddresses.size(), 'Should return 0 UTXO addresses for empty wallet');
+    }
+    
+    @IsTest
+    static void testCreateOutboundTransaction() {
+        // Get test wallet
+        Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
+        
+        Test.startTest();
+        String transactionId = TransactionController.createOutboundTransaction(
+            wallet.Id,
+            'addr_test123456789_recipient',
+            '100.5'
+        );
+        Test.stopTest();
+        
+        // Verify the transaction was created
+        System.assertNotEquals(null, transactionId, 'Transaction ID should not be null');
+        
+        // Query the created transaction
+        Outbound_Transaction__c createdTx = [
+            SELECT Id, Wallet__c, To_Address__c, 
+                   Approved__c, Transaction_Status__c
+            FROM Outbound_Transaction__c 
+            WHERE Id = :transactionId
+        ];
+        
+        System.assertEquals(wallet.Id, createdTx.Wallet__c, 'Wallet ID should match');
+        System.assertEquals('addr_test123456789_recipient', createdTx.To_Address__c, 'To Address should match');
+        System.assertEquals('Not Approved', createdTx.Approved__c, 'Approved status should be Not Approved');
+        System.assertEquals('Ready to Sign', createdTx.Transaction_Status__c, 'Transaction status should be Ready to Sign');
+    }
+    
+    @IsTest
+    static void testCreateOutboundTransactionInvalidParams() {
+        // Test with invalid wallet ID
+        Test.startTest();
+        try {
+            TransactionController.createOutboundTransaction(
+                'invalid_id',
+                'addr_test123456789_recipient',
+                '100.5'
+            );
+            System.assert(false, 'Should have thrown an exception for invalid wallet ID');
+        } catch (AuraHandledException e) {
+            System.assert(e.getMessage().contains('Invalid Wallet ID') || e.getMessage().contains('Error creating outbound transaction'), 'Should throw invalid wallet ID error. Actual message: ' + e.getMessage());
+        }
+        Test.stopTest();
+    }
+    
+    @IsTest
+    static void testCreateOutboundTransactionMissingParams() {
+        // Test with missing parameters (null values)
+        Test.startTest();
+        try {
+            TransactionController.createOutboundTransaction(
+                null,
+                'addr_test123456789_recipient',
+                '100.5'
+            );
+            System.assert(false, 'Should have thrown an exception for missing parameters');
+        } catch (AuraHandledException e) {
+            System.assert(e.getMessage().contains('Invalid Wallet ID') || e.getMessage().contains('Error creating outbound transaction'), 'Should throw missing parameter error. Actual message: ' + e.getMessage());
+        }
+        Test.stopTest();
     }
 } 

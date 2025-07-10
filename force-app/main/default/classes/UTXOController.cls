@@ -1,20 +1,16 @@
 public with sharing class UTXOController {
-    /**
-     * Inner class for UTXO Address data
-     */
+    
+    // Inner classes for data structures
     public class UTXOAddress {
         @AuraEnabled public Integer index { get; set; }
         @AuraEnabled public String publicKey { get; set; }
         @AuraEnabled public String address { get; set; }
-        @AuraEnabled public String stakingKeyHash { get; set; }
+        @AuraEnabled public String paymentKeyHash { get; set; }
         @AuraEnabled public String path { get; set; }
         @AuraEnabled public String stakePath { get; set; }
         @AuraEnabled public String privateKey { get; set; }
     }
 
-    /**
-     * Inner class for Transaction wrapper data
-     */
     public class TransactionWrapper {
         @AuraEnabled public String assetName { get; set; }
         @AuraEnabled public Decimal amount { get; set; }
@@ -22,22 +18,17 @@ public with sharing class UTXOController {
         @AuraEnabled public Datetime receivedAt { get; set; }
     }
 
-    /**
-     * Inner class for Token count data
-     */
     public class TokenCount {
         @AuraEnabled public String symbol;
         @AuraEnabled public Decimal amount;
     }
 
-    /**
-     * Inner class for Asset token summary data
-     */
     public class AssetTokenSummary {
         @AuraEnabled public Decimal ada;
         @AuraEnabled public List<TokenCount> tokens;
     }
 
+    // Core wallet and address methods
     @AuraEnabled(cacheable=true)
     public static String getEncryptedSeedPhrase(Id walletSetId) {
         try {            
@@ -59,90 +50,42 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static void createUTXOAddresses(String walletId, List<UTXOAddress> receivingAddresses, List<UTXOAddress> changeAddresses) {
         try {
-            // Validate inputs
             if (receivingAddresses == null || changeAddresses == null) {
                 throw new AuraHandledException('Address lists cannot be null');
             }
 
-            // Prepare UTXO_Address__c records
             List<UTXO_Address__c> utxoRecords = new List<UTXO_Address__c>();
+            utxoRecords.addAll(createAddressRecords(walletId, receivingAddresses, '0'));
+            utxoRecords.addAll(createAddressRecords(walletId, changeAddresses, '1'));
 
-            // Process receiving addresses (Type__c = 0)
-            utxoRecords.addAll(processReceivingAddresses(walletId, receivingAddresses));
-
-            // Process change addresses (Type__c = 1)
-            utxoRecords.addAll(processChangeAddresses(walletId, changeAddresses));
-
-            // Insert records with security enforcement
             if (!utxoRecords.isEmpty()) {
                 SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, utxoRecords);
                 insert decision.getRecords();
             }
-            
         } catch (Exception e) {
             throw new AuraHandledException('Error creating UTxO addresses: ' + e.getMessage());
         }
     }
 
-    /**
-     * Process receiving addresses and return UTXO_Address__c records
-     */
-    private static List<UTXO_Address__c> processReceivingAddresses(String walletId, List<UTXOAddress> receivingAddresses) {
+    private static List<UTXO_Address__c> createAddressRecords(String walletId, List<UTXOAddress> addresses, String type) {
         List<UTXO_Address__c> records = new List<UTXO_Address__c>();
         
-        for (UTXOAddress addr : receivingAddresses) {
+        for (UTXOAddress addr : addresses) {
             if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || 
-                String.isBlank(addr.stakingKeyHash) || String.isBlank(addr.path)) {
-                throw new AuraHandledException('Invalid receiving address data for index ' + addr.index);
+                String.isBlank(addr.paymentKeyHash) || String.isBlank(addr.path)) {
+                throw new AuraHandledException('Invalid address data for index ' + addr.index);
             }
             
-            // Store private key without encryption
-            String privateKey = String.isNotBlank(addr.privateKey) ? addr.privateKey : null;
-            
-            UTXO_Address__c utxoRecord = new UTXO_Address__c(
+            records.add(new UTXO_Address__c(
                 Wallet__c = walletId,
                 Address__c = addr.address,
                 Index__c = addr.index,
                 Public_Key__c = addr.publicKey,
-                Staking_Key_Hash__c = addr.stakingKeyHash,
+                Payment_Key_Hash__c = addr.paymentKeyHash,
                 Path__c = addr.path,
-                Private_Key__c = privateKey,
-                Type__c = '0' // Receiving address
-            );
-            
-            records.add(utxoRecord);
-        }
-        
-        return records;
-    }
-
-    /**
-     * Process change addresses and return UTXO_Address__c records
-     */
-    private static List<UTXO_Address__c> processChangeAddresses(String walletId, List<UTXOAddress> changeAddresses) {
-        List<UTXO_Address__c> records = new List<UTXO_Address__c>();
-        
-        for (UTXOAddress addr : changeAddresses) {
-            if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || 
-                String.isBlank(addr.stakingKeyHash) || String.isBlank(addr.path)) {
-                throw new AuraHandledException('Invalid change address data for index ' + addr.index);
-            }
-            
-            // Store private key without encryption
-            String privateKey = String.isNotBlank(addr.privateKey) ? addr.privateKey : null;
-            
-            UTXO_Address__c utxoRecord = new UTXO_Address__c(
-                Wallet__c = walletId,
-                Address__c = addr.address,
-                Index__c = addr.index,
-                Public_Key__c = addr.publicKey,
-                Staking_Key_Hash__c = addr.stakingKeyHash,
-                Path__c = addr.path,
-                Private_Key__c = privateKey,
-                Type__c = '1' // Change address
-            );
-            
-            records.add(utxoRecord);
+                Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
+                Type__c = type
+            ));
         }
         
         return records;
@@ -151,9 +94,7 @@ public with sharing class UTXOController {
     @AuraEnabled(cacheable=true)
     public static List<UTXO_Address__c> getUTXOAddresses(String walletId) {
         try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
             return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId, null);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
@@ -163,20 +104,16 @@ public with sharing class UTXOController {
     @AuraEnabled(cacheable=true)
     public static List<UTXO_Address__c> getUTXOAddressesWithAssets(String walletId) {
         try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
             
-            // Get all addresses for this wallet
             List<UTXO_Address__c> allAddresses = [
-                SELECT Id, Address__c, Index__c, Public_Key__c, Staking_Key_Hash__c, 
+                SELECT Id, Address__c, Index__c, Public_Key__c, Payment_Key_Hash__c, 
                        Path__c, Private_Key__c, Type__c, Name
                 FROM UTXO_Address__c 
                 WHERE Wallet__c = :walletId
                 ORDER BY Index__c ASC
             ];
             
-            // Filter out addresses without private keys in Apex
             List<UTXO_Address__c> filteredAddresses = new List<UTXO_Address__c>();
             for (UTXO_Address__c addr : allAddresses) {
                 if (addr.Private_Key__c != null) {
@@ -184,7 +121,6 @@ public with sharing class UTXOController {
                 }
             }
             
-            // Get addresses that have assets
             Set<Id> addressesWithAssets = new Set<Id>();
             for (UTXO_Asset__c asset : [
                 SELECT UTXO_Address__c 
@@ -194,7 +130,6 @@ public with sharing class UTXOController {
                 addressesWithAssets.add(asset.UTXO_Address__c);
             }
             
-            // Filter addresses that have both private keys and assets
             List<UTXO_Address__c> result = new List<UTXO_Address__c>();
             for (UTXO_Address__c addr : allAddresses) {
                 if (addressesWithAssets.contains(addr.Id)) {
@@ -208,12 +143,27 @@ public with sharing class UTXOController {
         }
     }
 
+    @AuraEnabled(cacheable=true)
+    public static List<UTXO_Address__c> getAllWalletAddresses(String walletId) {
+        try {
+            validateWalletId(walletId);
+            
+            return [
+                SELECT Id, Address__c, Index__c, Type__c, Path__c, 
+                       Private_Key__c, Public_Key__c, Payment_Key_Hash__c
+                FROM UTXO_Address__c
+                WHERE Wallet__c = :walletId
+                ORDER BY Type__c, Index__c
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException('Error retrieving wallet addresses: ' + e.getMessage());
+        }
+    }
+
     @AuraEnabled
     public static List<UTXOAddressSelector.UTXOAddressWithDecryptedKey> getUTXOAddressesWithDecryptedKeys(String walletId) {
         try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
             return UTXOAddressSelector.getUTXOAddressesWithDecryptedKeysByWalletId(walletId, null);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses with decrypted keys: ' + e.getMessage());
@@ -223,9 +173,7 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static UTXOAddressSelector.UTXOAddressWithDecryptedKey getUTXOAddressWithDecryptedKeyById(String utxoAddressId) {
         try {
-            if (String.isBlank(utxoAddressId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', utxoAddressId)) {
-                throw new AuraHandledException('Invalid UTXO Address ID');
-            }
+            validateId(utxoAddressId, 'UTXO Address ID');
             return UTXOAddressSelector.getUTXOAddressWithDecryptedKeyById(utxoAddressId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO address with decrypted key: ' + e.getMessage());
@@ -253,26 +201,18 @@ public with sharing class UTXOController {
     @AuraEnabled(cacheable=true)
     public static Integer getNextUTXOIndex(String walletId, String type) {
         try {
-            // Validate inputs
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
             if (String.isBlank(type) || !(type == '0' || type == '1')) {
                 throw new AuraHandledException('Type must be "0" (receiving) or "1" (change)');
             }
 
-            // Query UTXO_Address__c records for the given Wallet__c and Type__c
             List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getLastUTXOAddressByType(walletId, type);
 
-            // If no records are found, start at index 0
             if (utxoAddresses.isEmpty()) {
                 return 0;
             }
 
-            // Get the highest Index__c and return the next index
-            Integer highestIndex = (Integer)utxoAddresses[0].Index__c;
-            Integer nextIndex = highestIndex + 1;
-            return nextIndex;
+            return (Integer)utxoAddresses[0].Index__c + 1;
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving next UTXO index: ' + e.getMessage());
         }
@@ -281,35 +221,20 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static String addReceivingUTXOAddress(String walletId, UTXOAddress receivingAddress) {
         try {
-            // Validate inputs
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-            if (receivingAddress == null) {
-                throw new AuraHandledException('Receiving address cannot be null');
-            }
-            if (receivingAddress.index == null || String.isBlank(receivingAddress.address) || 
-                String.isBlank(receivingAddress.publicKey) || String.isBlank(receivingAddress.stakingKeyHash) || 
-                String.isBlank(receivingAddress.path)) {
-                throw new AuraHandledException('Invalid receiving address data for index ' + receivingAddress.index);
-            }
+            validateWalletId(walletId);
+            validateAddress(receivingAddress, 'receiving');
 
-            // Store private key without encryption
-            String privateKey = String.isNotBlank(receivingAddress.privateKey) ? receivingAddress.privateKey : null;
-
-            // Create a new UTXO_Address__c record for the receiving address (Type__c = 0)
             UTXO_Address__c utxoRecord = new UTXO_Address__c(
                 Wallet__c = walletId,
                 Address__c = receivingAddress.address,
                 Index__c = receivingAddress.index,
                 Public_Key__c = receivingAddress.publicKey,
-                Staking_Key_Hash__c = receivingAddress.stakingKeyHash,
+                Payment_Key_Hash__c = receivingAddress.paymentKeyHash,
                 Path__c = receivingAddress.path,
-                Private_Key__c = privateKey,
-                Type__c = '0' // Receiving address
+                Private_Key__c = String.isNotBlank(receivingAddress.privateKey) ? receivingAddress.privateKey : null,
+                Type__c = '0'
             );
 
-            // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
             insert decision.getRecords();
             
@@ -322,35 +247,20 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static String addChangeUTXOAddress(String walletId, UTXOAddress changeAddress) {
         try {
-            // Validate inputs
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
-            if (changeAddress == null) {
-                throw new AuraHandledException('Change address cannot be null');
-            }
-            if (changeAddress.index == null || String.isBlank(changeAddress.address) || 
-                String.isBlank(changeAddress.publicKey) || String.isBlank(changeAddress.stakingKeyHash) || 
-                String.isBlank(changeAddress.path)) {
-                throw new AuraHandledException('Invalid change address data for index ' + changeAddress.index);
-            }
+            validateWalletId(walletId);
+            validateAddress(changeAddress, 'change');
 
-            // Store private key without encryption
-            String privateKey = String.isNotBlank(changeAddress.privateKey) ? changeAddress.privateKey : null;
-
-            // Create a new UTXO_Address__c record for the change address (Type__c = 1)
             UTXO_Address__c utxoRecord = new UTXO_Address__c(
                 Wallet__c = walletId,
                 Address__c = changeAddress.address,
                 Index__c = changeAddress.index,
                 Public_Key__c = changeAddress.publicKey,
-                Staking_Key_Hash__c = changeAddress.stakingKeyHash,
+                Payment_Key_Hash__c = changeAddress.paymentKeyHash,
                 Path__c = changeAddress.path,
-                Private_Key__c = privateKey,
-                Type__c = '1' // Change address
+                Private_Key__c = String.isNotBlank(changeAddress.privateKey) ? changeAddress.privateKey : null,
+                Type__c = '1'
             );
 
-            // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
             insert decision.getRecords();
             
@@ -363,9 +273,7 @@ public with sharing class UTXOController {
     @AuraEnabled(cacheable=true)
     public static String getFirstUnusedReceivingAddress(String walletId) {
         try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
             List<UTXO_Address__c> addrs = [
                 SELECT Address__c, Index__c
                 FROM UTXO_Address__c
@@ -375,10 +283,7 @@ public with sharing class UTXOController {
                 ORDER BY Index__c
                 LIMIT 1
             ];
-            if (addrs.isEmpty()) {
-                return null;
-            }
-            return addrs[0].Address__c;
+            return addrs.isEmpty() ? null : addrs[0].Address__c;
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching unused receiving address: ' + e.getMessage());
         }
@@ -387,34 +292,34 @@ public with sharing class UTXOController {
     @AuraEnabled(cacheable=true)
     public static List<UTXO_Asset__c> getAllUtxoAssetsForWallet(String walletId) {
         try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
 
             return [
-                SELECT Id, UTXO_Address__c, Unit__c, Amount__c, Name__c, Asset_Name__c, 
+                SELECT Id, UTXO_Address__c, Asset__c, Amount__c, Name__c, 
                        Decimals__c, Policy_ID__c, Fingerprint__c,
                        UTXO_Address__r.Address__c, UTXO_Address__r.Index__c
                 FROM UTXO_Asset__c
                 WHERE UTXO_Address__r.Wallet__c = :walletId
-                ORDER BY UTXO_Address__r.Index__c, Unit__c
+                ORDER BY UTXO_Address__r.Index__c, Asset__c
             ];
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO assets: ' + e.getMessage());
         }
     }
 
+    // Transaction methods
     @AuraEnabled
-    public static String createOutboundTransaction(String walletId, String toAddress, String amount) {
+    public static String createOutboundTransaction(String walletId, String toAddress, String amount, String asset) {
         try {
-            if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-                throw new AuraHandledException('Invalid Wallet ID');
-            }
+            validateWalletId(walletId);
             if (String.isBlank(toAddress)) {
                 throw new AuraHandledException('To Address is required');
             }
             if (String.isBlank(amount)) {
                 throw new AuraHandledException('Amount is required');
+            }
+            if (String.isBlank(asset)) {
+                throw new AuraHandledException('Asset is required');
             }
 
             Decimal amountDecimal;
@@ -428,22 +333,168 @@ public with sharing class UTXOController {
                 throw new AuraHandledException('Amount must be greater than 0');
             }
 
-            // Create outbound transaction record
             Outbound_Transaction__c txRecord = new Outbound_Transaction__c(
                 Wallet__c = walletId,
                 To_Address__c = toAddress,
-                Amount__c = amountDecimal,
                 Approved__c = 'Not Approved',
                 Transaction_Status__c = 'Ready to Sign'
             );
 
-            // Insert the record with security enforcement
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
             insert decision.getRecords();
+            Id outboundId = decision.getRecords()[0].Id;
 
-            return decision.getRecords()[0].Id;
+            Outbound_Transaction_Line__c line = new Outbound_Transaction_Line__c(
+                Outbound_Transaction__c = outboundId,
+                Amount__c = amountDecimal,
+                Asset__c = asset
+            );
+            SObjectAccessDecision lineDecision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction_Line__c>{line});
+            insert lineDecision.getRecords();
+
+            return outboundId;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating outbound transaction: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static String createMultiAssetOutboundTransaction(String walletId, String toAddress, List<Map<String, Object>> assets) {
+        try {
+            validateWalletId(walletId);
+            if (String.isBlank(toAddress)) {
+                throw new AuraHandledException('To Address is required');
+            }
+            if (assets == null || assets.isEmpty()) {
+                throw new AuraHandledException('At least one asset is required');
+            }
+
+            Outbound_Transaction__c txRecord = new Outbound_Transaction__c(
+                Wallet__c = walletId,
+                To_Address__c = toAddress,
+                Approved__c = 'Not Approved',
+                Transaction_Status__c = 'Ready to Sign'
+            );
+            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
+            insert decision.getRecords();
+            Id outboundId = decision.getRecords()[0].Id;
+
+            List<Outbound_Transaction_Line__c> lines = new List<Outbound_Transaction_Line__c>();
+            for (Map<String, Object> assetMap : assets) {
+                Decimal lineAmount;
+                String lineAsset;
+                try {
+                    lineAmount = Decimal.valueOf(String.valueOf(assetMap.get('amount')));
+                } catch (Exception e) {
+                    continue;
+                }
+                lineAsset = String.valueOf(assetMap.get('asset'));
+                if (String.isBlank(lineAsset)) {
+                    continue;
+                }
+                lines.add(new Outbound_Transaction_Line__c(
+                    Outbound_Transaction__c = outboundId,
+                    Amount__c = lineAmount,
+                    Asset__c = lineAsset
+                ));
+            }
+            if (!lines.isEmpty()) {
+                SObjectAccessDecision lineDecision = Security.stripInaccessible(AccessType.CREATABLE, lines);
+                insert lineDecision.getRecords();
+            }
+
+            return outboundId;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error creating multi-asset outbound transaction: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Outbound_Transaction_Line__c> getTransactionLinesForOutbound(String outboundTransactionId) {
+        try {
+            validateId(outboundTransactionId, 'Outbound Transaction ID');
+            return [
+                SELECT Id, Amount__c, Asset__c
+                FROM Outbound_Transaction_Line__c
+                WHERE Outbound_Transaction__c = :outboundTransactionId
+                ORDER BY Id
+            ];
+        } catch (Exception e) {
+            throw new AuraHandledException('Error fetching transaction lines: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static Outbound_Transaction__c getOutboundTransaction(String outboundTransactionId) {
+        try {
+            validateId(outboundTransactionId, 'Outbound Transaction ID');
+            List<Outbound_Transaction__c> results = [
+                SELECT Id, To_Address__c, Wallet__c
+                FROM Outbound_Transaction__c
+                WHERE Id = :outboundTransactionId
+                LIMIT 1
+            ];
+            
+            if (results.isEmpty()) {
+                throw new AuraHandledException('Outbound Transaction not found');
+            }
+            
+            return results[0];
+        } catch (AuraHandledException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to fetch Outbound Transaction: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void updateOutboundTransactionWithSignedCbor(String recordId, String signedCbor) {
+        try {
+            if (String.isBlank(recordId)) {
+                throw new AuraHandledException('Record ID is required');
+            }
+            if (String.isBlank(signedCbor)) {
+                throw new AuraHandledException('Signed CBOR is required');
+            }
+            List<Outbound_Transaction__c> txList = [
+                SELECT Id, Signed_Transaction_CBOR__c, Transaction_Status__c
+                FROM Outbound_Transaction__c
+                WHERE Id = :recordId
+                LIMIT 1
+            ];
+            if (txList.isEmpty()) {
+                throw new AuraHandledException('Outbound Transaction not found');
+            }
+            Outbound_Transaction__c tx = txList[0];
+            tx.Signed_Transaction_CBOR__c = signedCbor;
+            tx.Transaction_Status__c = 'Ready to Send';
+            update tx;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error updating outbound transaction: ' + e.getMessage());
+        }
+    }
+
+    // Helper methods
+    private static void validateWalletId(String walletId) {
+        if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
+            throw new AuraHandledException('Invalid Wallet ID');
+        }
+    }
+
+    private static void validateId(String id, String idType) {
+        if (String.isBlank(id) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', id)) {
+            throw new AuraHandledException('Invalid ' + idType);
+        }
+    }
+
+    private static void validateAddress(UTXOAddress address, String addressType) {
+        if (address == null) {
+            throw new AuraHandledException(addressType + ' address cannot be null');
+        }
+        if (address.index == null || String.isBlank(address.address) || 
+            String.isBlank(address.publicKey) || String.isBlank(address.paymentKeyHash) || 
+            String.isBlank(address.path)) {
+            throw new AuraHandledException('Invalid ' + addressType + ' address data for index ' + address.index);
         }
     }
 }

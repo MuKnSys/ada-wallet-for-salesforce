@@ -1,44 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <actionCalls>
-        <name>Send_outbound_transaction_sent</name>
-        <label>Send outbound transaction sent</label>
-        <locationX>0</locationX>
-        <locationY>0</locationY>
-        <actionName>slackPostMessage</actionName>
-        <actionType>slackPostMessage</actionType>
-        <connector>
-            <targetReference>Get_Accounting_email</targetReference>
-        </connector>
-        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
-        <inputParameters>
-            <name>slackAppIdForToken</name>
-            <value>
-                <elementReference>Get_Slack_settings.Slack_app_Id__c</elementReference>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>slackWorkspaceIdForToken</name>
-            <value>
-                <elementReference>Get_Slack_settings.Slack_workspace_Id__c</elementReference>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>slackConversationId</name>
-            <value>
-                <elementReference>Get_Slack_settings.Slack_channel_Id__c</elementReference>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>slackMessage</name>
-            <value>
-                <elementReference>SendingTransactionNotification</elementReference>
-            </value>
-        </inputParameters>
-        <nameSegment>slackPostMessage</nameSegment>
-        <offset>0</offset>
-        <storeOutputAutomatically>true</storeOutputAutomatically>
-    </actionCalls>
+    <!-- Slack action removed due to missing action type -->
     <actionCalls>
         <name>SendEmailActionToAccounting</name>
         <label>SendEmailActionToAccounting</label>
@@ -197,9 +159,7 @@
         <locationX>0</locationX>
         <locationY>0</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Send_outbound_transaction_sent</targetReference>
-        </connector>
+        <!-- Connector removed due to missing action -->
         <getFirstRecordOnly>true</getFirstRecordOnly>
         <object>Slacksettings__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
@@ -230,7 +190,7 @@
     <textTemplates>
         <name>EmailBody</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>
-        <text>&lt;p&gt;Outbound transaction with {!$Record.Amount__c} amount was sent.&lt;/p&gt;</text>
+        <text>&lt;p&gt;Outbound transaction was sent.&lt;/p&gt;</text>
     </textTemplates>
     <textTemplates>
         <name>EmailSubject</name>
@@ -240,7 +200,7 @@
     <textTemplates>
         <name>SendingTransactionNotification</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>Transaction {!$Record.Id} with {!$Record.Amount__c} amount was sent.</text>
+        <text>Transaction {!$Record.Id} was sent.</text>
     </textTemplates>
     <variables>
         <name>WalletOwnerEmail</name>
