@@ -1,45 +1,45 @@
 <template>
     <lightning-card class="wallet-card">
         <div class="wallet-header">
-            <h2 class="wallet-title">ADA Wallet</h2>
+            <h2 class="wallet-title">{labels.UI.TITLE}</h2>
         </div>
         <div class="wallet-content">
             <template lwc:if={isLoading}>
                 <div class="loading-container">
-                    <lightning-spinner alternative-text="Loading wallet data..." size="medium"></lightning-spinner>
+                    <lightning-spinner alternative-text={labels.UI.LOADING_WALLET_DATA} size="medium"></lightning-spinner>
                 </div>
             </template>
             <template lwc:else>
                 <!-- Balance Section -->
                 <div class="balance-section">
-                    <div class="wallet-balance-label">Balance</div>
+                    <div class="wallet-balance-label">{labels.UI.BALANCE}</div>
                     <div class="wallet-balance-amount">
                         <template lwc:if={balance}>
-                            {balance} <span class="currency">ADA</span>
+                            {balance} <span class="currency">{labels.UI.CURRENCY}</span>
                         </template>
                         <template lwc:else>
-                            <span class="not-available">Not available</span>
+                            <span class="not-available">{labels.UI.NOT_AVAILABLE}</span>
                         </template>
                     </div>
                 </div>
 
                 <!-- Payment Address Section -->
                 <div class="address-section">
-                    <div class="wallet-address-label">Payment Address</div>
+                    <div class="wallet-address-label">{labels.UI.PAYMENT_ADDRESS}</div>
                     <div class="wallet-address">{paymentAddress}</div>
                 </div>
 
                 <!-- Action Buttons -->
                 <div class="action-buttons">
-                    <lightning-button label="Create Transaction" variant="neutral" onclick={openSendModal} class="action-button"></lightning-button>
-                    <lightning-button label="Receive" variant="brand" onclick={openReceiveModal} disabled={isAddressInvalid} class="action-button"></lightning-button>
+                    <lightning-button label={labels.UI.CREATE_TRANSACTION} variant="neutral" onclick={openSendModal} class="action-button"></lightning-button>
+                    <lightning-button label={labels.UI.RECEIVE} variant="brand" onclick={openReceiveModal} disabled={isAddressInvalid} class="action-button"></lightning-button>
                 </div>
 
                 <!-- Tabs for Assets and Transactions -->
                 <div class="tabs-section">
                     <lightning-tabset variant="scoped">
                         <!-- Assets Tab -->
-                        <lightning-tab label="Assets" value="assets">
+                        <lightning-tab label={labels.UI.ASSETS} value="assets">
                             <div class="assets-content">
                                 <template lwc:if={hasAssets}>
                                     <template for:each={assets} for:item="asset">
@@ -67,41 +67,41 @@
                                     </template>
                                 </template>
                                 <template lwc:else>
-                                    <p class="no-assets">No assets available</p>
+                                    <p class="no-assets">{labels.UI.NO_ASSETS_AVAILABLE}</p>
                                 </template>
                             </div>
                         </lightning-tab>
 
                         <!-- Transactions Tab -->
-                        <lightning-tab label="Transactions" value="transactions">
+                        <lightning-tab label={labels.UI.TRANSACTIONS} value="transactions">
                             <div class="transactions-content">
                                 <div class="transaction-tabs slds-m-bottom_medium">
                                     <div class="slds-button-group" role="group">
-                                        <button class="slds-button slds-button_neutral {selectedTransactionType === 'inbound' ? 'slds-button_brand' : ''}" onclick={handleShowInbound}>Inbound</button>
-                                        <button class="slds-button slds-button_neutral {selectedTransactionType === 'outbound' ? 'slds-button_brand' : ''}" onclick={handleShowOutbound}>Outbound</button>
+                                        <button class="slds-button slds-button_neutral {selectedTransactionType === 'inbound' ? 'slds-button_brand' : ''}" onclick={handleShowInbound}>{labels.UI.INBOUND}</button>
+                                        <button class="slds-button slds-button_neutral {selectedTransactionType === 'outbound' ? 'slds-button_brand' : ''}" onclick={handleShowOutbound}>{labels.UI.OUTBOUND}</button>
                                     </div>
                                 </div>
                                 <template if:true={isInboundSelected}>
-                                    <h3 class="transaction-section-title">Inbound Transactions</h3>
+                                    <h3 class="transaction-section-title">{labels.UI.INBOUND_TRANSACTIONS}</h3>
                                     <template lwc:if={visibleInboundTransactions.length}>
                                         <template for:each={visibleInboundTransactions} for:item="tx">
                                             <div key={tx.Id} class="transaction-item inbound">
                                                 <div class="transaction-date">{tx.formattedDate}</div>
-                                                <div class="transaction-hash">Hash: {tx.Transaction_Hash__c}</div>
+                                                <div class="transaction-hash">{labels.UI.HASH}: {tx.Transaction_Hash__c}</div>
                                             </div>
                                         </template>
                                         <template lwc:if={inboundHasMore}>
                                             <div class="view-all-container">
-                                                <button class="slds-button slds-button_neutral" onclick={handleViewAllInbound}>View All</button>
+                                                <button class="slds-button slds-button_neutral" onclick={handleViewAllInbound}>{labels.UI.VIEW_ALL}</button>
                                             </div>
                                         </template>
                                     </template>
                                     <template lwc:else>
-                                        <p class="no-transactions">No inbound transactions</p>
+                                        <p class="no-transactions">{labels.UI.NO_INBOUND_TRANSACTIONS}</p>
                                     </template>
                                 </template>
                                 <template if:true={isOutboundSelected}>
-                                    <h3 class="transaction-section-title">Outbound Transactions</h3>
+                                    <h3 class="transaction-section-title">{labels.UI.OUTBOUND_TRANSACTIONS}</h3>
                                     <template lwc:if={outboundTransactionsForDisplay.length}>
                                         <template for:each={outboundTransactionsForDisplay} for:item="tx">
                                             <div key={tx.Id} class="transaction-item outbound">
@@ -112,21 +112,21 @@
                                                     </a>
                                                 </template>
                                                 <template lwc:elseif={tx.Transaction_Hash__c}>
-                                                    <div class="transaction-hash">Hash: {tx.Transaction_Hash__c}</div>
+                                                    <div class="transaction-hash">{labels.UI.HASH}: {tx.Transaction_Hash__c}</div>
                                                 </template>
                                                 <template lwc:else>
-                                                    <div class="transaction-status slds-text-color_weak">Status: {tx.Transaction_Status__c}</div>
+                                                    <div class="transaction-status slds-text-color_weak">{labels.UI.STATUS}: {tx.Transaction_Status__c}</div>
                                                 </template>
                                             </div>
                                         </template>
                                         <template lwc:if={outboundHasMore}>
                                             <div class="view-all-container">
-                                                <button class="slds-button slds-button_neutral" onclick={handleViewAllOutbound}>View All</button>
+                                                <button class="slds-button slds-button_neutral" onclick={handleViewAllOutbound}>{labels.UI.VIEW_ALL}</button>
                                             </div>
                                         </template>
                                     </template>
                                     <template lwc:else>
-                                        <p class="no-transactions">No outbound transactions</p>
+                                        <p class="no-transactions">{labels.UI.NO_OUTBOUND_TRANSACTIONS}</p>
                                     </template>
                                 </template>
                             </div>
@@ -142,21 +142,21 @@
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-receive" aria-modal="true" class="slds-modal slds-fade-in-open receive-modal">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
-                    <button class="slds-button slds-button_icon slds-modal__close close-button" title="Close" onclick={closeReceiveModal}>
+                    <button class="slds-button slds-button_icon slds-modal__close close-button" title={labels.UI.CLOSE} onclick={closeReceiveModal}>
                         <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
-                        <span class="slds-assistive-text">Close</span>
+                        <span class="slds-assistive-text">{labels.UI.CLOSE}</span>
                     </button>
-                    <h2 id="modal-heading-receive" class="slds-modal__title receive-title">Receive ADA</h2>
+                    <h2 id="modal-heading-receive" class="slds-modal__title receive-title">{labels.UI.RECEIVE_ADA}</h2>
                 </header>
                 <div class="slds-modal__content receive-content">
                     <div class="receive-grid">
                         <div class="address-container">
-                            <p class="address-label">Your Payment Address:</p>
+                            <p class="address-label">{labels.UI.YOUR_PAYMENT_ADDRESS}:</p>
                             <div class="address-box">{paymentAddress}</div>
                         </div>
                         <div class="qr-container">
                             <template lwc:if={qrCodeError}>
-                                <p class="qr-error">Unable to generate QR code.</p>
+                                <p class="qr-error">{labels.UI.UNABLE_TO_GENERATE_QR}</p>
                             </template>
                             <template lwc:else>
                                 <div class="qr-code-canvas"></div>
@@ -164,12 +164,12 @@
                         </div>
                     </div>
                     <div class="action-buttons">
-                        <lightning-button label="Copy Address" variant="brand" onclick={copyToClipboard} class="modal-button"></lightning-button>
-                        <lightning-button label="Download QR Code" variant="neutral" onclick={shareLink} class="modal-button"></lightning-button>
+                        <lightning-button label={labels.UI.COPY_ADDRESS} variant="brand" onclick={copyToClipboard} class="modal-button"></lightning-button>
+                        <lightning-button label={labels.UI.DOWNLOAD_QR_CODE} variant="neutral" onclick={shareLink} class="modal-button"></lightning-button>
                     </div>
                 </div>
                 <footer class="slds-modal__footer">
-                    <lightning-button variant="neutral" label="Close" onclick={closeReceiveModal} class="close-button"></lightning-button>
+                    <lightning-button variant="neutral" label={labels.UI.CLOSE} onclick={closeReceiveModal} class="close-button"></lightning-button>
                 </footer>
             </div>
         </section>
@@ -181,22 +181,22 @@
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-send" aria-modal="true" class="slds-modal slds-fade-in-open send-modal">
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
-                    <button class="slds-button slds-button_icon slds-modal__close close-button" title="Close" onclick={closeSendModal}>
+                    <button class="slds-button slds-button_icon slds-modal__close close-button" title={labels.UI.CLOSE} onclick={closeSendModal}>
                         <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
-                        <span class="slds-assistive-text">Close</span>
+                        <span class="slds-assistive-text">{labels.UI.CLOSE}</span>
                     </button>
-                    <h2 id="modal-heading-send" class="slds-modal__title send-title">Send Transaction</h2>
+                    <h2 id="modal-heading-send" class="slds-modal__title send-title">{labels.UI.SEND_TRANSACTION}</h2>
                     
                     <!-- Step Indicator -->
                     <div class="step-indicator">
                         <div class={step1Class}>
                             <div class="step-number">1</div>
-                            <div class="step-label">Recipient</div>
+                            <div class="step-label">{labels.UI.STEP1_RECIPIENT}</div>
                         </div>
                         <div class={step1ConnectorClass}></div>
                         <div class={step2Class}>
                             <div class="step-number">2</div>
-                            <div class="step-label">Amount</div>
+                            <div class="step-label">{labels.UI.STEP2_AMOUNT}</div>
                         </div>
                     </div>
                 </header>
