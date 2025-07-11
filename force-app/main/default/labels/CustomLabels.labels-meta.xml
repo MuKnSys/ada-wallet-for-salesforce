@@ -313,20 +313,20 @@
         <value>Download Seed Phrase</value>
     </labels>
     <labels>
-        <fullName>GenerateSeedPhrase_EnterSeedPhraseDescription</fullName>
-        <categories>lwc, generateSeedPhrase</categories>
+        <fullName>GenerateSeedPhrase_EnterSeedPhraseImportDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Description for entering seed phrase</shortDescription>
-        <value>Enter your seed phrase words in the correct order.</value>
+        <shortDescription>GenerateSeedPhrase Enter Seed Phrase Import Description</shortDescription>
+        <value>Enter your seed phrase to import your existing wallet set.</value>
     </labels>
     <labels>
-        <fullName>GenerateSeedPhrase_EnterSeedPhraseHeader</fullName>
-        <categories>lwc, generateSeedPhrase</categories>
+        <fullName>GenerateSeedPhrase_EnterSeedPhraseImportHeader</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Header for entering seed phrase</shortDescription>
-        <value>Enter Seed Phrase</value>
+        <shortDescription>GenerateSeedPhrase Enter Seed Phrase Import Header</shortDescription>
+        <value>Enter Your Seed Phrase</value>
     </labels>
     <labels>
         <fullName>GenerateSeedPhrase_EnterWalletNameHeader</fullName>
@@ -401,6 +401,14 @@
         <value>Seed phrase must contain exactly</value>
     </labels>
     <labels>
+        <fullName>GenerateSeedPhrase_EnterWordPlaceholder</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Enter Word Placeholder</shortDescription>
+        <value>Enter word</value>
+    </labels>
+    <labels>
         <fullName>GenerateSeedPhrase_ImportButton</fullName>
         <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>
@@ -472,21 +480,38 @@
         <shortDescription>GenerateSeedPhrase Success Import Message</shortDescription>
         <value>Wallet Set imported successfully</value>
     </labels>
+
     <labels>
-        <fullName>GenerateSeedPhrase_VerifySeedPhraseDescription</fullName>
-        <categories>lwc, generateSeedPhrase</categories>
+        <fullName>GenerateSeedPhrase_UnknownError</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Description for verifying seed phrase</shortDescription>
-        <value>Enter the words in the correct order to verify your seed phrase.</value>
+        <shortDescription>GenerateSeedPhrase Unknown Error</shortDescription>
+        <value>Unknown error</value>
     </labels>
     <labels>
-        <fullName>GenerateSeedPhrase_VerifySeedPhraseHeader</fullName>
-        <categories>lwc, generateSeedPhrase</categories>
+        <fullName>GenerateSeedPhrase_WalletNameRequired</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>Header for verifying seed phrase</shortDescription>
-        <value>Verify Seed Phrase</value>
+        <shortDescription>GenerateSeedPhrase Wallet Name Required</shortDescription>
+        <value>Wallet Name is required</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_VerifySeedPhraseVerifyDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Verify Seed Phrase Verify Description</shortDescription>
+        <value>Please enter your seed phrase to verify wallet ownership.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_VerifySeedPhraseVerifyHeader</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Verify Seed Phrase Verify Header</shortDescription>
+        <value>Verify Your Seed Phrase</value>
     </labels>
     <labels>
         <fullName>GenerateSeedPhrase_WalletNameLabel</fullName>

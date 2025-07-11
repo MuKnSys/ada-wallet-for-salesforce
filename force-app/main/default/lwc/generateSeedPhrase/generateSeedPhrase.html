@@ -45,7 +45,7 @@
                     onchange={handleWalletNameChange}
                     required
                     class="slds-m-bottom_medium"
-                    message-when-value-missing="Wallet Name is required">
+                    message-when-value-missing={labels.UI.WalletNameRequired}>
                 </lightning-input>
                 <lightning-button 
                     label={labels.UI.NextButton} 
@@ -87,8 +87,8 @@
             <!-- Step 3 Import: Enter Seed Phrase -->
             <template lwc:if={step3Import}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">Enter Your Seed Phrase</h3>
-                    <p class="slds-text-body_small slds-m-bottom_medium">Enter your seed phrase to import your existing wallet set.</p>
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.EnterSeedPhraseImportHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">{labels.UI.EnterSeedPhraseImportDescription}</p>
                     
                     <lightning-radio-group 
                         name="wordCount" 
@@ -111,7 +111,7 @@
                                     onblur={handleInputBlur}
                                     data-index={idx}
                                     class="seed-input-field"
-                                    placeholder="Enter word">
+                                    placeholder={labels.UI.EnterWordPlaceholder}>
                                 </lightning-input>
                                 
                                 <!-- Autocomplete dropdown: only show for focused input -->
@@ -147,8 +147,8 @@
             <!-- Step 3: Seed Phrase Verification (for new wallet) -->
             <template lwc:if={step3}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">Verify Your Seed Phrase</h3>
-                    <p class="slds-text-body_small slds-m-bottom_medium">Please enter your seed phrase to verify wallet ownership.</p>
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.VerifySeedPhraseVerifyHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">{labels.UI.VerifySeedPhraseVerifyDescription}</p>
                     <div class="seed-input-grid">
                         <template for:each={verificationInputs} for:item="input" for:index="idx">
                             <div key={input.label} class="input-container">
@@ -161,7 +161,7 @@
                                     onblur={handleVerificationInputBlur}
                                     data-verif-index={idx}
                                     class="seed-input-field"
-                                    placeholder="Enter word">
+                                    placeholder={labels.UI.EnterWordPlaceholder}>
                                 </lightning-input>
                                 <!-- Autocomplete dropdown: only show for focused verification input -->
                                 <template lwc:if={input.showSuggestions}>

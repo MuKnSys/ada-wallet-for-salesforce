@@ -292,7 +292,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             showToast(this, 'Success', this.labels.SUCCESS.Import, 'success');
 
         } catch (error) {
-            this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message || 'Unknown error');
+            this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message || this.labels.ERROR.Unknown);
             showToast(this, 'Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;

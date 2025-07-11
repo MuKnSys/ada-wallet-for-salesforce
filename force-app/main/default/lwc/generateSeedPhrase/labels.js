@@ -3,8 +3,6 @@ import GenerateSeedPhrase_ChooseMethodHeader from '@salesforce/label/c.GenerateS
 import GenerateSeedPhrase_CreateNew from '@salesforce/label/c.GenerateSeedPhrase_CreateNew';
 import GenerateSeedPhrase_CreateNewDescription from '@salesforce/label/c.GenerateSeedPhrase_CreateNewDescription';
 import GenerateSeedPhrase_DownloadButton from '@salesforce/label/c.GenerateSeedPhrase_DownloadButton';
-import GenerateSeedPhrase_EnterSeedPhraseDescription from '@salesforce/label/c.GenerateSeedPhrase_EnterSeedPhraseDescription';
-import GenerateSeedPhrase_EnterSeedPhraseHeader from '@salesforce/label/c.GenerateSeedPhrase_EnterSeedPhraseHeader';
 import GenerateSeedPhrase_EnterWalletNameHeader from '@salesforce/label/c.GenerateSeedPhrase_EnterWalletNameHeader';
 import GenerateSeedPhrase_ErrorBipLibrary from '@salesforce/label/c.GenerateSeedPhrase_ErrorBipLibrary';
 import GenerateSeedPhrase_ErrorCreate from '@salesforce/label/c.GenerateSeedPhrase_ErrorCreate';
@@ -23,13 +21,18 @@ import GenerateSeedPhrase_SeedPhraseWarning from '@salesforce/label/c.GenerateSe
 import GenerateSeedPhrase_SubmitButton from '@salesforce/label/c.GenerateSeedPhrase_SubmitButton';
 import GenerateSeedPhrase_SuccessCreate from '@salesforce/label/c.GenerateSeedPhrase_SuccessCreate';
 import GenerateSeedPhrase_SuccessImport from '@salesforce/label/c.GenerateSeedPhrase_SuccessImport';
-import GenerateSeedPhrase_VerifySeedPhraseDescription from '@salesforce/label/c.GenerateSeedPhrase_VerifySeedPhraseDescription';
-import GenerateSeedPhrase_VerifySeedPhraseHeader from '@salesforce/label/c.GenerateSeedPhrase_VerifySeedPhraseHeader';
 import GenerateSeedPhrase_WalletNameLabel from '@salesforce/label/c.GenerateSeedPhrase_WalletNameLabel';
 import GenerateSeedPhrase_WordCount15 from '@salesforce/label/c.GenerateSeedPhrase_WordCount15';
 import GenerateSeedPhrase_WordCount24 from '@salesforce/label/c.GenerateSeedPhrase_WordCount24';
 import GenerateSeedPhrase_WordCountLabel from '@salesforce/label/c.GenerateSeedPhrase_WordCountLabel';
 import GenerateSeedPhrase_WordLabel from '@salesforce/label/c.GenerateSeedPhrase_WordLabel';
+import GenerateSeedPhrase_EnterSeedPhraseImportHeader from '@salesforce/label/c.GenerateSeedPhrase_EnterSeedPhraseImportHeader';
+import GenerateSeedPhrase_EnterSeedPhraseImportDescription from '@salesforce/label/c.GenerateSeedPhrase_EnterSeedPhraseImportDescription';
+import GenerateSeedPhrase_VerifySeedPhraseVerifyHeader from '@salesforce/label/c.GenerateSeedPhrase_VerifySeedPhraseVerifyHeader';
+import GenerateSeedPhrase_VerifySeedPhraseVerifyDescription from '@salesforce/label/c.GenerateSeedPhrase_VerifySeedPhraseVerifyDescription';
+import GenerateSeedPhrase_EnterWordPlaceholder from '@salesforce/label/c.GenerateSeedPhrase_EnterWordPlaceholder';
+import GenerateSeedPhrase_WalletNameRequired from '@salesforce/label/c.GenerateSeedPhrase_WalletNameRequired';
+import GenerateSeedPhrase_UnknownError from '@salesforce/label/c.GenerateSeedPhrase_UnknownError';
 
 export const labels = {
     ERROR: {
@@ -40,7 +43,8 @@ export const labels = {
         Invalid: GenerateSeedPhrase_ErrorInvalid,
         Library: GenerateSeedPhrase_ErrorLibrary,
         Verification: GenerateSeedPhrase_ErrorVerification,
-        WordCount: GenerateSeedPhrase_ErrorWordCount
+        WordCount: GenerateSeedPhrase_ErrorWordCount,
+        Unknown: GenerateSeedPhrase_UnknownError
     },
     OPTIONS: {
         CreateNew: GenerateSeedPhrase_CreateNew,
@@ -55,8 +59,8 @@ export const labels = {
         ChooseMethodHeader: GenerateSeedPhrase_ChooseMethodHeader,
         CreateNewDescription: GenerateSeedPhrase_CreateNewDescription,
         DownloadButton: GenerateSeedPhrase_DownloadButton,
-        EnterSeedPhraseDescription: GenerateSeedPhrase_EnterSeedPhraseDescription,
-        EnterSeedPhraseHeader: GenerateSeedPhrase_EnterSeedPhraseHeader,
+        EnterSeedPhraseImportHeader: GenerateSeedPhrase_EnterSeedPhraseImportHeader,
+        EnterSeedPhraseImportDescription: GenerateSeedPhrase_EnterSeedPhraseImportDescription,
         EnterWalletNameHeader: GenerateSeedPhrase_EnterWalletNameHeader,
         ImportButton: GenerateSeedPhrase_ImportButton,
         ImportExistingDescription: GenerateSeedPhrase_ImportExistingDescription,
@@ -64,11 +68,13 @@ export const labels = {
         SeedPhraseHeader: GenerateSeedPhrase_SeedPhraseHeader,
         SeedPhraseWarning: GenerateSeedPhrase_SeedPhraseWarning,
         SubmitButton: GenerateSeedPhrase_SubmitButton,
-        VerifySeedPhraseDescription: GenerateSeedPhrase_VerifySeedPhraseDescription,
-        VerifySeedPhraseHeader: GenerateSeedPhrase_VerifySeedPhraseHeader,
+        VerifySeedPhraseVerifyHeader: GenerateSeedPhrase_VerifySeedPhraseVerifyHeader,
+        VerifySeedPhraseVerifyDescription: GenerateSeedPhrase_VerifySeedPhraseVerifyDescription,
         WalletNameLabel: GenerateSeedPhrase_WalletNameLabel,
+        WalletNameRequired: GenerateSeedPhrase_WalletNameRequired,
         WordCountLabel: GenerateSeedPhrase_WordCountLabel,
-        WordLabel: GenerateSeedPhrase_WordLabel
+        WordLabel: GenerateSeedPhrase_WordLabel,
+        EnterWordPlaceholder: GenerateSeedPhrase_EnterWordPlaceholder
     },
     WORD_COUNT: {
         Option15: GenerateSeedPhrase_WordCount15,
