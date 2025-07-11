@@ -94,7 +94,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 
             })
             .catch(error => {                
-                this.showToast('Error', this.labels.ERROR.BipLibrary + ' ' + error.message, 'error');
+                this.showToast('Error', (this.labels?.ERROR?.BipLibrary || 'BIP Library Error') + ' ' + error.message, 'error');
             });
     }
 
@@ -118,7 +118,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         if (this.walletName) {
             if (this.isCreatingNew) {
                 if (!this.isLibraryLoaded || !window.bip39) {
-                    this.showToast('Error', this.labels.ERROR.Library, 'error');
+                    this.showToast('Error', this.labels?.ERROR?.Library || 'Library Error', 'error');
                     return;
                 }
 
@@ -142,7 +142,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     this.step1 = false;
                     this.step2 = true;
                 } catch (error) {
-                    this.showToast('Error', this.labels.ERROR.Generate + ' ' + error.message, 'error');
+                    this.showToast('Error', (this.labels?.ERROR?.Generate || 'Generate Error') + ' ' + error.message, 'error');
                 }
             } else {
                 this.step1 = false;
@@ -160,7 +160,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     initializeImportInputs() {
         const wordCount = parseInt(this.selectedWordCount);
         this.importInputs = Array.from({ length: wordCount }, (_, i) => ({
-            label: `${this.labels.UI.WordLabel} ${i + 1}`,
+            label: `${this.labels?.UI?.WordLabel || 'Word'} ${i + 1}`,
             value: ''
         }));
         this.suggestions = [];
@@ -311,7 +311,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     handleNextFromStep2() {
         this.verificationInputs = this.seedPhrase.map((item, i) => {
             return {
-                label: `${this.labels.UI.WordLabel} ${i + 1}`,
+                label: `${this.labels?.UI?.WordLabel || 'Word'} ${i + 1}`,
                 value: ''
             };
         });
