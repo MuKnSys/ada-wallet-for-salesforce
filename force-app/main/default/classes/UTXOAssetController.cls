@@ -500,6 +500,24 @@ public with sharing class UTXOAssetController {
     }
 
     /**
+     * Sets Is_Used__c = true for a list of UTXO_Address__c records
+     * @param utxoAddressIds List of UTXO Address record IDs
+     */
+    @AuraEnabled
+    public static void setAddressesUsed(List<Id> utxoAddressIds) {
+        if (utxoAddressIds == null || utxoAddressIds.isEmpty()) return;
+        List<UTXO_Address__c> addressesToUpdate = [
+            SELECT Id, Is_Used__c FROM UTXO_Address__c WHERE Id IN :utxoAddressIds
+        ];
+        for (UTXO_Address__c addr : addressesToUpdate) {
+            addr.Is_Used__c = true;
+        }
+        if (!addressesToUpdate.isEmpty()) {
+            update addressesToUpdate;
+        }
+    }
+
+    /**
      * Get asset summary for a wallet (all assets across all UTXO addresses)
      * @param walletId The wallet ID to get assets for
      * @return Map with asset summary data
