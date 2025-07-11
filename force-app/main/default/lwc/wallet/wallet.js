@@ -10,13 +10,22 @@ import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getF
 import { MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 import createOutboundTransaction from '@salesforce/apex/TransactionController.createOutboundTransaction';
-import getWalletTransactions from '@salesforce/apex/UTXOAssetController.getWalletTransactions';
-import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOAssetController.getAllUtxoAssetsForWallet';
+// import getWalletTransactions from '@salesforce/apex/UTXOAssetController.getWalletTransactions';
+// import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOAssetController.getAllUtxoAssetsForWallet';
 import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
 
 
 export default class Wallet extends LightningElement {
     CHANNEL_NAME = '/event/WalletSyncEvent__e';
+    
+    // Temporary dummy functions to replace missing Apex methods
+    async getWalletTransactions(params) {
+        return { success: true, transactions: [], message: 'Method not yet implemented' };
+    }
+    
+    async getAllUtxoAssetsForWallet(params) {
+        return { success: true, assets: [], message: 'Method not yet implemented' };
+    }
     
     _recordId;
     eventSubscription = null;
