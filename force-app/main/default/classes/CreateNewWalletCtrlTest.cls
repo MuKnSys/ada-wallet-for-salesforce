@@ -33,10 +33,9 @@ private class CreateNewWalletCtrlTest {
         );
         Test.stopTest();
 
-        Wallet__c createdWallet = [SELECT Id, Name, Address__c, Account_Index__c FROM Wallet__c WHERE Id = :walletId];
+        Wallet__c createdWallet = [SELECT Id, Name, Account_Index__c FROM Wallet__c WHERE Id = :walletId];
         
         Assert.areEqual(TEST_WALLET_NAME, createdWallet.Name, 'Wallet name should match');
-        Assert.areEqual(TEST_ADDRESS, createdWallet.Address__c, 'Wallet address should match');
         Assert.areEqual(TEST_ACCOUNT_INDEX, createdWallet.Account_Index__c, 'Account index should match');
     }
 
@@ -46,7 +45,6 @@ private class CreateNewWalletCtrlTest {
         Wallet__c wallet = new Wallet__c(
             Wallet_Set__c = walletSet.Id,
             Name = TEST_WALLET_NAME,
-            Address__c = TEST_ADDRESS,
             Account_Private_Key__c = DataEncryptor.encrypt(TEST_PRIVATE_KEY),
             Account_Public_Key__c = DataEncryptor.encrypt(TEST_PUBLIC_KEY),
             Account_Index__c = TEST_ACCOUNT_INDEX
@@ -77,7 +75,6 @@ private class CreateNewWalletCtrlTest {
         Wallet__c wallet = new Wallet__c(
             Wallet_Set__c = walletSet.Id,
             Name = TEST_WALLET_NAME,
-            Address__c = TEST_ADDRESS,
             Account_Private_Key__c = DataEncryptor.encrypt(TEST_PRIVATE_KEY),
             Account_Public_Key__c = DataEncryptor.encrypt(TEST_PUBLIC_KEY),
             Account_Index__c = 0
@@ -108,7 +105,6 @@ private class CreateNewWalletCtrlTest {
         Wallet__c wallet = new Wallet__c(
             Wallet_Set__c = walletSet.Id,
             Name = TEST_WALLET_NAME,
-            Address__c = TEST_ADDRESS,
             Account_Private_Key__c = DataEncryptor.encrypt(TEST_PRIVATE_KEY),
             Account_Public_Key__c = DataEncryptor.encrypt(TEST_PUBLIC_KEY),
             Account_Index__c = TEST_ACCOUNT_INDEX

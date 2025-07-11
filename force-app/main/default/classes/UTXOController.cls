@@ -309,57 +309,7 @@ public with sharing class UTXOController {
 
     // Transaction methods
     @AuraEnabled
-    public static String createOutboundTransaction(String walletId, String toAddress, String amount, String asset) {
-        try {
-            validateWalletId(walletId);
-            if (String.isBlank(toAddress)) {
-                throw new AuraHandledException('To Address is required');
-            }
-            if (String.isBlank(amount)) {
-                throw new AuraHandledException('Amount is required');
-            }
-            if (String.isBlank(asset)) {
-                throw new AuraHandledException('Asset is required');
-            }
-
-            Decimal amountDecimal;
-            try {
-                amountDecimal = Decimal.valueOf(amount);
-            } catch (Exception e) {
-                throw new AuraHandledException('Invalid amount format');
-            }
-
-            if (amountDecimal <= 0) {
-                throw new AuraHandledException('Amount must be greater than 0');
-            }
-
-            Outbound_Transaction__c txRecord = new Outbound_Transaction__c(
-                Wallet__c = walletId,
-                To_Address__c = toAddress,
-                Approved__c = 'Not Approved',
-                Transaction_Status__c = 'Ready to Sign'
-            );
-
-            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
-            insert decision.getRecords();
-            Id outboundId = decision.getRecords()[0].Id;
-
-            Outbound_Transaction_Line__c line = new Outbound_Transaction_Line__c(
-                Outbound_Transaction__c = outboundId,
-                Amount__c = amountDecimal,
-                Asset__c = asset
-            );
-            SObjectAccessDecision lineDecision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction_Line__c>{line});
-            insert lineDecision.getRecords();
-
-            return outboundId;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error creating outbound transaction: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static String createMultiAssetOutboundTransaction(String walletId, String toAddress, List<Map<String, Object>> assets) {
+    public static String createMultiAssetOutboundTransaction(String walletId, String toAddress, List<Map<String, Object>> assets, String memo) {
         try {
             validateWalletId(walletId);
             if (String.isBlank(toAddress)) {
@@ -373,7 +323,8 @@ public with sharing class UTXOController {
                 Wallet__c = walletId,
                 To_Address__c = toAddress,
                 Approved__c = 'Not Approved',
-                Transaction_Status__c = 'Ready to Sign'
+                Transaction_Status__c = 'Ready to Sign',
+                Memo__c = String.isBlank(memo) ? null : memo
             );
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
             insert decision.getRecords();
@@ -429,7 +380,7 @@ public with sharing class UTXOController {
         try {
             validateId(outboundTransactionId, 'Outbound Transaction ID');
             List<Outbound_Transaction__c> results = [
-                SELECT Id, To_Address__c, Wallet__c
+                SELECT Id, To_Address__c, Wallet__c, Memo__c
                 FROM Outbound_Transaction__c
                 WHERE Id = :outboundTransactionId
                 LIMIT 1
@@ -457,7 +408,7 @@ public with sharing class UTXOController {
                 throw new AuraHandledException('Signed CBOR is required');
             }
             List<Outbound_Transaction__c> txList = [
-                SELECT Id, Signed_Transaction_CBOR__c, Transaction_Status__c
+                SELECT Id, Signed_Transaction_CBOR__c, Transaction_Status__c, Memo__c
                 FROM Outbound_Transaction__c
                 WHERE Id = :recordId
                 LIMIT 1

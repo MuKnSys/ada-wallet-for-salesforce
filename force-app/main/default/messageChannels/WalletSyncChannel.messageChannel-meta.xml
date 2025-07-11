@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>WalletSyncChannel</masterLabel>
+    <isExposed>true</isExposed>
+    <description>Channel for wallet sync events</description>
+    <lightningMessageFields>
+        <fieldName>WalletId__c</fieldName>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>Action__c</fieldName>
+    </lightningMessageFields>
+</LightningMessageChannel> 

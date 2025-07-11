@@ -150,7 +150,9 @@ public with sharing class TransactionControllerTest {
         String transactionId = TransactionController.createOutboundTransaction(
             wallet.Id,
             'addr_test123456789_recipient',
-            '100.5'
+            '100.5',
+            'ADA',
+            'Test memo'
         );
         Test.stopTest();
         
@@ -160,7 +162,7 @@ public with sharing class TransactionControllerTest {
         // Query the created transaction
         Outbound_Transaction__c createdTx = [
             SELECT Id, Wallet__c, To_Address__c, 
-                   Approved__c, Transaction_Status__c
+                   Approved__c, Transaction_Status__c, Memo__c
             FROM Outbound_Transaction__c 
             WHERE Id = :transactionId
         ];
@@ -169,6 +171,17 @@ public with sharing class TransactionControllerTest {
         System.assertEquals('addr_test123456789_recipient', createdTx.To_Address__c, 'To Address should match');
         System.assertEquals('Not Approved', createdTx.Approved__c, 'Approved status should be Not Approved');
         System.assertEquals('Ready to Sign', createdTx.Transaction_Status__c, 'Transaction status should be Ready to Sign');
+        System.assertEquals('Test memo', createdTx.Memo__c, 'Memo should match');
+        
+        // Verify the transaction line was created
+        List<Outbound_Transaction_Line__c> lines = [
+            SELECT Id, Amount__c, Asset__c 
+            FROM Outbound_Transaction_Line__c 
+            WHERE Outbound_Transaction__c = :transactionId
+        ];
+        System.assertEquals(1, lines.size(), 'Should create 1 transaction line');
+        System.assertEquals(100.5, lines[0].Amount__c, 'Amount should match');
+        System.assertEquals('ADA', lines[0].Asset__c, 'Asset should match');
     }
     
     @IsTest
@@ -179,7 +192,9 @@ public with sharing class TransactionControllerTest {
             TransactionController.createOutboundTransaction(
                 'invalid_id',
                 'addr_test123456789_recipient',
-                '100.5'
+                '100.5',
+                'ADA',
+                'Test memo'
             );
             System.assert(false, 'Should have thrown an exception for invalid wallet ID');
         } catch (AuraHandledException e) {
@@ -196,7 +211,9 @@ public with sharing class TransactionControllerTest {
             TransactionController.createOutboundTransaction(
                 null,
                 'addr_test123456789_recipient',
-                '100.5'
+                '100.5',
+                'ADA',
+                'Test memo'
             );
             System.assert(false, 'Should have thrown an exception for missing parameters');
         } catch (AuraHandledException e) {

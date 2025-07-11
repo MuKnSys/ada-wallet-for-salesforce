@@ -441,15 +441,16 @@ private class UTXOControllerTest {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
         
         Test.startTest();
-            String result = UTXOController.createOutboundTransaction(wallet.Id, 'addr1qtest', '1000000', 'ADA');
+            String result = TransactionController.createOutboundTransaction(wallet.Id, 'addr1qtest', '1000000', 'ADA', 'Test memo');
         Test.stopTest();
         
         Assert.isNotNull(result, 'Should return transaction ID');
         
-        Outbound_Transaction__c tx = [SELECT Id, To_Address__c, Wallet__c, Transaction_Status__c FROM Outbound_Transaction__c WHERE Id = :result];
+        Outbound_Transaction__c tx = [SELECT Id, To_Address__c, Wallet__c, Transaction_Status__c, Memo__c FROM Outbound_Transaction__c WHERE Id = :result];
         Assert.areEqual('addr1qtest', tx.To_Address__c, 'To address should match');
         Assert.areEqual(wallet.Id, tx.Wallet__c, 'Wallet should match');
         Assert.areEqual('Ready to Sign', tx.Transaction_Status__c, 'Status should match');
+        Assert.areEqual('Test memo', tx.Memo__c, 'Memo should match');
         
         List<Outbound_Transaction_Line__c> lines = [SELECT Id, Amount__c, Asset__c FROM Outbound_Transaction_Line__c WHERE Outbound_Transaction__c = :result];
         Assert.areEqual(1, lines.size(), 'Should create 1 transaction line');
@@ -466,10 +467,13 @@ private class UTXOControllerTest {
         assets.add(new Map<String, Object>{'amount' => '100', 'asset' => 'USDA'});
         
         Test.startTest();
-            String result = UTXOController.createMultiAssetOutboundTransaction(wallet.Id, 'addr1qtest', assets);
+            String result = UTXOController.createMultiAssetOutboundTransaction(wallet.Id, 'addr1qtest', assets, 'Test multi-asset memo');
         Test.stopTest();
         
         Assert.isNotNull(result, 'Should return transaction ID');
+        
+        Outbound_Transaction__c tx = [SELECT Id, Memo__c FROM Outbound_Transaction__c WHERE Id = :result];
+        Assert.areEqual('Test multi-asset memo', tx.Memo__c, 'Memo should match');
         
         List<Outbound_Transaction_Line__c> lines = [SELECT Id, Amount__c, Asset__c FROM Outbound_Transaction_Line__c WHERE Outbound_Transaction__c = :result];
         Assert.areEqual(2, lines.size(), 'Should create 2 transaction lines');

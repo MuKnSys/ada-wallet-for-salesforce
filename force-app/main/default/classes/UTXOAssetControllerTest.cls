@@ -70,4 +70,32 @@ public with sharing class UTXOAssetControllerTest {
         System.assertNotEquals(null, result.get('message'), 'Should have error message');
         System.assertEquals('UTXO Address ID cannot be null', result.get('message'), 'Should have correct error message');
     }
+    
+    @IsTest
+    static void testSyncAssetsAndTransactions_IsUsedFieldUpdate() {
+        // Get test data
+        UTXO_Address__c testAddress = [SELECT Id, Is_Used__c FROM UTXO_Address__c LIMIT 1];
+        
+        // Verify initial state is false (default)
+        System.assertEquals(false, testAddress.Is_Used__c, 'Initial Is_Used__c should be false');
+        
+        // Set up mock for successful API calls
+        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceHttpCalloutMock());
+        
+        Test.startTest();
+        
+        // Call the combined sync method
+        Map<String, Object> result = UTXOAssetController.syncAssetsAndTransactions(testAddress.Id);
+        
+        Test.stopTest();
+        
+        // Verify success
+        System.assert((Boolean) result.get('success'), 'Sync should be successful');
+        
+        // Query the address again to check if Is_Used__c was updated
+        UTXO_Address__c updatedAddress = [SELECT Id, Is_Used__c FROM UTXO_Address__c WHERE Id = :testAddress.Id];
+        
+        // The mock returns basic data, so Is_Used__c should remain false (no transactions)
+        System.assertEquals(false, updatedAddress.Is_Used__c, 'Is_Used__c should remain false when no transactions are found');
+    }
 } 

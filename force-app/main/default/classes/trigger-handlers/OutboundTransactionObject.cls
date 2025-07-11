@@ -2,6 +2,7 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
 
     private static final String STATUS_READY_TO_SEND = 'Ready to send';
     private static final String STATUS_SENT = 'Sent';
+    private static final String STATUS_REJECTED = 'Rejected';
     private static final String APPROVAL_STATUS_APPROVED = 'Approved';
 
     private static final Integer MIN_TRANSACTION_HASH_LENGTH = 64;
@@ -62,7 +63,8 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
                 transactionsToUpdate.add(txRecord);
                 
             } catch (Exception e) {
-                txRecord.Transaction_Status__c = STATUS_READY_TO_SEND;
+                // Set status to Rejected on submission error, but do NOT clear CBOR value
+                txRecord.Transaction_Status__c = STATUS_REJECTED;
                 transactionsToUpdate.add(txRecord);
             }
         }
@@ -78,9 +80,8 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
             Map<String, Object> errorResponse = (Map<String, Object>) JSON.deserializeUntyped(blockfrostResponse);
             String errorMessage = (String) errorResponse.get('error');
             
-            // Set status back to "Ready to send" so user can retry
-            txRecord.Transaction_Status__c = STATUS_READY_TO_SEND;
-            
+            // Set status to Rejected on Blockfrost error, but do NOT clear CBOR value
+            txRecord.Transaction_Status__c = STATUS_REJECTED;
         } else {
             // Success response - Blockfrost returns the transaction hash as plain text
             String transactionHash = blockfrostResponse.trim();
@@ -91,8 +92,8 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
                 txRecord.Transaction_Status__c = STATUS_SENT;
                 txRecord.Transaction_Hash__c = transactionHash;
             } else {
-                // Set status back to "Ready to send" so user can retry
-                txRecord.Transaction_Status__c = STATUS_READY_TO_SEND;
+                // Set status to Rejected on invalid hash, but do NOT clear CBOR value
+                txRecord.Transaction_Status__c = STATUS_REJECTED;
             }
         }
     }

@@ -195,6 +195,10 @@ public with sharing class BlockfrostService {
             
             if (res.getStatusCode() == 200) {
                 String txHash = res.getBody().trim();
+                // Remove quotes if the response is wrapped in quotes
+                if (txHash.startsWith('"') && txHash.endsWith('"')) {
+                    txHash = txHash.substring(1, txHash.length() - 1);
+                }
                 return txHash;
             } else {
                 String errorBody = res.getBody();
@@ -264,6 +268,36 @@ public with sharing class BlockfrostService {
             return '[]';
         }
 
+        return JSON.serialize(new Map<String,Object>{
+            'status' => endpoint.getStatusCode(),
+            'error' => 'Blockfrost address transactions API error'
+        });
+    }
+
+    /**
+     * Get all transactions for an address using /addresses/{address}/transactions
+     */
+    @AuraEnabled(cacheable=false)
+    public static String getAddressTransactionsList(String address) {
+        if (String.isBlank(address)) {
+            throw new BlockfrostEndpoint.BlockfrostAPIException('Address is required');
+        }
+        String projectId = AdaWalletsService.getBlockfrostProjectId();
+        String url = '/addresses/' + address + '/transactions';
+        BlockfrostEndpoint endpoint = new BlockfrostEndpoint()
+            .get()
+            .setEndpoint(url)
+            .setHeaders(new Map<String, String>{
+                'Project_id' => projectId,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            })
+            .send();
+        if (endpoint.getStatusCode() == 200) {
+            return endpoint.getResponse().getBody();
+        } else if (endpoint.getStatusCode() == 404) {
+            return '[]';
+        }
         return JSON.serialize(new Map<String,Object>{
             'status' => endpoint.getStatusCode(),
             'error' => 'Blockfrost address transactions API error'

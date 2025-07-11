@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Amount__c</fullName>
-    <label>Amount</label>
-    <type>Number</type>
-    <precision>18</precision>
-    <scale>6</scale>
+    <fullName>Stake_Address__c</fullName>
+    <label>Stake Address</label>
+    <type>Text</type>
+    <length>120</length>
     <required>false</required>
-    <trackTrending>false</trackTrending>
     <trackHistory>false</trackHistory>
-    <externalId>false</externalId>
+    <trackTrending>false</trackTrending>
     <unique>false</unique>
+    <caseSensitive>false</caseSensitive>
 </CustomField> 

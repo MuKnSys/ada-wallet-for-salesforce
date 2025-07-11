@@ -63,15 +63,32 @@
                     
                     <div class="seed-input-grid">
                         <template for:each={seedPhraseInputs} for:item="input" for:index="idx">
-                            <lightning-input 
-                                key={input.label}
-                                label={input.label}
-                                value={input.value}
-                                onchange={handleSeedPhraseChange}
-                                data-index={idx}
-                                class="seed-input-field"
-                                placeholder="Enter word">
-                            </lightning-input>
+                            <div key={input.label} class="seed-input-container">
+                                <lightning-input 
+                                    label={input.label}
+                                    value={input.value}
+                                    onchange={handleSeedPhraseChange}
+                                    onfocus={handleSeedPhraseFocus}
+                                    onblur={handleSeedPhraseBlur}
+                                    data-index={idx}
+                                    class="seed-input-field"
+                                    placeholder="Enter word">
+                                </lightning-input>
+                                <!-- Suggestions dropdown -->
+                                <template lwc:if={input.showSuggestions}>
+                                    <div class="suggestions-dropdown">
+                                        <template for:each={suggestions} for:item="suggestion">
+                                            <div 
+                                                key={suggestion}
+                                                class="suggestion-item"
+                                                data-word={suggestion}
+                                                onclick={handleSuggestionClick}>
+                                                {suggestion}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
                     </div>
                     <template lwc:if={seedPhraseErrorMessage}>

@@ -68,6 +68,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track seedPhraseErrorMessage = '';
     @track originalSeedPhrase = [];
     @track seedPhraseWordCount = 24;
+    // New properties for autocomplete functionality
+    @track bip39WordList = [];
+    @track suggestions = [];
+    @track activeInputIndex = -1;
 
     get isCreateDisabled() {
         const isSeedPhraseValid = !this.showSeedPhraseVerification ||
@@ -110,6 +114,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         ];
     }
 
+    get showSuggestions() {
+        return this.suggestions.length > 0 && this.activeInputIndex >= 0;
+    }
+
     renderedCallback() {
         if (!this.librariesLoaded) {            
             this.loadLibraries();
@@ -142,6 +150,11 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             }
 
             this.librariesLoaded = true;
+            
+            // Store BIP39 word list for autocomplete
+            if (window.bip39 && window.bip39.wordlists && window.bip39.wordlists.english) {
+                this.bip39WordList = window.bip39.wordlists.english;
+            }
 
         } catch (error) {
             this.errorMessage = 'Library loading failed: ' + (error.message || error);
@@ -293,22 +306,20 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         if (!this.selectedWalletSetId) return;
 
         try {
-<<<<<<< HEAD
-            // Create empty input fields for 24 words (no prefilling)
-            this.seedPhraseInputs = Array.from({ length: 24 }, (_, index) => {
-=======
             // Create input fields based on selected word count
             this.seedPhraseInputs = Array.from({ length: this.seedPhraseWordCount }, (_, index) => {
->>>>>>> be4ce91ad91a6caeef48624266cc71660352a8a1
                 return {
                     label: `Word ${index + 1}`,
-                    value: '' // Empty input field - user must enter seed phrase
+                    value: '', // Empty input field - user must enter seed phrase
+                    showSuggestions: false
                 };
             });
 
             this.showSeedPhraseVerification = true;
             this.seedPhraseErrorMessage = '';
             this.originalSeedPhrase = []; // No original seed phrase stored
+            this.suggestions = [];
+            this.activeInputIndex = -1;
         } catch (error) {
             this.errorMessage = 'Failed to initialize seed phrase verification: ' + (error.message || error);
             this.showToast('Error', this.errorMessage, 'error');
@@ -323,18 +334,92 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.seedPhraseInputs = Array.from({ length: this.seedPhraseWordCount }, (_, index) => {
                 return {
                     label: `Word ${index + 1}`,
-                    value: ''
+                    value: '',
+                    showSuggestions: false
                 };
             });
             this.seedPhraseErrorMessage = '';
+            this.suggestions = [];
+            this.activeInputIndex = -1;
         }
     }
 
     handleSeedPhraseChange(event) {
         const index = parseInt(event.target.dataset.index);
-        this.seedPhraseInputs[index].value = event.target.value.toLowerCase().trim();
+        const value = event.target.value.toLowerCase().trim();
+        
+        this.seedPhraseInputs[index].value = value;
         this.seedPhraseInputs = [...this.seedPhraseInputs];
+        this.activeInputIndex = index;
         this.seedPhraseErrorMessage = '';
+        
+        // Generate suggestions based on input
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5); // Limit to 5 suggestions
+            this.seedPhraseInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    // Method to handle suggestion selection
+    handleSuggestionClick(event) {
+        const selectedWord = event.currentTarget.dataset.word;
+        const index = this.activeInputIndex;
+        
+        if (index >= 0 && index < this.seedPhraseInputs.length) {
+            this.seedPhraseInputs[index].value = selectedWord;
+            this.seedPhraseInputs = [...this.seedPhraseInputs];
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+            this.activeInputIndex = -1;
+            
+            // Focus on next input if available
+            if (index < this.seedPhraseInputs.length - 1) {
+                this.focusNextInput(index + 1);
+            }
+        }
+    }
+
+    // Method to focus on next input
+    focusNextInput(index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[data-index="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, 100);
+    }
+
+    // Method to handle input focus
+    handleSeedPhraseFocus(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.activeInputIndex = index;
+        
+        // Show suggestions if there's a value
+        const value = this.seedPhraseInputs[index].value.toLowerCase().trim();
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5);
+            this.seedPhraseInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    // Method to handle input blur
+    handleSeedPhraseBlur() {
+        // Delay hiding suggestions to allow for clicks
+        setTimeout(() => {
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+            this.activeInputIndex = -1;
+        }, 200);
     }
 
     isSeedPhraseValid() {
@@ -609,13 +694,21 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         );
         const bech32Address = baseAddress.to_address().to_bech32();
 
+        // Derive the bech32 stake address
+        const stakeBaseAddress = window.cardanoSerialization.RewardAddress.new(
+            network.network_id(),
+            stakeCred
+        );
+        const bech32StakeAddress = stakeBaseAddress.to_address().to_bech32();
+
         const recordId = await createWallet({
             walletSetId: this.selectedWalletSetId,
             walletName: this.walletName,
             address: bech32Address,
             accountPrivateKey: paymentPrivateKey.to_bech32(),
             accountPublicKey: paymentPublicKey.to_bech32(),
-            accountIndex: accountIndexNum
+            accountIndex: accountIndexNum,
+            stakeAddress: bech32StakeAddress
         });
 
         if (!recordId) {

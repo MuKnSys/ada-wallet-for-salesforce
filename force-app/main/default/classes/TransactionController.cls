@@ -163,7 +163,7 @@ public with sharing class TransactionController {
     }
 
     @AuraEnabled
-    public static String createOutboundTransaction(String walletId, String toAddress, String amount) {
+    public static String createOutboundTransaction(String walletId, String toAddress, String amount, String asset, String memo) {
         try {
             validateWalletId(walletId);
             if (String.isBlank(toAddress)) {
@@ -172,6 +172,12 @@ public with sharing class TransactionController {
             if (String.isBlank(amount)) {
                 throw new AuraHandledException('Amount is required');
             }
+            if (String.isBlank(asset)) {
+                throw new AuraHandledException('Asset is required');
+            }
+
+            // Log the memo value
+            Logger.logInfo('[TransactionController.createOutboundTransaction] Memo value: ' + memo);
 
             Decimal amountDecimal;
             try {
@@ -188,13 +194,23 @@ public with sharing class TransactionController {
                 Wallet__c = walletId,
                 To_Address__c = toAddress,
                 Approved__c = 'Not Approved',
-                Transaction_Status__c = 'Ready to Sign'
+                Transaction_Status__c = 'Ready to Sign',
+                Memo__c = String.isBlank(memo) ? null : memo
             );
 
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
             insert decision.getRecords();
+            Id outboundId = decision.getRecords()[0].Id;
 
-            return decision.getRecords()[0].Id;
+            Outbound_Transaction_Line__c line = new Outbound_Transaction_Line__c(
+                Outbound_Transaction__c = outboundId,
+                Amount__c = amountDecimal,
+                Asset__c = asset
+            );
+            SObjectAccessDecision lineDecision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction_Line__c>{line});
+            insert lineDecision.getRecords();
+
+            return outboundId;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating outbound transaction: ' + e.getMessage());
         }

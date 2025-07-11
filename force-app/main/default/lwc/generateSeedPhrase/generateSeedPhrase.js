@@ -25,6 +25,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         { label: '15 Words', value: '15' },
         { label: '24 Words', value: '24' }
     ];
+    @track bip39WordList = [];
+    @track suggestions = [];
+    @track activeInputIndex = -1;
+    @track activeVerificationInputIndex = -1;
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -36,6 +40,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     get isImportDisabled() {
         return this.importInputs.some(input => !input.value || !input.value.trim());
+    }
+
+    get showSuggestions() {
+        return this.suggestions.length > 0 && this.activeInputIndex >= 0;
     }
 
     connectedCallback() {
@@ -52,6 +60,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.step3 = false;
         this.isCreatingNew = false;
         this.selectedWordCount = '24';
+        this.bip39WordList = [];
+        this.suggestions = [];
+        this.activeInputIndex = -1;
+        this.activeVerificationInputIndex = -1;
         this.initializeImportInputs();
     }
 
@@ -68,7 +80,11 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     throw new Error('bip39 not found on window object after loading.');
                 }
 
-                this.isLibraryLoaded = true;                
+                this.isLibraryLoaded = true;
+                
+                // Store BIP39 word list for autocomplete
+                this.bip39WordList = window.bip39.wordlists.english;
+                
             })
             .catch(error => {                
                 this.showToast('Error', 'Failed to load Bip library: ' + error.message, 'error');
@@ -88,8 +104,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.step0 = false;
         this.step1 = true;
     }
-
-
 
     handleWalletNameChange(event) {
         this.walletName = event.target.value;
@@ -149,15 +163,89 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         const wordCount = parseInt(this.selectedWordCount);
         this.importInputs = Array.from({ length: wordCount }, (_, i) => ({
             label: `Word ${i + 1}`,
-            value: ''
+            value: '',
+            showSuggestions: false // Initialize showSuggestions
         }));
+        this.suggestions = [];
+        this.activeInputIndex = -1;
     }
 
-    // Method to handle import input changes
+    // Method to handle import input changes with autocomplete
     handleImportInputChange(event) {
         const index = parseInt(event.target.dataset.index);
-        this.importInputs[index].value = event.target.value.toLowerCase().trim();
+        const value = event.target.value.toLowerCase().trim();
+        
+        this.importInputs[index].value = value;
         this.importInputs = [...this.importInputs];
+        this.activeInputIndex = index;
+        
+        // Generate suggestions based on input
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5); // Limit to 5 suggestions
+            this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.importInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    // Method to handle suggestion selection
+    handleSuggestionClick(event) {
+        const selectedWord = event.currentTarget.dataset.word;
+        const index = this.activeInputIndex;
+        
+        if (index >= 0 && index < this.importInputs.length) {
+            this.importInputs[index].value = selectedWord;
+            this.importInputs = [...this.importInputs];
+            this.suggestions = [];
+            this.importInputs.forEach(input => input.showSuggestions = false);
+            this.activeInputIndex = -1;
+            
+            // Focus on next input if available
+            if (index < this.importInputs.length - 1) {
+                this.focusNextInput(index + 1);
+            }
+        }
+    }
+
+    // Method to focus on next input
+    focusNextInput(index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[data-index="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, 100);
+    }
+
+    // Method to handle input focus
+    handleInputFocus(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.activeInputIndex = index;
+        
+        // Show suggestions if there's a value
+        const value = this.importInputs[index].value.toLowerCase().trim();
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5);
+            this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.importInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    // Method to handle input blur
+    handleInputBlur() {
+        // Delay hiding suggestions to allow for clicks
+        setTimeout(() => {
+            this.suggestions = [];
+            this.importInputs.forEach(input => input.showSuggestions = false);
+            this.activeInputIndex = -1;
+        }, 200);
     }
 
     // Method to handle import submit
@@ -228,7 +316,8 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.verificationInputs = this.seedPhrase.map((item, i) => {
             return {
                 label: `Word ${i + 1}`,
-                value: '' // Do not autofill; user must enter manually
+                value: '', // Do not autofill; user must enter manually
+                showSuggestions: false
             };
         });
 
@@ -240,8 +329,67 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     handleVerificationChange(event) {
         const index = parseInt(event.target.dataset.index);
-        this.verificationInputs[index].value = event.target.value.toLowerCase();        
+        const value = event.target.value.toLowerCase().trim();
+        this.verificationInputs[index].value = value;
         this.verificationInputs = [...this.verificationInputs];
+        this.activeVerificationInputIndex = index;
+        // Generate suggestions based on input
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5);
+            this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.verificationInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    handleVerificationSuggestionClick(event) {
+        const selectedWord = event.currentTarget.dataset.word;
+        const index = this.activeVerificationInputIndex;
+        if (index >= 0 && index < this.verificationInputs.length) {
+            this.verificationInputs[index].value = selectedWord;
+            this.verificationInputs = [...this.verificationInputs];
+            this.suggestions = [];
+            this.verificationInputs.forEach(input => input.showSuggestions = false);
+            this.activeVerificationInputIndex = -1;
+            if (index < this.verificationInputs.length - 1) {
+                this.focusNextVerificationInput(index + 1);
+            }
+        }
+    }
+
+    focusNextVerificationInput(index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[data-verif-index="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, 100);
+    }
+
+    handleVerificationInputFocus(event) {
+        const index = parseInt(event.target.dataset.verifIndex);
+        this.activeVerificationInputIndex = index;
+        const value = this.verificationInputs[index].value.toLowerCase().trim();
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5);
+            this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.verificationInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    handleVerificationInputBlur() {
+        setTimeout(() => {
+            this.suggestions = [];
+            this.verificationInputs.forEach(input => input.showSuggestions = false);
+            this.activeVerificationInputIndex = -1;
+        }, 200);
     }
 
     async handleSubmit() {

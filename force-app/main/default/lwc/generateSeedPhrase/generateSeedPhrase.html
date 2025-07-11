@@ -88,7 +88,7 @@
             <template lwc:if={step3Import}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
                     <h3 class="slds-text-heading_small slds-m-bottom_small">Enter Your Seed Phrase</h3>
-                    <p class="slds-text-body_small slds-m-bottom_medium">Enter your seed phrase to import your existing wallet set.</p>
+                    <p class="slds-text-body_small slds-m-bottom_medium">Enter your seed phrase to import your existing wallet set. Use autocomplete suggestions for valid BIP39 words.</p>
                     
                     <lightning-radio-group 
                         name="wordCount" 
@@ -101,15 +101,34 @@
                     
                     <div class="seed-input-grid">
                         <template for:each={importInputs} for:item="input" for:index="idx">
-                            <lightning-input 
-                                key={input.label}
-                                label={input.label}
-                                value={input.value}
-                                onchange={handleImportInputChange}
-                                data-index={idx}
-                                class="seed-input-field"
-                                placeholder="Enter word">
-                            </lightning-input>
+                            <div key={input.label} class="input-container">
+                                <lightning-input 
+                                    key={input.label}
+                                    label={input.label}
+                                    value={input.value}
+                                    onchange={handleImportInputChange}
+                                    onfocus={handleInputFocus}
+                                    onblur={handleInputBlur}
+                                    data-index={idx}
+                                    class="seed-input-field"
+                                    placeholder="Enter word">
+                                </lightning-input>
+                                
+                                <!-- Autocomplete dropdown: only show for focused input -->
+                                <template lwc:if={input.showSuggestions}>
+                                    <div class="suggestions-dropdown">
+                                        <template for:each={suggestions} for:item="suggestion">
+                                            <div 
+                                                key={suggestion}
+                                                class="suggestion-item"
+                                                data-word={suggestion}
+                                                onclick={handleSuggestionClick}>
+                                                {suggestion}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
                     </div>
                 </div>
@@ -129,18 +148,36 @@
             <template lwc:if={step3}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_medium">
                     <h3 class="slds-text-heading_small slds-m-bottom_small">Verify Your Seed Phrase</h3>
-                    <p class="slds-text-body_small slds-m-bottom_medium">Please enter your seed phrase to verify wallet ownership.</p>
+                    <p class="slds-text-body_small slds-m-bottom_medium">Please enter your seed phrase to verify wallet ownership. Use autocomplete suggestions for valid BIP39 words.</p>
                     <div class="seed-input-grid">
                         <template for:each={verificationInputs} for:item="input" for:index="idx">
-                            <lightning-input 
-                                key={input.label}
-                                label={input.label}
-                                value={input.value}
-                                onchange={handleVerificationChange}
-                                data-index={idx}
-                                class="seed-input-field"
-                                placeholder="Enter word">
-                            </lightning-input>
+                            <div key={input.label} class="input-container">
+                                <lightning-input 
+                                    key={input.label}
+                                    label={input.label}
+                                    value={input.value}
+                                    onchange={handleVerificationChange}
+                                    onfocus={handleVerificationInputFocus}
+                                    onblur={handleVerificationInputBlur}
+                                    data-verif-index={idx}
+                                    class="seed-input-field"
+                                    placeholder="Enter word">
+                                </lightning-input>
+                                <!-- Autocomplete dropdown: only show for focused verification input -->
+                                <template lwc:if={input.showSuggestions}>
+                                    <div class="suggestions-dropdown">
+                                        <template for:each={suggestions} for:item="suggestion">
+                                            <div 
+                                                key={suggestion}
+                                                class="suggestion-item"
+                                                data-word={suggestion}
+                                                onclick={handleVerificationSuggestionClick}>
+                                                {suggestion}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
                     </div>
                 </div>

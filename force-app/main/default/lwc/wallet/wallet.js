@@ -9,7 +9,10 @@ import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalle
 import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
 import { MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
-import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
+import createOutboundTransaction from '@salesforce/apex/TransactionController.createOutboundTransaction';
+import getWalletTransactions from '@salesforce/apex/UTXOAssetController.getWalletTransactions';
+import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOAssetController.getAllUtxoAssetsForWallet';
+import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
 
 
 export default class Wallet extends LightningElement {
@@ -42,6 +45,12 @@ export default class Wallet extends LightningElement {
     @track adaAmount = '';
     @track tokens = [];
     @track tokenOptions = [];
+    @track inboundTransactions = [];
+    @track outboundTransactions = [];
+    @track selectedTransactionType = 'inbound';
+    @track sendMemo = '';
+    @track showAllInbound = false;
+    @track showAllOutbound = false;
 
     @api
     get recordId() {
@@ -95,6 +104,22 @@ export default class Wallet extends LightningElement {
         return 'step-connector';
     }
 
+    get isInboundSelected() {
+        return this.selectedTransactionType === 'inbound';
+    }
+    get isOutboundSelected() {
+        return this.selectedTransactionType === 'outbound';
+    }
+    handleShowInbound() {
+        this.selectedTransactionType = 'inbound';
+    }
+    handleShowOutbound() {
+        this.selectedTransactionType = 'outbound';
+    }
+
+    get memoCharCount() {
+        return this.sendMemo ? this.sendMemo.length : 0;
+    }
 
 
     async renderedCallback() {
@@ -127,6 +152,10 @@ export default class Wallet extends LightningElement {
         try {
             // Get asset summary using new method that properly handles ADA conversion
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
+            console.log('[WALLET] Asset summary:', summary);
+            // Fetch all UTXO assets for the wallet
+            const allAssets = await getAllUtxoAssetsForWallet({ walletId: this.recordId });
+            console.log('[WALLET] All UTXO assets:', allAssets);
             
             if (summary.success) {
                 const tokens = summary.tokens || [];
@@ -140,7 +169,18 @@ export default class Wallet extends LightningElement {
                 tokens.forEach(token => {
                     // Use the actual decimals from the asset metadata, fallback to 0 if not available
                     const assetDecimals = token.decimals !== null && token.decimals !== undefined ? token.decimals : 0;
-                    
+
+                    // Determine if icon is a base64 or data URI
+                    let imgUrl = null;
+                    if (token.icon) {
+                        if (token.icon.startsWith('data:image/')) {
+                            imgUrl = token.icon;
+                        } else if (/^[A-Za-z0-9+/=]+$/.test(token.icon) && token.icon.length > 100) {
+                            // Assume base64 string, default to PNG
+                            imgUrl = `data:image/png;base64,${token.icon}`;
+                        }
+                    }
+
                     assetRows.push({
                         id: token.unit || token.symbol,
                         name: token.name || token.symbol,
@@ -150,8 +190,9 @@ export default class Wallet extends LightningElement {
                         decimals: token.decimals,
                         policyId: token.policyId,
                         fingerprint: token.fingerprint,
-                        imgUrl: token.icon || null,
-                        icon: 'utility:apps'
+                        imgUrl: imgUrl,
+                        icon: token.icon, // Use icon from Apex only
+                        iconIsImage: token.icon && (token.icon.startsWith('data:image') || token.icon.length > 100)
                     });
                 });
                 
@@ -172,6 +213,8 @@ export default class Wallet extends LightningElement {
             this.showToast('Error', message, 'error');
         } finally {
             this.isLoading = false;
+            // Fetch transactions after loading assets
+            await this.fetchWalletTransactions();
         }
     }
 
@@ -318,6 +361,10 @@ export default class Wallet extends LightningElement {
 
     connectedCallback() {
         this.subscribeToWalletSyncEvent();
+        if (this.recordId) {
+            this.isLoading = true;
+            this.fetchUtxoCounts();
+        }
     }
 
     disconnectedCallback() {
@@ -507,21 +554,44 @@ export default class Wallet extends LightningElement {
         if (this.isSendButtonDisabled) return;
         this.isLoading = true;
         try {
-            // Use the selected asset and amount for the transaction
-            const amount = this.selectedAsset === 'ADA' ? this.adaAmount : this.sendAmount;
-            const asset = this.selectedAsset;
-            
-            console.log('[SEND] Sending to Apex with walletId:', this.recordId, 'recipient:', this.sendRecipient, 'amount:', amount, 'asset:', asset);
-            
-            const outboundId = await createOutboundTransaction({
-                walletId: this.recordId,
-                toAddress: this.sendRecipient,
-                amount: amount,
-                asset: asset
+            // Build the assets array for multi-asset transactions
+            const assetsArray = [];
+            if (this.adaAmount && parseFloat(this.adaAmount) > 0) {
+                assetsArray.push({ asset: 'ADA', amount: this.adaAmount });
+            }
+            this.tokens.forEach(token => {
+                if (token.asset && token.amount && parseFloat(token.amount) > 0) {
+                    assetsArray.push({ asset: token.asset, amount: token.amount });
+                }
             });
-            
-            console.log('[SEND] Apex returned outboundId:', outboundId);
-            this.showToast('Success', 'Transaction created successfully!', 'success');
+            console.log('[SEND] Assets array to send:', JSON.stringify(assetsArray));
+            console.log('[SEND] Recipient:', this.sendRecipient);
+            // If more than one asset, use multi-asset Apex method
+            if (assetsArray.length > 1) {
+                console.log('[SEND] Calling createMultiAssetOutboundTransaction Apex method');
+                const outboundId = await createMultiAssetOutboundTransaction({
+                    walletId: this.recordId,
+                    toAddress: this.sendRecipient,
+                    assets: assetsArray,
+                    memo: this.sendMemo
+                });
+                console.log('[SEND] Apex returned outboundId:', outboundId);
+                this.showToast('Success', 'Multi-asset transaction created successfully!', 'success');
+            } else if (assetsArray.length === 1) {
+                console.log('[SEND] Calling createOutboundTransaction Apex method');
+                const outboundId = await createOutboundTransaction({
+                    walletId: this.recordId,
+                    toAddress: this.sendRecipient,
+                    amount: assetsArray[0].amount,
+                    asset: assetsArray[0].asset,
+                    memo: this.sendMemo
+                });
+                console.log('[SEND] Apex returned outboundId:', outboundId);
+                this.showToast('Success', 'Transaction created successfully!', 'success');
+            } else {
+                this.showToast('Error', 'No valid assets to send.', 'error');
+                return;
+            }
             this.showSend = false;
             this.fetchUtxoCounts();
         } catch (error) {
@@ -531,6 +601,19 @@ export default class Wallet extends LightningElement {
             this.isLoading = false;
         }
     }
+
+    async fetchWalletTransactions() {
+        try {
+            const result = await getWalletTransactions({ walletId: this.recordId });
+            console.log('[WALLET] Transactions:', result);
+            this.inboundTransactions = result.inbound || [];
+            this.outboundTransactions = result.outbound || [];
+        } catch (error) {
+            this.inboundTransactions = [];
+            this.outboundTransactions = [];
+        }
+    }
+
 
 
 
@@ -683,5 +766,103 @@ export default class Wallet extends LightningElement {
         );
         this.updateTokenComputedFields();
         this.updateSendStateMultiAsset();
+    }
+
+    handleTransactionTabChange(event) {
+        this.selectedTransactionType = event.target.value;
+    }
+
+    get outboundTransactionsWithUrl() {
+        return (this.outboundTransactions || []).map(tx => ({
+            ...tx,
+            cardanoScanUrl: tx.Transaction_Hash__c ? `https://cardanoscan.io/transaction/${tx.Transaction_Hash__c}` : null
+        }));
+    }
+
+    get outboundTransactionsForDisplay() {
+        // Always provide Transaction_Hash__c, Transaction_Status__c, and cardanoScanUrl for template
+        return this.visibleOutboundTransactions.map(tx => {
+            const hash = tx.Transaction_Hash__c;
+            let cardanoScanUrl = '';
+            if (hash && typeof hash === 'string' && hash.length > 0) {
+                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
+            }
+            return {
+                ...tx,
+                Transaction_Hash__c: hash,
+                Transaction_Status__c: tx.Transaction_Status__c || '',
+                cardanoScanUrl
+            };
+        });
+    }
+
+    handleAssetImgError(event) {
+        const symbol = event.target.alt;
+        this.assets = this.assets.map(asset => {
+            if (asset.symbol === symbol) {
+                return { ...asset, showFallbackIcon: true, icon: 'utility:money', imgUrl: null, iconIsImage: false };
+            }
+            return asset;
+        });
+    }
+
+    handleMemoChange(event) {
+        this.sendMemo = event.target.value;
+        console.log('[WALLET] Memo changed:', this.sendMemo);
+        console.log('[WALLET] Memo length:', this.sendMemo.length);
+    }
+
+    get sortedInboundTransactions() {
+        return [...this.inboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    }
+    get sortedOutboundTransactions() {
+        return [...this.outboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    }
+    get visibleInboundTransactions() {
+        return this.showAllInbound ? this.sortedInboundTransactions : this.sortedInboundTransactions.slice(0, 3);
+    }
+    get visibleOutboundTransactions() {
+        return this.showAllOutbound ? this.sortedOutboundTransactions : this.sortedOutboundTransactions.slice(0, 3);
+    }
+    handleViewAllInbound() {
+        this.showAllInbound = true;
+    }
+    handleViewAllOutbound() {
+        this.showAllOutbound = true;
+    }
+    formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            year: 'numeric', month: 'short', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: true
+        });
+    }
+
+    get inboundHasMore() {
+        return this.sortedInboundTransactions.length > 3 && !this.showAllInbound;
+    }
+    get outboundHasMore() {
+        return this.sortedOutboundTransactions.length > 3 && !this.showAllOutbound;
+    }
+
+    // When preparing transactions for display, add formattedDate property
+    set inboundTransactions(value) {
+        this._inboundTransactions = (value || []).map(tx => ({
+            ...tx,
+            formattedDate: this.formatDate(tx.CreatedDate)
+        }));
+    }
+    get inboundTransactions() {
+        return this._inboundTransactions || [];
+    }
+    set outboundTransactions(value) {
+        this._outboundTransactions = (value || []).map(tx => ({
+            ...tx,
+            formattedDate: this.formatDate(tx.CreatedDate)
+        }));
+    }
+    get outboundTransactions() {
+        return this._outboundTransactions || [];
     }
 }

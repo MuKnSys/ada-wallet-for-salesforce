@@ -1,6 +1,7 @@
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
+import { getRecord } from 'lightning/uiRecordApi';
 import CARDANO_SERIALIZATION from '@salesforce/resourceUrl/cardanoSerialization';
 import BIP39 from '@salesforce/resourceUrl/bip39';
 import BLAKE from '@salesforce/resourceUrl/blake';
@@ -9,6 +10,8 @@ import getTransactionLinesForOutbound from '@salesforce/apex/UTXOController.getT
 import getOutboundTransaction from '@salesforce/apex/UTXOController.getOutboundTransaction';
 import loadWallet from '@salesforce/apex/TransactionController.loadWallet';
 import updateOutboundTransactionWithSignedCbor from '@salesforce/apex/UTXOController.updateOutboundTransactionWithSignedCbor';
+import TRANSACTION_STATUS_FIELD from '@salesforce/schema/Outbound_Transaction__c.Transaction_Status__c';
+import TRANSACTION_HASH_FIELD from '@salesforce/schema/Outbound_Transaction__c.Transaction_Hash__c';
 
 // Enhanced error handling class
 class CardanoTransactionError extends Error {
@@ -33,6 +36,20 @@ export default class PrepareAndSignTransaction extends LightningElement {
     // Cardano library references
     cardanoLib = null;
     blakeLib = null;
+
+    // Observe the Outbound_Transaction__c record for status/hash changes
+    @wire(getRecord, { recordId: '$recordId', fields: [TRANSACTION_STATUS_FIELD, TRANSACTION_HASH_FIELD] })
+    wiredRecord({ error, data }) {
+        if (data) {
+            if (!this.outboundTransaction) this.outboundTransaction = {};
+            // Merge with any existing fields
+            this.outboundTransaction = {
+                ...this.outboundTransaction,
+                Transaction_Status__c: data.fields.Transaction_Status__c.value,
+                Transaction_Hash__c: data.fields.Transaction_Hash__c.value
+            };
+        }
+    }
 
     renderedCallback() {
         if (!this.librariesLoaded && !this.isLoadingLibraries) {
@@ -618,6 +635,9 @@ export default class PrepareAndSignTransaction extends LightningElement {
             try {
                 outboundTransactionRecord = await getOutboundTransaction({ outboundTransactionId: this.recordId });
                 toAddress = outboundTransactionRecord && outboundTransactionRecord.To_Address__c ? outboundTransactionRecord.To_Address__c : null;
+                // Explicitly log the recipient address and memo field
+                console.log(`[buildAndSignTransaction] Recipient Address (To_Address__c): ${toAddress}`);
+                console.log(`[buildAndSignTransaction] Memo (Memo__c): ${outboundTransactionRecord && outboundTransactionRecord.Memo__c ? outboundTransactionRecord.Memo__c : ''}`);
             } catch (e) {
                 this.showToast('Error', 'Failed to fetch transaction details', 'error');
                 return;
@@ -699,6 +719,33 @@ export default class PrepareAndSignTransaction extends LightningElement {
                     .build();
                 const txBuilder = this.cardanoLib.TransactionBuilder.new(txBuilderCfg);
                 console.log('[STEP 3] TransactionBuilder initialized with Blockfrost parameters.');
+
+                // Add memo metadata to transaction BEFORE any outputs or fee calculations
+                console.log('\n[STEP 3A] Adding memo metadata to transaction...');
+                let auxData = null;
+                
+                // Only add memo metadata if the Memo field is set and not null
+                if (outboundTransactionRecord.Memo__c && outboundTransactionRecord.Memo__c.trim() !== '') {
+                    try {
+                        const memo = outboundTransactionRecord.Memo__c.trim();
+                        const generalMetadata = this.cardanoLib.GeneralTransactionMetadata.new();
+                        const metadataKey = this.cardanoLib.BigNum.from_str("674");
+                        const metadataValue = this.cardanoLib.encode_json_str_to_metadatum(
+                            JSON.stringify({ memo: memo }),
+                            this.cardanoLib.MetadataJsonSchema.BasicConversions
+                        );
+                        generalMetadata.insert(metadataKey, metadataValue);
+                        auxData = this.cardanoLib.AuxiliaryData.new();
+                        auxData.set_metadata(generalMetadata);
+                        txBuilder.set_auxiliary_data(auxData);
+                        console.log(`[STEP 3A] Added memo metadata: "${memo}" with key 674`);
+                    } catch (metaError) {
+                        console.error('[STEP 3A] Failed to add memo metadata:', metaError);
+                        auxData = null;
+                    }
+                } else {
+                    console.log('[STEP 3A] No memo provided, skipping metadata addition');
+                }
 
                 // Convert transaction lines to outputs format
                 const outputs = this.transactionLines.map(line => {
@@ -1220,6 +1267,26 @@ export default class PrepareAndSignTransaction extends LightningElement {
                     console.log(`[STEP 8] Transaction body type: ${typeof txBody}`);
                     console.log(`[STEP 8] Transaction body has inputs method: ${typeof txBody.inputs === 'function'}`);
                     console.log(`[STEP 8] Transaction body has outputs method: ${typeof txBody.outputs === 'function'}`);
+                    
+                    // Check if auxiliary data is in the transaction body
+                    console.log('[STEP 8] Checking auxiliary data in transaction body...');
+                    try {
+                        const bodyAuxData = txBody.auxiliary_data();
+                        if (bodyAuxData) {
+                            console.log('[STEP 8] ✅ Transaction body contains auxiliary data');
+                            const bodyMetadata = bodyAuxData.metadata();
+                            if (bodyMetadata) {
+                                console.log('[STEP 8] ✅ Transaction body contains metadata');
+                                console.log(`[STEP 8] Metadata keys count: ${bodyMetadata.len()}`);
+                            } else {
+                                console.log('[STEP 8] ❌ Transaction body auxiliary data has no metadata');
+                            }
+                        } else {
+                            console.log('[STEP 8] ❌ Transaction body has no auxiliary data');
+                        }
+                    } catch (auxError) {
+                        console.error('[STEP 8] Error checking auxiliary data in transaction body:', auxError);
+                    }
                 } catch (buildError) {
                     console.error('[STEP 8] ❌ Error building transaction body:', buildError);
                     console.error('[STEP 8] Build error details:', JSON.stringify(buildError, null, 2));
@@ -1356,14 +1423,32 @@ export default class PrepareAndSignTransaction extends LightningElement {
                 console.log(`[STEP 13] Parameters:`);
                 console.log(`  - Transaction body: ${typeof txBody}`);
                 console.log(`  - Witness set: ${typeof witnessSet}`);
-                console.log(`  - Auxiliary data: undefined (none)`);
+                console.log(`  - Auxiliary data: ${auxData ? 'included with memo' : 'none'}`);
                 
                 let signedTx, signedCborHex;
                 try {
+                    // Use auxiliary data from transaction body if available, otherwise use the separate auxData
+                    let finalAuxData = null;
+                    try {
+                        if (txBody.auxiliary_data && typeof txBody.auxiliary_data === 'function') {
+                            finalAuxData = txBody.auxiliary_data();
+                            console.log(`[STEP 13] Found auxiliary data in transaction body`);
+                        } else {
+                            console.log(`[STEP 13] Transaction body has no auxiliary_data method`);
+                            finalAuxData = auxData;
+                        }
+                    } catch (auxError) {
+                        console.log(`[STEP 13] Error getting auxiliary data from transaction body:`, auxError.message);
+                        finalAuxData = auxData;
+                    }
+                    
+                    console.log(`[STEP 13] Using auxiliary data: ${finalAuxData ? 'available' : 'none'}`);
+                    console.log(`[STEP 13] Final auxiliary data type: ${typeof finalAuxData}`);
+                    
                     signedTx = this.cardanoLib.Transaction.new(
                         txBody,
                         witnessSet,
-                        undefined // no auxiliary data
+                        finalAuxData // use auxiliary data from transaction body or fallback
                     );
                     console.log('[STEP 13] ✅ Final transaction created successfully');
                     console.log(`[STEP 13] Signed transaction type: ${typeof signedTx}`);
@@ -1378,6 +1463,17 @@ export default class PrepareAndSignTransaction extends LightningElement {
                 } catch (signError) {
                     console.error('[STEP 13] ❌ Error signing transaction:', signError);
                     console.error('[STEP 13] Sign error details:', JSON.stringify(signError, null, 2));
+                    console.error('[STEP 13] Sign error message:', signError.message);
+                    console.error('[STEP 13] Sign error stack:', signError.stack);
+                    console.error('[STEP 13] Sign error constructor:', signError.constructor.name);
+                    
+                    // Log the parameters that were passed to Transaction.new
+                    console.error('[STEP 13] Transaction.new parameters:');
+                    console.error(`  - txBody type: ${typeof txBody}`);
+                    console.error(`  - witnessSet type: ${typeof witnessSet}`);
+                    console.error(`  - finalAuxData type: ${typeof finalAuxData}`);
+                    console.error(`  - finalAuxData value:`, finalAuxData);
+                    
                     throw signError;
                 }
 
@@ -1619,5 +1715,26 @@ export default class PrepareAndSignTransaction extends LightningElement {
         
         console.log(`[findAssetInfo] ❌ Asset not found after all matching attempts`);
         return null;
+    }
+
+    // Add computed properties for sent status and CardanoScan URL
+    get isSent() {
+        return this.outboundTransaction &&
+            this.outboundTransaction.Transaction_Status__c === 'Sent' &&
+            this.outboundTransaction.Transaction_Hash__c;
+    }
+
+    get notSent() {
+        return !this.isSent;
+    }
+
+    get transactionHash() {
+        return this.outboundTransaction ? this.outboundTransaction.Transaction_Hash__c : '';
+    }
+
+    get cardanoScanUrl() {
+        return this.transactionHash
+            ? `https://cardanoscan.io/transaction/${this.transactionHash}`
+            : '';
     }
 }

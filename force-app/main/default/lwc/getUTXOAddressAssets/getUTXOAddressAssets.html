@@ -1,36 +1,17 @@
 <template>
-    <lightning-card title="UTXO Assets" icon-name="standard:address">
-        <div class="slds-p-around_medium">
-            <!-- Loading Spinner -->
-            <template lwc:if={isLoading}>
-                <div class="slds-is-relative assets-header">
-                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-                    <span class="slds-p-left_small">Fetching UTXO assets...</span>
-                </div>
-            </template>
-
-            <!-- Error Message -->
-            <template lwc:if={error}>
-                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
-                    <span class="slds-assistive-text">Error</span>
-                    <h2>Error fetching assets: {error}</h2>
-                </div>
-            </template>
-
-            <!-- Success Message -->
-            <template lwc:if={assets}>
-                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_success" role="alert">
-                    <span class="slds-assistive-text">Success</span>
-                    <div class="slds-media slds-media_center">
-                        <div class="slds-media__figure">
-                            <lightning-icon icon-name="utility:success" size="medium" variant="success"></lightning-icon>
-                        </div>
-                        <div class="slds-media__body">
-                            <h2 class="slds-text-heading_small">Updated UTXO Assets</h2>
-                        </div>
-                    </div>
-                </div>
-            </template>
+    <template if:true={isLoading}>
+        <div class="slds-box slds-theme_default slds-p-around_medium slds-align_absolute-center">
+            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
         </div>
-    </lightning-card>
+    </template>
+    <template if:true={showSuccess}>
+        <div class="slds-box slds-theme_default slds-p-around_medium slds-align_absolute-center">
+            Assets and Transactions synced for UTXO Address
+        </div>
+    </template>
+    <template if:true={showError}>
+        <div class="slds-box slds-theme_default slds-p-around_medium slds-align_absolute-center slds-text-color_error">
+            {errorMessage}
+        </div>
+    </template>
 </template> 

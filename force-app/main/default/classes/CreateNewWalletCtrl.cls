@@ -1,14 +1,14 @@
 public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
-    public static Id createWallet(String walletSetId, String walletName, String address, String accountPrivateKey, String accountPublicKey, Integer accountIndex) {
+    public static Id createWallet(String walletSetId, String walletName, String address, String accountPrivateKey, String accountPublicKey, Integer accountIndex, String stakeAddress) {
         try {
             Wallet__c newWallet = new Wallet__c(
                 Wallet_Set__c = walletSetId,
                 Name = walletName,
-                Address__c = address,
                 Account_Private_Key__c = DataEncryptor.encrypt(accountPrivateKey),
                 Account_Public_Key__c = DataEncryptor.encrypt(accountPublicKey),
-                Account_Index__c = accountIndex
+                Account_Index__c = accountIndex,
+                Stake_Address__c = stakeAddress
             );
             insert newWallet;
             

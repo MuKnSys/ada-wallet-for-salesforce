@@ -148,12 +148,33 @@
 
 .asset-icon {
     margin-right: 1rem;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.asset-img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    display: block;
 }
 
 .asset-icon-img {
     background: #e0e0e0;
     border-radius: 50%;
     padding: 0.25rem;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .asset-details {
@@ -162,14 +183,17 @@
 }
 
 .asset-name {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #333;
+    font-size: 0.92rem;
+    color: #666;
+    font-weight: 400;
+    margin-top: 0.05rem;
 }
 
 .asset-symbol {
-    font-size: 0.85rem;
-    color: #666;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 0.15rem;
 }
 
 .asset-amount {
@@ -613,4 +637,120 @@
 
 .fee-info p {
     margin: 0;
+}
+
+.transaction-section {
+    margin-bottom: 2rem;
+}
+.transaction-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+}
+.transaction-item {
+    display: flex;
+    flex-direction: column;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.transaction-type {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+.transaction-type.inbound {
+    color: #388e3c;
+}
+.transaction-type.outbound {
+    color: #d32f2f;
+}
+.transaction-amount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+.transaction-date {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.1rem;
+}
+.transaction-hash {
+    font-size: 0.8rem;
+    color: #aaa;
+    word-break: break-all;
+}
+
+.slds-form-element__label, .form-label {
+    color: #1a1a1a !important;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 0.25rem;
+}
+
+.slds-input, .form-input, .form-textarea {
+    color: #222 !important;
+    background: #fff;
+    font-size: 1.08rem;
+    border: 1.5px solid #bdbdbd;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.slds-input:focus, .form-input:focus, .form-textarea:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 2px #c8e6c9;
+}
+
+.slds-m-bottom_medium label, .slds-m-bottom_medium .slds-form-element__label {
+    color: #1a1a1a !important;
+    font-weight: 700;
+    font-size: 1.12rem;
+}
+
+.slds-m-bottom_medium .slds-input {
+    font-size: 1.15rem;
+    color: #222 !important;
+    background: #fff;
+}
+
+.recipient-label {
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 1.01rem;
+}
+
+.recipient-address {
+    color: #2e7d32;
+    font-weight: 600;
+    font-size: 1.01rem;
+    word-break: break-all;
+}
+
+.send-modal .slds-m-bottom_medium {
+    background: #2e7d32;
+    border-radius: 8px;
+    padding: 1rem 1.5rem 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.send-modal .slds-m-bottom_medium label,
+.send-modal .slds-m-bottom_medium .slds-form-element__label {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 1.18rem;
+}
+.send-modal .slds-m-bottom_medium .slds-input {
+    font-size: 1.18rem;
+    color: #fff !important;
+    background: #388e3c;
+    border: 2px solid #fff;
+    border-radius: 6px;
+}
+.send-modal .slds-m-bottom_medium .slds-input::placeholder {
+    color: #e0e0e0;
+    opacity: 1;
 }

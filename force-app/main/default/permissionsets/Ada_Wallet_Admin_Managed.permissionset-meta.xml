@@ -137,10 +137,14 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>UTXO_Asset__c.Icon__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Outbound_Transaction__c.Transaction_Hash__c</field>
         <readable>true</readable>
     </fieldPermissions>
-
     <fieldPermissions>
         <editable>false</editable>
         <field>Inbound_Transaction__c.Block__c</field>
@@ -188,7 +192,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Inbound_Transaction__c.Wallet__c</field>
+        <field>Outbound_Transaction__c.Signed_Transaction_CBOR__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Outbound_Transaction__c.Transaction_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Outbound_Transaction__c.Memo__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>

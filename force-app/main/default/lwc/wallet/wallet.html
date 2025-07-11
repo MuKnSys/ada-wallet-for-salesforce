@@ -46,15 +46,21 @@
                                         <div key={asset.id} class="asset-item">
                                             <div class="asset-icon">
                                                 <template lwc:if={asset.imgUrl}>
-                                                    <img src={asset.imgUrl} class="asset-img" alt={asset.symbol} />
+                                                    <img src={asset.imgUrl} class="asset-img" alt={asset.symbol} onerror={handleAssetImgError} />
+                                                </template>
+                                                <template lwc:elseif={asset.showFallbackIcon}>
+                                                    <lightning-icon icon-name="utility:money" size="small" class="asset-icon-img"></lightning-icon>
+                                                </template>
+                                                <template lwc:elseif={asset.iconIsImage}>
+                                                    <img src={asset.icon} class="asset-img" alt={asset.symbol} onerror={handleAssetImgError} />
                                                 </template>
                                                 <template lwc:else>
                                                     <lightning-icon icon-name={asset.icon} size="small" class="asset-icon-img"></lightning-icon>
                                                 </template>
                                             </div>
                                             <div class="asset-details">
-                                                <div class="asset-name">{asset.name}</div>
                                                 <div class="asset-symbol">{asset.symbol}</div>
+                                                <div class="asset-name">{asset.name}</div>
                                             </div>
                                             <div class="asset-amount">{asset.amount}</div>
                                         </div>
@@ -69,38 +75,59 @@
                         <!-- Transactions Tab -->
                         <lightning-tab label="Transactions" value="transactions">
                             <div class="transactions-content">
-                                <table class="slds-table slds-table_cell-buffer slds-table_bordered transactions-table">
-                                    <thead>
-                                        <tr class="slds-line-height_reset">
-                                            <th class="slds-text-title_caps" scope="col">
-                                                <div class="slds-truncate" title="Date">Date</div>
-                                            </th>
-                                            <th class="slds-text-title_caps" scope="col">
-                                                <div class="slds-truncate" title="Type">Type</div>
-                                            </th>
-                                            <th class="slds-text-title_caps" scope="col">
-                                                <div class="slds-truncate" title="Amount">Amount</div>
-                                            </th>
-                                            <th class="slds-text-title_caps" scope="col">
-                                                <div class="slds-truncate" title="Status">Status</div>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template for:each={transactions} for:item="transaction">
-                                            <tr key={transaction.id}>
-                                                <td>{transaction.date}</td>
-                                                <td>{transaction.type}</td>
-                                                <td>{transaction.amount}</td>
-                                                <td>
-                                                    <span class={transaction.statusClass}>{transaction.status}</span>
-                                                </td>
-                                            </tr>
+                                <div class="transaction-tabs slds-m-bottom_medium">
+                                    <div class="slds-button-group" role="group">
+                                        <button class="slds-button slds-button_neutral {selectedTransactionType === 'inbound' ? 'slds-button_brand' : ''}" onclick={handleShowInbound}>Inbound</button>
+                                        <button class="slds-button slds-button_neutral {selectedTransactionType === 'outbound' ? 'slds-button_brand' : ''}" onclick={handleShowOutbound}>Outbound</button>
+                                    </div>
+                                </div>
+                                <template if:true={isInboundSelected}>
+                                    <h3 class="transaction-section-title">Inbound Transactions</h3>
+                                    <template lwc:if={visibleInboundTransactions.length}>
+                                        <template for:each={visibleInboundTransactions} for:item="tx">
+                                            <div key={tx.Id} class="transaction-item inbound">
+                                                <div class="transaction-date">{tx.formattedDate}</div>
+                                                <div class="transaction-hash">Hash: {tx.Transaction_Hash__c}</div>
+                                            </div>
                                         </template>
-                                    </tbody>
-                                </table>
-                                <template if:false={transactions}>
-                                    <p class="no-transactions">No transactions available</p>
+                                        <template lwc:if={inboundHasMore}>
+                                            <div class="view-all-container">
+                                                <button class="slds-button slds-button_neutral" onclick={handleViewAllInbound}>View All</button>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template lwc:else>
+                                        <p class="no-transactions">No inbound transactions</p>
+                                    </template>
+                                </template>
+                                <template if:true={isOutboundSelected}>
+                                    <h3 class="transaction-section-title">Outbound Transactions</h3>
+                                    <template lwc:if={outboundTransactionsForDisplay.length}>
+                                        <template for:each={outboundTransactionsForDisplay} for:item="tx">
+                                            <div key={tx.Id} class="transaction-item outbound">
+                                                <div class="transaction-date">{tx.formattedDate}</div>
+                                                <template lwc:if={tx.cardanoScanUrl}>
+                                                    <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">
+                                                        {tx.Transaction_Hash__c}
+                                                    </a>
+                                                </template>
+                                                <template lwc:elseif={tx.Transaction_Hash__c}>
+                                                    <div class="transaction-hash">Hash: {tx.Transaction_Hash__c}</div>
+                                                </template>
+                                                <template lwc:else>
+                                                    <div class="transaction-status slds-text-color_weak">Status: {tx.Transaction_Status__c}</div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template lwc:if={outboundHasMore}>
+                                            <div class="view-all-container">
+                                                <button class="slds-button slds-button_neutral" onclick={handleViewAllOutbound}>View All</button>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <template lwc:else>
+                                        <p class="no-transactions">No outbound transactions</p>
+                                    </template>
                                 </template>
                             </div>
                         </lightning-tab>
@@ -193,6 +220,19 @@
                                         onblur={validateAddress}>
                                     </textarea>
                                 </div>
+                                <!-- Memo Field -->
+                                <div class="form-field">
+                                    <label class="form-label" for="send-memo">Memo (optional)</label>
+                                    <textarea 
+                                        id="send-memo" 
+                                        class="form-input form-textarea" 
+                                        placeholder="Enter memo" 
+                                        value={sendMemo} 
+                                        onchange={handleMemoChange}
+                                        maxlength="255"
+                                        rows="3"></textarea>
+                                    <div class="char-count">{memoCharCount}/255</div>
+                                </div>
                                 <template lwc:if={addressError}>
                                     <div class="error-message slds-text-color_destructive">{addressError}</div>
                                 </template>
@@ -218,12 +258,20 @@
                             </div>
                             <div class="send-form">
                                 <!-- ADA Amount Input -->
-                                <div class="slds-m-bottom_medium">
-                                    <label class="slds-form-element__label" for="adaAmount">Amount (ADA)</label>
-                                    <lightning-input type="number" name="adaAmount" value={adaAmount} onchange={handleAdaAmountChange} min="0" step="0.000001"></lightning-input>
-                                    <!-- No error or balance warning for ADA -->
+                                <div class="form-field">
+                                    <label class="form-label" for="adaAmount">Amount (ADA)</label>
+                                    <input 
+                                        id="adaAmount"
+                                        class="form-input"
+                                        type="number"
+                                        name="adaAmount"
+                                        value={adaAmount}
+                                        min="0"
+                                        step="0.000001"
+                                        onchange={handleAdaAmountChange}
+                                        placeholder="Enter amount in ADA"
+                                    />
                                 </div>
-
                                 <!-- Token List -->
                                 <div class="form-field">
                                     <label class="form-label">Tokens</label>
@@ -240,17 +288,17 @@
                                                 </lightning-combobox>
                                             </div>
                                             <div class="slds-col">
-                                                <lightning-input
+                                                <input
                                                     type="number"
                                                     name="tokenAmount"
-                                                    label="Amount"
+                                                    class="form-input"
                                                     value={token.amount}
                                                     min="0"
                                                     step="0.000001"
                                                     data-index={index}
                                                     placeholder={token.placeholder}
-                                                    onchange={handleTokenAmountChange}>
-                                                </lightning-input>
+                                                    onchange={handleTokenAmountChange}
+                                                />
                                                 <lightning-button
                                                     variant="base"
                                                     label="Send Max"

@@ -171,6 +171,9 @@
                         <valueListItems>
                             <value>Asset__c</value>
                         </valueListItems>
+                        <valueListItems>
+                            <value>Name__c</value>
+                        </valueListItems>
                     </valueList>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
