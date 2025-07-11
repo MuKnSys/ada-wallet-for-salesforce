@@ -305,6 +305,334 @@
         <value>Generate a new 24-word seed phrase for a fresh wallet set.</value>
     </labels>
     <labels>
+        <fullName>CreateNewWallet_AccountIndexLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Label</shortDescription>
+        <value>Account Index</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexRequired</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Required</shortDescription>
+        <value>Account Index is required</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexMustBeNumber</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Must Be Number</shortDescription>
+        <value>Account Index must be a number</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexNonNegative</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Non Negative</shortDescription>
+        <value>Account Index must be non-negative</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ButtonLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Button Label</shortDescription>
+        <value>Create Wallet</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ButtonLabelCreating</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Button Label Creating</shortDescription>
+        <value>Creating...</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_CardTitle</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Card Title</shortDescription>
+        <value>Create New Wallet</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_EnterWordPlaceholder</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Enter Word Placeholder</shortDescription>
+        <value>Enter word</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorAccountIndexValidation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Account Index Validation</shortDescription>
+        <value>Failed to validate account index</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorFetchNextIndex</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Fetch Next Index</shortDescription>
+        <value>Failed to fetch next account index</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorInvalidBip32Key</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Invalid Bip32 Key</shortDescription>
+        <value>Invalid BIP32 private key provided</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorInvalidMnemonic</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Invalid Mnemonic</shortDescription>
+        <value>Decrypted mnemonic is invalid</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorLibrariesNotLoaded</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Libraries Not Loaded</shortDescription>
+        <value>Libraries not loaded. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorRawKeyExtraction</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Raw Key Extraction</shortDescription>
+        <value>Failed to extract raw key from BIP32 private key</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorRawKeyInvalid</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Raw Key Invalid</shortDescription>
+        <value>Raw key bytes are invalid or too short</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorSeedPhraseEmpty</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Seed Phrase Empty</shortDescription>
+        <value>Seed phrase is empty or null</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorSeedPhraseIncorrect</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Seed Phrase Incorrect</shortDescription>
+        <value>Seed phrase is incorrect. Please check your entries.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorUnknown</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Unknown</shortDescription>
+        <value>Unknown error</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorWalletCreation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Wallet Creation</shortDescription>
+        <value>Wallet creation failed</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorWalletRecordCreation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Wallet Record Creation</shortDescription>
+        <value>Error creating wallet record</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_InvalidWalletSetId</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Invalid Wallet Set Id</shortDescription>
+        <value>Invalid Wallet Set ID selected</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_LibraryLoadingFailed</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Library Loading Failed</shortDescription>
+        <value>Library loading failed</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressDerivingKeys</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Deriving Keys</shortDescription>
+        <value>Deriving cryptographic keys</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressFinalizing</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Finalizing</shortDescription>
+        <value>Finalizing wallet creation</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressInitializing</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Initializing</shortDescription>
+        <value>Initializing</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressPreparingNavigation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Preparing Navigation</shortDescription>
+        <value>Preparing to navigate to wallet...</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressVerifyingSeedPhrase</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Verifying Seed Phrase</shortDescription>
+        <value>Verifying seed phrase</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressCheckingServer</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Checking Server</shortDescription>
+        <value>Checking seed phrase on server...</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressCreatingWallet</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Creating Wallet</shortDescription>
+        <value>Creating wallet record</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SeedPhraseLengthLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Seed Phrase Length Label</shortDescription>
+        <value>Seed Phrase Length</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SeedPhraseVerificationDescription</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Seed Phrase Verification Description</shortDescription>
+        <value>Please enter your seed phrase to verify wallet ownership.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SeedPhraseVerificationHeader</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Seed Phrase Verification Header</shortDescription>
+        <value>Verify Your Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SelectWalletSetPlaceholder</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Select Wallet Set Placeholder</shortDescription>
+        <value>Select a Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SuccessWalletCreated</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Success Wallet Created</shortDescription>
+        <value>Wallet "{0}" created successfully</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ValidationPleaseSelectWalletSet</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Validation Please Select Wallet Set</shortDescription>
+        <value>Please select a Wallet Set.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletNameLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Name Label</shortDescription>
+        <value>Wallet Name</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletNameRequired</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Name Required</shortDescription>
+        <value>Wallet Name is required</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletNameTooLong</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Name Too Long</shortDescription>
+        <value>Wallet Name must be 255 characters or less</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletSetLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Set Label</shortDescription>
+        <value>Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WordCount15</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Word Count 15</shortDescription>
+        <value>15 words</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WordCount24</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Word Count 24</shortDescription>
+        <value>24 words</value>
+    </labels>
+    <labels>
         <fullName>GenerateSeedPhrase_DownloadButton</fullName>
         <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>

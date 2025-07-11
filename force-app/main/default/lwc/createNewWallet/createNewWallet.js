@@ -3,6 +3,8 @@ import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
 import { showToast } from 'c/utils';
 
+import { labels } from './labels';
+
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
 
@@ -30,18 +32,18 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         try {
             // Check if this is a valid BIP32 private key that can be converted to raw Ed25519
             if (!bip32priv || typeof bip32priv.to_raw_key !== 'function') {
-                throw new Error('Invalid BIP32 private key provided');
+                throw new Error(this.labels.ERROR.InvalidBip32Key);
             }
             
             // Get the raw key that was used to generate the address
             const rawKey = bip32priv.to_raw_key();
             if (!rawKey || typeof rawKey.as_bytes !== 'function') {
-                throw new Error('Failed to extract raw key from BIP32 private key');
+                throw new Error(this.labels.ERROR.RawKeyExtraction);
             }
             
             const keyBytes = rawKey.as_bytes();
             if (!keyBytes || keyBytes.length < 32) {
-                throw new Error('Raw key bytes are invalid or too short');
+                throw new Error(this.labels.ERROR.RawKeyInvalid);
             }
             
             // Only use the first 32 bytes (the actual private key)
@@ -72,6 +74,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track suggestions = [];
     @track activeInputIndex = -1;
 
+    labels = labels;
+
     get isCreateDisabled() {
         const isSeedPhraseValid = !this.showSeedPhraseVerification ||
             (
@@ -92,7 +96,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     }
 
     get buttonLabel() {
-        return this.isLoading ? 'Creating...' : 'Create Wallet';
+        return this.isLoading ? this.labels.UI.ButtonLabelCreating : this.labels.UI.ButtonLabel;
     }
 
     get progressDisplay() {
@@ -108,8 +112,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
     get wordCountOptions() {
         return [
-            { label: '15 words', value: '15' },
-            { label: '24 words', value: '24' }
+            { label: this.labels.WORD_COUNT.Option15, value: '15' },
+            { label: this.labels.WORD_COUNT.Option24, value: '24' }
         ];
     }
 
@@ -145,7 +149,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
             const failed = loadResults.filter(r => !r.loaded);
             if (failed.length) {
-                throw new Error('Failed to load: ' + failed.map(f => f.name).join(', '));
+                throw new Error(this.labels.ERROR.LibraryLoading + ': ' + failed.map(f => f.name).join(', '));
             }
 
             this.librariesLoaded = true;
@@ -156,7 +160,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             }
 
         } catch (error) {
-            this.errorMessage = 'Library loading failed: ' + (error.message || error);
+            this.errorMessage = this.labels.ERROR.LibraryLoading + ': ' + (error.message || error);
             showToast(this, 'Error', this.errorMessage, 'error');
             setTimeout(() => this.loadLibraries(), 2000);
         }
@@ -190,7 +194,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 // Initialize seed phrase verification
                 await this.initializeSeedPhraseVerification();
             } catch (error) {
-                this.handleError(error, 'Failed to fetch next account index');
+                this.handleError(error, this.labels.ERROR.FetchNextIndex);
                 this.accountIndex = '0';
             }
         } else {
@@ -228,7 +232,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                     showToast(this, 'Error', errorMessage, 'error');
                 }
             } catch (error) {
-                this.handleError(error, 'Failed to validate account index');
+                this.handleError(error, this.labels.ERROR.AccountIndexValidation);
             }
         }
     }
@@ -236,18 +240,18 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     async handleCreate() {
         this.errorMessage = '';
         this.isLoading = true;
-        this.currentStep = 'Initializing';
+        this.currentStep = this.labels.PROGRESS.Initializing;
         this.progressMessage = '';
 
         if (!this.librariesLoaded) {
-            this.errorMessage = 'Libraries not loaded. Please try again.';
+            this.errorMessage = this.labels.ERROR.LibrariesNotLoaded;
             showToast(this, 'Error', this.errorMessage, 'error');
             this.isLoading = false;
             return;
         }
 
         if (!this.selectedWalletSetId) {
-            this.pickerErrorMessage = 'Please select a Wallet Set.';
+            this.pickerErrorMessage = this.labels.VALIDATION.PleaseSelectWalletSet;
             showToast(this, 'Error', this.pickerErrorMessage, 'error');
             this.isLoading = false;
             return;
@@ -264,8 +268,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             }
 
             try {
-                this.currentStep = 'Verifying seed phrase';
-                this.progressMessage = 'Checking seed phrase on server...';
+                this.currentStep = this.labels.PROGRESS.VerifyingSeedPhrase;
+                this.progressMessage = this.labels.PROGRESS.CheckingServer;
 
                 const isValid = await verifySeedPhrase({
                     walletSetId: this.selectedWalletSetId,
@@ -273,7 +277,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 });
 
                 if (!isValid) {
-                    this.seedPhraseErrorMessage = 'Seed phrase is incorrect. Please check your entries.';
+                    this.seedPhraseErrorMessage = this.labels.ERROR.SeedPhraseIncorrect;
                     showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
                     this.isLoading = false;
                     return;
@@ -288,10 +292,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         try {
             await this.createWallet();
-            showToast(this, 'Success', `Wallet "${this.walletName}" created successfully`, 'success');
+            showToast(this, 'Success', this.labels.SUCCESS.WalletCreated.replace('{0}', this.walletName), 'success');
             this.resetForm();
         } catch (error) {
-            this.errorMessage = 'Wallet creation failed: ' + (error.message || error);
+            this.errorMessage = this.labels.ERROR.WalletCreation + ': ' + (error.message || error);
             showToast(this, 'Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;
@@ -587,7 +591,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 throw new Error(errorMessage);
             }
         } catch (error) {
-            throw new Error('Failed to validate account index: ' + (error.body?.message || error.message));
+            throw new Error(this.labels.ERROR.AccountIndexValidation + ': ' + (error.body?.message || error.message));
         }
 
         // Use the seed phrase entered by user (already verified on server)
@@ -595,13 +599,13 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         let mnemonic = enteredPhrase.join(' ');
         
         if (!mnemonic) {
-            throw new Error('Seed phrase is empty or null');
+            throw new Error(this.labels.ERROR.SeedPhraseEmpty);
         }
         if (!window.bip39.validateMnemonic(mnemonic)) {
-            throw new Error('Decrypted mnemonic is invalid');
+            throw new Error(this.labels.ERROR.InvalidMnemonic);
         }
 
-        this.currentStep = 'Deriving cryptographic keys';
+        this.currentStep = this.labels.PROGRESS.DerivingKeys;
         const entropy = window.bip39.mnemonicToEntropy(mnemonic);
         const seed = Buffer.from(entropy, 'hex');
         const rootKey = window.cardanoSerialization.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
@@ -628,7 +632,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         const network = window.cardanoSerialization.NetworkInfo.mainnet();
 
-        this.currentStep = 'Creating wallet record';
+        this.currentStep = this.labels.PROGRESS.CreatingWallet;
         const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
         const paymentCred = window.cardanoSerialization.Credential.from_keyhash(paymentKeyHash);
 
@@ -657,7 +661,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         });
 
         if (!recordId) {
-            throw new Error('Error creating wallet record');
+            throw new Error(this.labels.ERROR.WalletRecordCreation);
         }
 
         // Generate receiving addresses with full syncing (usage check, creation, and asset/transaction sync)
@@ -682,8 +686,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             recordId
         );
 
-        this.currentStep = 'Finalizing wallet creation';
-        this.progressMessage = 'Preparing to navigate to wallet...';
+        this.currentStep = this.labels.PROGRESS.Finalizing;
+        this.progressMessage = this.labels.PROGRESS.PreparingNavigation;
 
         // Navigate to the wallet record page
         this[NavigationMixin.Navigate]({
@@ -716,36 +720,36 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
     // Validation helper methods
     validateWalletSetId(walletSetId) {
-        if (!walletSetId) return { isValid: false, error: 'Please select a Wallet Set' };
+        if (!walletSetId) return { isValid: false, error: this.labels.VALIDATION.PleaseSelectWalletSet };
         if (!/^[a-zA-Z0-9]{15,18}$/.test(walletSetId)) {
-            return { isValid: false, error: 'Invalid Wallet Set ID selected' };
+            return { isValid: false, error: this.labels.VALIDATION.InvalidWalletSetId };
         }
         return { isValid: true, error: '' };
     }
 
     validateWalletName(walletName) {
         if (!walletName || !walletName.trim()) {
-            return { isValid: false, error: 'Wallet Name is required' };
+            return { isValid: false, error: this.labels.UI.WalletNameRequired };
         }
         if (walletName.length > 255) {
-            return { isValid: false, error: 'Wallet Name must be 255 characters or less' };
+            return { isValid: false, error: this.labels.UI.WalletNameTooLong };
         }
         return { isValid: true, error: '' };
     }
 
     validateAccountIndex(accountIndex) {
         if (!accountIndex || isNaN(accountIndex)) {
-            return { isValid: false, error: 'Account Index must be a number' };
+            return { isValid: false, error: this.labels.UI.AccountIndexMustBeNumber };
         }
         if (parseInt(accountIndex) < 0) {
-            return { isValid: false, error: 'Account Index must be non-negative' };
+            return { isValid: false, error: this.labels.UI.AccountIndexNonNegative };
         }
         return { isValid: true, error: '' };
     }
 
     // Error handling helper
     handleError(error, context = '') {
-        const message = error.body?.message || error.message || 'Unknown error';
+        const message = error.body?.message || error.message || this.labels.ERROR.Unknown;
         const fullMessage = context ? `${context}: ${message}` : message;
         this.errorMessage = fullMessage;
         showToast(this, 'Error', fullMessage, 'error');
