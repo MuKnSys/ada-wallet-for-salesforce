@@ -1,5 +1,4 @@
 import { LightningElement, track, api } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { subscribe, unsubscribe } from 'lightning/empApi';
 
@@ -13,6 +12,7 @@ import createOutboundTransaction from '@salesforce/apex/TransactionController.cr
 // import getWalletTransactions from '@salesforce/apex/UTXOAssetController.getWalletTransactions';
 // import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOAssetController.getAllUtxoAssetsForWallet';
 import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
+import { showToast } from 'c/utils';
 
 
 export default class Wallet extends LightningElement {
@@ -153,7 +153,7 @@ export default class Wallet extends LightningElement {
             await loadScript(this, qrcodeLibrary);
             this.isQrCodeLibraryLoaded = true;
         } catch (error) {
-            this.showToast('Error', 'Failed to load QR Code library.', 'error');
+            showToast(this, 'Error', 'Failed to load QR Code library.', 'error');
         }
     }    
 
@@ -226,7 +226,7 @@ export default class Wallet extends LightningElement {
             this.isAddressInvalid = !payAddr;
         } catch (error) {
             const message = error.body?.message || error.message || 'Unknown error';
-            this.showToast('Error', message, 'error');
+            showToast(this, 'Error', message, 'error');
         } finally {
             this.isLoading = false;
             // Fetch transactions after loading assets
@@ -277,7 +277,7 @@ export default class Wallet extends LightningElement {
     generateQrCode() {
         if (!this.isQrCodeLibraryLoaded || !this.paymentAddress || this.isAddressInvalid) {
             this.qrCodeError = true;
-            this.showToast('Error', 'Cannot generate QR code: Invalid address or library not loaded.', 'error');
+            showToast(this, 'Error', 'Cannot generate QR code: Invalid address or library not loaded.', 'error');
             return;
         }
 
@@ -302,13 +302,13 @@ export default class Wallet extends LightningElement {
             }
         } catch (error) {
             this.qrCodeError = true;
-            this.showToast('Error', 'Failed to generate QR code.', 'error');
+            showToast(this, 'Error', 'Failed to generate QR code.', 'error');
         }
     }
 
     openReceiveModal() {
         if (this.isAddressInvalid) {
-            this.showToast('Error', 'Cannot open Receive modal: No valid payment address available.', 'error');
+            showToast(this, 'Error', 'Cannot open Receive modal: No valid payment address available.', 'error');
         } else {
             this.showReceive = true;
         }
@@ -342,9 +342,9 @@ export default class Wallet extends LightningElement {
     copyToClipboard() {
         if (navigator.clipboard && this.paymentAddress) {
             navigator.clipboard.writeText(this.paymentAddress).then(() => {
-                this.showToast('Success', 'Address copied to clipboard!', 'success');
+                showToast(this, 'Success', 'Address copied to clipboard!', 'success');
             }).catch(() => {
-                this.showToast('Error', 'Failed to copy address to clipboard.', 'error');
+                showToast(this, 'Error', 'Failed to copy address to clipboard.', 'error');
             });
         } else {
             // Fallback for older browsers
@@ -354,9 +354,9 @@ export default class Wallet extends LightningElement {
             textArea.select();
             try {
                 document.execCommand('copy');
-                this.showToast('Success', 'Address copied to clipboard!', 'success');
+                showToast(this, 'Success', 'Address copied to clipboard!', 'success');
             } catch (err) {
-                this.showToast('Error', 'Failed to copy address to clipboard.', 'error');
+                showToast(this, 'Error', 'Failed to copy address to clipboard.', 'error');
             }
             document.body.removeChild(textArea);
         }
@@ -371,17 +371,10 @@ export default class Wallet extends LightningElement {
     }
 
     shareLink() {
-        this.showToast('Info', 'QR Code download functionality not implemented yet.', 'info');
+        showToast(this, 'Info', 'QR Code download functionality not implemented yet.', 'info');
     }
 
-    showToast(title, message, variant) {
-        const evt = new ShowToastEvent({
-            title: title,
-            message: message,
-            variant: variant,
-        });
-        this.dispatchEvent(evt);
-    }
+
 
     subscribeToWalletSyncEvent() {
         if (!this.eventSubscription) {
@@ -588,7 +581,7 @@ export default class Wallet extends LightningElement {
                     memo: this.sendMemo
                 });
                 console.log('[SEND] Apex returned outboundId:', outboundId);
-                this.showToast('Success', 'Multi-asset transaction created successfully!', 'success');
+                showToast(this, 'Success', 'Multi-asset transaction created successfully!', 'success');
             } else if (assetsArray.length === 1) {
                 console.log('[SEND] Calling createOutboundTransaction Apex method');
                 const outboundId = await createOutboundTransaction({
@@ -599,16 +592,16 @@ export default class Wallet extends LightningElement {
                     memo: this.sendMemo
                 });
                 console.log('[SEND] Apex returned outboundId:', outboundId);
-                this.showToast('Success', 'Transaction created successfully!', 'success');
+                showToast(this, 'Success', 'Transaction created successfully!', 'success');
             } else {
-                this.showToast('Error', 'No valid assets to send.', 'error');
+                showToast(this, 'Error', 'No valid assets to send.', 'error');
                 return;
             }
             this.showSend = false;
             this.fetchUtxoCounts();
         } catch (error) {
             console.error('[SEND] Error from Apex:', error);
-            this.showToast('Error', error.body?.message || error.message || 'Failed to create transaction', 'error');
+            showToast(this, 'Error', error.body?.message || error.message || 'Failed to create transaction', 'error');
         } finally {
             this.isLoading = false;
         }
@@ -706,7 +699,7 @@ export default class Wallet extends LightningElement {
         const usedTickers = this.tokens.map(t => t.asset).filter(Boolean);
         const availableOptions = this.tokenOptions.filter(opt => !usedTickers.includes(opt.value));
         if (availableOptions.length === 0) {
-            this.showToast('Info', 'All tokens already added.', 'info');
+            showToast(this, 'Info', 'All tokens already added.', 'info');
             return;
         }
         // Add a new row with empty asset and id for now

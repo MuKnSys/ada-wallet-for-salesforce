@@ -241,14 +241,14 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         if (!this.librariesLoaded) {
             this.errorMessage = 'Libraries not loaded. Please try again.';
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
             this.isLoading = false;
             return;
         }
 
         if (!this.selectedWalletSetId) {
             this.pickerErrorMessage = 'Please select a Wallet Set.';
-            this.showToast('Error', this.pickerErrorMessage, 'error');
+            showToast(this, 'Error', this.pickerErrorMessage, 'error');
             this.isLoading = false;
             return;
         }
@@ -258,7 +258,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             const wordCount = enteredPhrase.split(' ').length;
             if (!enteredPhrase || wordCount !== this.seedPhraseWordCount) {
                 this.seedPhraseErrorMessage = `Please enter all ${this.seedPhraseWordCount} words correctly.`;
-                this.showToast('Error', this.seedPhraseErrorMessage, 'error');
+                showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
                 this.isLoading = false;
                 return;
             }
@@ -274,13 +274,13 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
                 if (!isValid) {
                     this.seedPhraseErrorMessage = 'Seed phrase is incorrect. Please check your entries.';
-                    this.showToast('Error', this.seedPhraseErrorMessage, 'error');
+                    showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
                     this.isLoading = false;
                     return;
                 }
             } catch (error) {
                 this.seedPhraseErrorMessage = error.body?.message || error.message;
-                this.showToast('Error', this.seedPhraseErrorMessage, 'error');
+                showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
                 this.isLoading = false;
                 return;
             }
@@ -292,7 +292,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.resetForm();
         } catch (error) {
             this.errorMessage = 'Wallet creation failed: ' + (error.message || error);
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;
             this.currentStep = '';
@@ -321,7 +321,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.activeInputIndex = -1;
         } catch (error) {
             this.errorMessage = 'Failed to initialize seed phrase verification: ' + (error.message || error);
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
         }
     }
 
@@ -748,7 +748,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         const message = error.body?.message || error.message || 'Unknown error';
         const fullMessage = context ? `${context}: ${message}` : message;
         this.errorMessage = fullMessage;
-        this.showToast('Error', fullMessage, 'error');
+        showToast(this, 'Error', fullMessage, 'error');
         return fullMessage;
     }
 

@@ -1,10 +1,10 @@
 import { LightningElement, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 
 import bipLibrary from '@salesforce/resourceUrl/bip39';
 import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
+import { showToast } from 'c/utils';
 
 import { labels } from './labels';
 
@@ -96,7 +96,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                 
             })
             .catch(error => {                
-                this.showToast('Error', this.labels.ERROR.BipLibrary + ' ' + error.message, 'error');
+                showToast(this, 'Error', this.labels.ERROR.BipLibrary + ' ' + error.message, 'error');
             });
     }
 
@@ -120,7 +120,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         if (this.walletName) {
             if (this.isCreatingNew) {
                 if (!this.isLibraryLoaded || !window.bip39) {
-                    this.showToast('Error', this.labels.ERROR.Library, 'error');
+                    showToast(this, 'Error', this.labels.ERROR.Library, 'error');
                     return;
                 }
 
@@ -144,7 +144,7 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     this.step1 = false;
                     this.step2 = true;
                 } catch (error) {
-                    this.showToast('Error', this.labels.ERROR.Generate + ' ' + error.message, 'error');
+                    showToast(this, 'Error', this.labels.ERROR.Generate + ' ' + error.message, 'error');
                 }
             } else {
                 this.step1 = false;
@@ -255,21 +255,21 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             const expectedLength = parseInt(this.selectedWordCount);
             if (enteredWords.length !== expectedLength) {
                 this.errorMessage = `${this.labels.ERROR.WordCount} ${expectedLength} words.`;
-                this.showToast('Error', this.errorMessage, 'error');
+                showToast(this, 'Error', this.errorMessage, 'error');
                 return;
             }
 
             await this.processImport(enteredWords);
         } catch (error) {
             this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message);
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
         }
     }
 
     async processImport(enteredWords) {
         const seedPhraseString = enteredWords.join(' ');
         if (!window.bip39.validateMnemonic(seedPhraseString)) {
-            this.showToast('Error', this.labels.ERROR.Invalid, 'error');
+            showToast(this, 'Error', this.labels.ERROR.Invalid, 'error');
             return;
         }
         
@@ -289,11 +289,11 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     actionName: 'view'
                 }
             }, true);
-            this.showToast('Success', this.labels.SUCCESS.Import, 'success');
+            showToast(this, 'Success', this.labels.SUCCESS.Import, 'success');
 
         } catch (error) {
             this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message || 'Unknown error');
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;
         }
@@ -415,27 +415,18 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                         actionName: 'view'
                     }
                 }, true);
-                this.showToast('Success', this.labels.SUCCESS.Create, 'success');
+                showToast(this, 'Success', this.labels.SUCCESS.Create, 'success');
             } catch (error) {
                 this.errorMessage = this.labels.ERROR.Create + ' ' + (error.body?.message || error.message);
-                this.showToast('Error', this.errorMessage, 'error');
+                showToast(this, 'Error', this.errorMessage, 'error');
             } finally {
                 this.isLoading = false;
             }
         } else {
             this.errorMessage = this.labels.ERROR.Verification;
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
         }
     }
 
-    showToast(title, message, variant, options = {}) {
-        const event = new ShowToastEvent({
-            title,
-            message,
-            variant,
-            messageData: options.url ? [{url: options.url, label: options.label}] : [],
-            mode: 'sticky'
-        });
-        this.dispatchEvent(event);
-    }
+
 }
