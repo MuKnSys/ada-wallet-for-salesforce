@@ -12,24 +12,14 @@ import createOutboundTransaction from '@salesforce/apex/TransactionController.cr
 import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
 import { showToast } from 'c/utils';
 
-
 export default class Wallet extends LightningElement {
     CHANNEL_NAME = '/event/WalletSyncEvent__e';
-    
-    // Temporary dummy functions to replace missing Apex methods
-    async getWalletTransactions(params) {
-        return { success: true, transactions: [], message: 'Method not yet implemented' };
-    }
-    
-    async getAllUtxoAssetsForWallet(params) {
-        return { success: true, assets: [], message: 'Method not yet implemented' };
-    }
-    
+
     _recordId;
     _inboundTransactions = [];
     _outboundTransactions = [];
     eventSubscription = null;
-    
+
     @track balance = '0';
     @track paymentAddress = 'Loading payment address...';
     @track showReceive = false;
@@ -74,7 +64,6 @@ export default class Wallet extends LightningElement {
         }
     }
 
-    // Computed properties for step visibility
     get isStep1() {
         return this.currentStep === 1;
     }
@@ -87,7 +76,6 @@ export default class Wallet extends LightningElement {
         return !this.sendRecipient || this.sendRecipient.trim() === '';
     }
 
-    // Step indicator classes
     get step1Class() {
         if (this.currentStep === 1) {
             return 'step active';
@@ -123,6 +111,79 @@ export default class Wallet extends LightningElement {
         return this.sendMemo ? this.sendMemo.length : 0;
     }
 
+    get safeTokens() {
+        return Array.isArray(this.tokens) ? this.tokens : [];
+    }
+
+    get sortedInboundTransactions() {
+        return [...this.inboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    }
+
+    get sortedOutboundTransactions() {
+        return [...this.outboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    }
+
+    get visibleInboundTransactions() {
+        return this.showAllInbound ? this.sortedInboundTransactions : this.sortedInboundTransactions.slice(0, 3);
+    }
+
+    get visibleOutboundTransactions() {
+        return this.showAllOutbound ? this.sortedOutboundTransactions : this.sortedOutboundTransactions.slice(0, 3);
+    }
+
+    get inboundHasMore() {
+        return this.sortedInboundTransactions.length > 3 && !this.showAllInbound;
+    }
+
+    get outboundHasMore() {
+        return this.sortedOutboundTransactions.length > 3 && !this.showAllOutbound;
+    }
+
+    get outboundTransactionsWithUrl() {
+        return (this.outboundTransactions || []).map(tx => ({
+            ...tx,
+            cardanoScanUrl: tx.Transaction_Hash__c ? `https://cardanoscan.io/transaction/${tx.Transaction_Hash__c}` : null
+        }));
+    }
+
+    get outboundTransactionsForDisplay() {
+        return this.visibleOutboundTransactions.map(tx => {
+            const hash = tx.Transaction_Hash__c;
+            let cardanoScanUrl = '';
+            if (hash && typeof hash === 'string' && hash.length > 0) {
+                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
+            }
+            return {
+                ...tx,
+                Transaction_Hash__c: hash,
+                Transaction_Status__c: tx.Transaction_Status__c || '',
+                cardanoScanUrl
+            };
+        });
+    }
+
+    set inboundTransactions(value) {
+        this._inboundTransactions = (value || []).map(tx => ({
+            ...tx,
+            formattedDate: this.formatDate(tx.CreatedDate)
+        }));
+    }
+
+    get inboundTransactions() {
+        return this._inboundTransactions || [];
+    }
+
+    set outboundTransactions(value) {
+        this._outboundTransactions = (value || []).map(tx => ({
+            ...tx,
+            formattedDate: this.formatDate(tx.CreatedDate)
+        }));
+    }
+
+    get outboundTransactions() {
+        return this._outboundTransactions || [];
+    }
+    
     connectedCallback() {
         this.subscribeToWalletSyncEvent();
         if (this.recordId) {
@@ -135,7 +196,6 @@ export default class Wallet extends LightningElement {
         this.unsubscribeFromWalletSyncEvent();
     }
 
-
     async renderedCallback() {
         if (!this.isQrCodeLibraryLoaded) {            
             await this.loadQrCodeLibrary();
@@ -145,7 +205,31 @@ export default class Wallet extends LightningElement {
             this.generateQrCode();
         }
     }
+    
+    subscribeToWalletSyncEvent() {
+        if (!this.eventSubscription) {
+            const replayId = -1; // -1 for all retained events
+            
+            this.eventSubscription = subscribe(this.CHANNEL_NAME, replayId, (event) => {
+                this.handleWalletSyncEvent(event);
+            });
+        }
+    }
 
+    unsubscribeFromWalletSyncEvent() {
+        if (this.eventSubscription) {
+            unsubscribe(this.eventSubscription);
+            this.eventSubscription = null;
+        }
+    }
+
+    handleWalletSyncEvent(event) {
+        const { WalletId__c } = event.data.payload;
+        if (WalletId__c === this.recordId) {
+            this.fetchUtxoCounts();
+        }
+    }
+    
     async loadQrCodeLibrary() {
         try {
             await loadScript(this, qrcodeLibrary);
@@ -153,44 +237,28 @@ export default class Wallet extends LightningElement {
         } catch (error) {
             showToast(this, 'Error', 'Failed to load QR Code library.', 'error');
         }
-    }    
-
-    // Lightweight initialization
-    async initializeWallet() {
-        this.balance = '0';
-        this.paymentAddress = 'Loading payment address...';
-        this.isLoading = false;
     }
-
+    
     async fetchUtxoCounts() {
         try {
-            // Get asset summary using new method that properly handles ADA conversion
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
-            console.log('[WALLET] Asset summary:', summary);
-            // Fetch all UTXO assets for the wallet
             const allAssets = await this.getAllUtxoAssetsForWallet({ walletId: this.recordId });
-            console.log('[WALLET] All UTXO assets:', allAssets);
             
             if (summary.success) {
                 const tokens = summary.tokens || [];
                 const adaBalance = summary.adaBalance || 0;
                 
-                // Set ADA balance (already converted from lovelace using Value__c field)
-                this.balance = this.formatNumber(adaBalance, 6); // ADA uses 6 decimal places
+                this.balance = this.formatNumber(adaBalance, 6);
 
-                // Build assets list for tokens (non-ADA assets)
                 const assetRows = [];
                 tokens.forEach(token => {
-                    // Use the actual decimals from the asset metadata, fallback to 0 if not available
                     const assetDecimals = token.decimals !== null && token.decimals !== undefined ? token.decimals : 0;
 
-                    // Determine if icon is a base64 or data URI
                     let imgUrl = null;
                     if (token.icon) {
                         if (token.icon.startsWith('data:image/')) {
                             imgUrl = token.icon;
                         } else if (/^[A-Za-z0-9+/=]+$/.test(token.icon) && token.icon.length > 100) {
-                            // Assume base64 string, default to PNG
                             imgUrl = `data:image/png;base64,${token.icon}`;
                         }
                     }
@@ -199,13 +267,13 @@ export default class Wallet extends LightningElement {
                         id: token.unit || token.symbol,
                         name: token.name || token.symbol,
                         symbol: token.symbol || token.unit,
-                        amount: this.formatNumber(token.amount, assetDecimals), // Use actual asset decimals
-                        rawAmount: token.rawAmount, // Keep raw amount for reference
+                        amount: this.formatNumber(token.amount, assetDecimals),
+                        rawAmount: token.rawAmount,
                         decimals: token.decimals,
                         policyId: token.policyId,
                         fingerprint: token.fingerprint,
                         imgUrl: imgUrl,
-                        icon: token.icon, // Use icon from Apex only
+                        icon: token.icon,
                         iconIsImage: token.icon && (token.icon.startsWith('data:image') || token.icon.length > 100)
                     });
                 });
@@ -218,7 +286,6 @@ export default class Wallet extends LightningElement {
                 this.hasAssets = false;
             }
 
-            // Fetch payment address
             const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
             this.paymentAddress = payAddr ? payAddr : 'No unused address available';
             this.isAddressInvalid = !payAddr;
@@ -227,51 +294,30 @@ export default class Wallet extends LightningElement {
             showToast(this, 'Error', message, 'error');
         } finally {
             this.isLoading = false;
-            // Fetch transactions after loading assets
             await this.fetchWalletTransactions();
         }
     }
 
-    async updateWalletBalance() {
-        const summary = await getWalletAssetSummary({ walletId: this.recordId });
-        
-        if (summary.success) {
-            this.balance = this.formatNumber(summary.adaBalance || 0, 6);
-            this.assets = this.buildAssetRows(summary.tokens || []);
-            this.hasAssets = this.assets.length > 0;
-        } else {
-            this.resetWalletData();
+    async fetchWalletTransactions() {
+        try {
+            const result = await getWalletTransactions({ walletId: this.recordId });
+            this._inboundTransactions = result.inbound || [];
+            this._outboundTransactions = result.outbound || [];
+        } catch (error) {
+            this._inboundTransactions = [];
+            this._outboundTransactions = [];
         }
     }
 
-    buildAssetRows(tokens) {
-        return tokens.map(token => ({
-            id: token.unit || token.symbol,
-            name: token.name || token.symbol,
-            symbol: token.symbol || token.unit,
-            amount: this.formatNumber(token.amount, token.decimals || 0),
-            rawAmount: token.rawAmount,
-            decimals: token.decimals,
-            policyId: token.policyId,
-            fingerprint: token.fingerprint,
-            imgUrl: token.icon || null,
-            icon: 'utility:apps'
-        }));
+    // Temporary dummy functions to replace missing Apex methods
+    async getWalletTransactions(params) {
+        return { success: true, transactions: [], message: 'Method not yet implemented' };
     }
-
-    resetWalletData() {
-        this.balance = '0';
-        this.assets = [];
-        this.hasAssets = false;
-        this.transactions = [];
+    
+    async getAllUtxoAssetsForWallet(params) {
+        return { success: true, assets: [], message: 'Method not yet implemented' };
     }
-
-    async updatePaymentAddress() {
-        const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
-        this.paymentAddress = payAddr || 'No unused address available';
-        this.isAddressInvalid = !payAddr;
-    }
-
+    
     generateQrCode() {
         if (!this.isQrCodeLibraryLoaded || !this.paymentAddress || this.isAddressInvalid) {
             this.qrCodeError = true;
@@ -282,12 +328,10 @@ export default class Wallet extends LightningElement {
         try {
             const qrCodeElement = this.template.querySelector('.qr-code-canvas');
             if (qrCodeElement) {
-                // Clear previous QR code by removing all child elements
                 while (qrCodeElement.firstChild) {
                     qrCodeElement.removeChild(qrCodeElement.firstChild);
                 }
                 
-                // Generate new QR code
                 new QRCode(qrCodeElement, {
                     text: this.paymentAddress,
                     width: 200,
@@ -303,7 +347,7 @@ export default class Wallet extends LightningElement {
             showToast(this, 'Error', 'Failed to generate QR code.', 'error');
         }
     }
-
+    
     openReceiveModal() {
         if (this.isAddressInvalid) {
             showToast(this, 'Error', 'Cannot open Receive modal: No valid payment address available.', 'error');
@@ -336,7 +380,7 @@ export default class Wallet extends LightningElement {
     closeSendModal() {
         this.showSend = false;
     }
-
+    
     copyToClipboard() {
         if (navigator.clipboard && this.paymentAddress) {
             navigator.clipboard.writeText(this.paymentAddress).then(() => {
@@ -345,7 +389,6 @@ export default class Wallet extends LightningElement {
                 showToast(this, 'Error', 'Failed to copy address to clipboard.', 'error');
             });
         } else {
-            // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = this.paymentAddress;
             document.body.appendChild(textArea);
@@ -360,6 +403,10 @@ export default class Wallet extends LightningElement {
         }
     }
 
+    shareLink() {
+        showToast(this, 'Info', 'QR Code download functionality not implemented yet.', 'info');
+    }
+    
     handleShowInbound() {
         this.selectedTransactionType = 'inbound';
     }
@@ -368,36 +415,18 @@ export default class Wallet extends LightningElement {
         this.selectedTransactionType = 'outbound';
     }
 
-    shareLink() {
-        showToast(this, 'Info', 'QR Code download functionality not implemented yet.', 'info');
+    handleTransactionTabChange(event) {
+        this.selectedTransactionType = event.target.value;
     }
 
-
-
-    subscribeToWalletSyncEvent() {
-        if (!this.eventSubscription) {
-            const replayId = -1; // -1 for all retained events
-            
-            this.eventSubscription = subscribe(this.CHANNEL_NAME, replayId, (event) => {
-                this.handleWalletSyncEvent(event);
-            });
-        }
+    handleViewAllInbound() {
+        this.showAllInbound = true;
     }
 
-    unsubscribeFromWalletSyncEvent() {
-        if (this.eventSubscription) {
-            unsubscribe(this.eventSubscription);
-            this.eventSubscription = null;
-        }
+    handleViewAllOutbound() {
+        this.showAllOutbound = true;
     }
-
-    handleWalletSyncEvent(event) {
-        const { WalletId__c } = event.data.payload;
-        if (WalletId__c === this.recordId) {
-            this.fetchUtxoCounts();
-        }
-    }
-
+    
     handleAmountChange(event) {
         const newAmount = event.target.value;
         this.sendAmount = newAmount;
@@ -410,7 +439,6 @@ export default class Wallet extends LightningElement {
     }
 
     handleMaxAmount() {
-        // Set the maximum amount to the current wallet balance
         const maxAmount = parseFloat(this.balance);
         
         if (maxAmount > 0) {
@@ -422,36 +450,85 @@ export default class Wallet extends LightningElement {
     }
 
     updateSendState() {
-        // Basic validation - just enable/disable send button based on input
         const amount = parseFloat(this.sendAmount);
         const hasAmount = !isNaN(amount) && amount > 0;
         const hasRecipient = !!this.sendRecipient && this.sendRecipient.trim() !== '';
         const hasAsset = !!this.selectedAsset;
         
-        // Enable send button if we have amount, recipient, and asset
         this.isSendButtonDisabled = !(hasAmount && hasRecipient && hasAsset);
-        this.errorMessage = ''; // Clear any error messages
+        this.errorMessage = '';
     }
 
-    initializeAssetOptions() {
-        // Always include ADA as the first option
-        const options = [
-            { label: 'ADA', value: 'ADA' }
-        ];
+    updateSendStateMultiAsset() {
+        const adaAvailable = parseFloat(this.balance);
+        const adaValid = !!this.adaAmount && parseFloat(this.adaAmount) > 0 && parseFloat(this.adaAmount) <= adaAvailable;
         
-        // Add other assets if available
-        if (this.assets && this.assets.length > 0) {
-            this.assets.forEach(asset => {
-                options.push({
-                    label: `${asset.symbol} (${asset.name})`,
-                    value: asset.symbol
-                });
+        let tokensValid = false;
+        if (this.tokens.length > 0) {
+            tokensValid = this.tokens.every(token => {
+                if (!token.asset || !token.amount) {
+                    return false;
+                }
+                const asset = this.assets.find(a => a.symbol === token.asset);
+                if (!asset) {
+                    return false;
+                }
+                const amount = parseFloat(token.amount);
+                const valid = amount > 0 && amount <= parseFloat(asset.amount);
+                return valid;
             });
         }
         
-        this.assetOptions = options;
+        const hasRecipient = !!this.sendRecipient && this.sendRecipient.trim() !== '' && this.addressValid;
+        
+        const enable = hasRecipient && (adaValid || tokensValid);
+        this.isSendButtonDisabled = !enable;
     }
 
+    async handleSend() {
+        if (this.isSendButtonDisabled) return;
+        this.isLoading = true;
+        try {
+            const assetsArray = [];
+            if (this.adaAmount && parseFloat(this.adaAmount) > 0) {
+                assetsArray.push({ asset: 'ADA', amount: this.adaAmount });
+            }
+            this.tokens.forEach(token => {
+                if (token.asset && token.amount && parseFloat(token.amount) > 0) {
+                    assetsArray.push({ asset: token.asset, amount: token.amount });
+                }
+            });
+            if (assetsArray.length > 1) {
+                const outboundId = await createMultiAssetOutboundTransaction({
+                    walletId: this.recordId,
+                    toAddress: this.sendRecipient,
+                    assets: assetsArray,
+                    memo: this.sendMemo
+                });
+                showToast(this, 'Success', 'Multi-asset transaction created successfully!', 'success');
+            } else if (assetsArray.length === 1) {
+                const outboundId = await createOutboundTransaction({
+                    walletId: this.recordId,
+                    toAddress: this.sendRecipient,
+                    amount: assetsArray[0].amount,
+                    asset: assetsArray[0].asset,
+                    memo: this.sendMemo
+                });
+                showToast(this, 'Success', 'Transaction created successfully!', 'success');
+            } else {
+                showToast(this, 'Error', 'No valid assets to send.', 'error');
+                return;
+            }
+            this.showSend = false;
+            this.fetchUtxoCounts();
+        } catch (error) {
+            showToast(this, 'Error', error.body?.message || error.message || 'Failed to create transaction', 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    // Step Navigation Methods
     nextStep() {
         if (this.validateAddress()) {
             this.currentStep = 2;
@@ -464,197 +541,40 @@ export default class Wallet extends LightningElement {
         this.errorMessage = '';
     }
 
+    // Asset Methods
+    initializeAssetOptions() {
+        const options = [
+            { label: 'ADA', value: 'ADA' }
+        ];
+        
+        if (this.assets && this.assets.length > 0) {
+            this.assets.forEach(asset => {
+                options.push({
+                    label: `${asset.symbol} (${asset.name})`,
+                    value: asset.symbol
+                });
+            });
+        }
+        
+        this.assetOptions = options;
+    }
+
     handleAssetChange(event) {
         this.selectedAsset = event.detail.value;
         this.updateSendState();
     }
 
-    validateAddress() {
-        const address = this.sendRecipient.trim();
-        
-        if (!address) {
-            this.addressError = 'Recipient address is required';
-            this.addressValid = false;
-            return false;
-        }
-        
-        // Basic Cardano address validation (starts with addr1, addr_test1, etc.)
-        const cardanoAddressPattern = /^addr[1-9][a-z0-9]{98}$/;
-        const testAddressPattern = /^addr_test[1-9][a-z0-9]{98}$/;
-        
-        if (!cardanoAddressPattern.test(address) && !testAddressPattern.test(address)) {
-            this.addressError = 'Please enter a valid Cardano address';
-            this.addressValid = false;
-            return false;
-        }
-        
-        this.addressError = '';
-        this.addressValid = true;
-        return true;
-    }
-
-    validateAmount() {
-        const amount = parseFloat(this.sendAmount);
-        
-        if (!this.sendAmount || this.sendAmount.trim() === '') {
-            this.amountError = 'Amount is required';
-            return false;
-        }
-        
-        if (isNaN(amount) || amount <= 0) {
-            this.amountError = 'Please enter a valid amount greater than 0';
-            return false;
-        }
-        
-        // Check if amount exceeds available balance
-        const availableBalance = parseFloat(this.balance) || 0;
-        if (amount > availableBalance) {
-            this.amountError = `Insufficient balance. Available: ${availableBalance} ADA`;
-            return false;
-        }
-        
-        this.amountError = '';
-        return true;
-    }
-
-    updateSendStateMultiAsset() {
-        console.log('[DEBUG] updateSendStateMultiAsset called');
-        console.log(`[DEBUG] adaAmount: ${this.adaAmount}`);
-        console.log(`[DEBUG] tokens:`, this.tokens);
-        // ADA validation
-        const adaAvailable = parseFloat(this.balance);
-        const adaValid = !!this.adaAmount && parseFloat(this.adaAmount) > 0 && parseFloat(this.adaAmount) <= adaAvailable;
-        console.log(`[DEBUG] ADA: amount=${this.adaAmount}, available=${adaAvailable}, valid=${adaValid}`);
-        // Token validation
-        let tokensValid = false;
-        if (this.tokens.length > 0) {
-            tokensValid = this.tokens.every(token => {
-                if (!token.asset || !token.amount) {
-                    console.log(`[DEBUG] Token row invalid: asset=${token.asset}, amount=${token.amount}`);
-                    return false;
-                }
-                const asset = this.assets.find(a => a.symbol === token.asset);
-                if (!asset) {
-                    console.log(`[DEBUG] Token asset not found: ${token.asset}`);
-                    return false;
-                }
-                const amount = parseFloat(token.amount);
-                const valid = amount > 0 && amount <= parseFloat(asset.amount);
-                console.log(`[DEBUG] Token: asset=${token.asset}, amount=${token.amount}, available=${asset.amount}, valid=${valid}`);
-                return valid;
-            });
-        }
-        // Recipient validation
-        const hasRecipient = !!this.sendRecipient && this.sendRecipient.trim() !== '' && this.addressValid;
-        console.log(`[DEBUG] Recipient: value=${this.sendRecipient}, valid=${this.addressValid}`);
-        // Enable send button if recipient is valid AND (ADA is valid OR (at least one token and all tokens valid))
-        const enable = hasRecipient && (adaValid || tokensValid);
-        this.isSendButtonDisabled = !enable;
-        console.log(`[DEBUG] isSendButtonDisabled=${this.isSendButtonDisabled} (hasRecipient=${hasRecipient}, adaValid=${adaValid}, tokensValid=${tokensValid})`);
-    }
-
-    async handleSend() {
-        if (this.isSendButtonDisabled) return;
-        this.isLoading = true;
-        try {
-            // Build the assets array for multi-asset transactions
-            const assetsArray = [];
-            if (this.adaAmount && parseFloat(this.adaAmount) > 0) {
-                assetsArray.push({ asset: 'ADA', amount: this.adaAmount });
+    handleAssetImgError(event) {
+        const symbol = event.target.alt;
+        this.assets = this.assets.map(asset => {
+            if (asset.symbol === symbol) {
+                return { ...asset, showFallbackIcon: true, icon: 'utility:money', imgUrl: null, iconIsImage: false };
             }
-            this.tokens.forEach(token => {
-                if (token.asset && token.amount && parseFloat(token.amount) > 0) {
-                    assetsArray.push({ asset: token.asset, amount: token.amount });
-                }
-            });
-            console.log('[SEND] Assets array to send:', JSON.stringify(assetsArray));
-            console.log('[SEND] Recipient:', this.sendRecipient);
-            // If more than one asset, use multi-asset Apex method
-            if (assetsArray.length > 1) {
-                console.log('[SEND] Calling createMultiAssetOutboundTransaction Apex method');
-                const outboundId = await createMultiAssetOutboundTransaction({
-                    walletId: this.recordId,
-                    toAddress: this.sendRecipient,
-                    assets: assetsArray,
-                    memo: this.sendMemo
-                });
-                console.log('[SEND] Apex returned outboundId:', outboundId);
-                showToast(this, 'Success', 'Multi-asset transaction created successfully!', 'success');
-            } else if (assetsArray.length === 1) {
-                console.log('[SEND] Calling createOutboundTransaction Apex method');
-                const outboundId = await createOutboundTransaction({
-                    walletId: this.recordId,
-                    toAddress: this.sendRecipient,
-                    amount: assetsArray[0].amount,
-                    asset: assetsArray[0].asset,
-                    memo: this.sendMemo
-                });
-                console.log('[SEND] Apex returned outboundId:', outboundId);
-                showToast(this, 'Success', 'Transaction created successfully!', 'success');
-            } else {
-                showToast(this, 'Error', 'No valid assets to send.', 'error');
-                return;
-            }
-            this.showSend = false;
-            this.fetchUtxoCounts();
-        } catch (error) {
-            console.error('[SEND] Error from Apex:', error);
-            showToast(this, 'Error', error.body?.message || error.message || 'Failed to create transaction', 'error');
-        } finally {
-            this.isLoading = false;
-        }
+            return asset;
+        });
     }
-
-    async fetchWalletTransactions() {
-        try {
-            const result = await getWalletTransactions({ walletId: this.recordId });
-            console.log('[WALLET] Transactions:', result);
-            this._inboundTransactions = result.inbound || [];
-            this._outboundTransactions = result.outbound || [];
-        } catch (error) {
-            this._inboundTransactions = [];
-            this._outboundTransactions = [];
-        }
-    }
-
-
-
-
-    // Helper method to format numbers with proper decimal places
-    formatNumber(value, decimals = 2) {
-        if (value === null || value === undefined || isNaN(value)) {
-            return '0';
-        }
-        
-        const numValue = parseFloat(value);
-        
-        // If decimals is specified, use that for all values
-        if (decimals !== undefined && decimals !== null) {
-            return numValue.toFixed(decimals);
-        }
-        
-        // For very small numbers, show more decimal places
-        if (numValue > 0 && numValue < 0.001) {
-            return numValue.toFixed(6);
-        }
-        
-        // For numbers less than 1, show 3 decimal places
-        if (numValue < 1) {
-            return numValue.toFixed(3);
-        }
-        
-        // For larger numbers, show appropriate decimal places
-        if (numValue >= 1000000) {
-            return (numValue / 1000000).toFixed(2) + 'M';
-        } else if (numValue >= 1000) {
-            return (numValue / 1000).toFixed(2) + 'K';
-        } else {
-            return numValue.toFixed(2);
-        }
-    }
-
+    
     getTokenOptions() {
-        // Exclude ADA, show only symbol and name in label
         return this.assets
             .filter(asset => asset.symbol !== 'ADA')
             .map(asset => ({
@@ -683,24 +603,18 @@ export default class Wallet extends LightningElement {
         return '';
     }
 
-    get safeTokens() {
-        return Array.isArray(this.tokens) ? this.tokens : [];
-    }
-
     handleAdaAmountChange(event) {
         this.adaAmount = event.target.value;
         this.updateSendStateMultiAsset();
     }
 
     addToken() {
-        // Prevent adding duplicate token rows for the same asset
         const usedTickers = this.tokens.map(t => t.asset).filter(Boolean);
         const availableOptions = this.tokenOptions.filter(opt => !usedTickers.includes(opt.value));
         if (availableOptions.length === 0) {
             showToast(this, 'Info', 'All tokens already added.', 'info');
             return;
         }
-        // Add a new row with empty asset and id for now
         this.tokens = [
             ...this.tokens,
             { id: '', asset: '', amount: '', available: '', warning: '', placeholder: '' }
@@ -756,8 +670,6 @@ export default class Wallet extends LightningElement {
         });
     }
 
-
-
     handleSendMaxToken(event) {
         const index = parseInt(event.target.dataset.index, 10);
         const token = this.tokens[index];
@@ -770,69 +682,85 @@ export default class Wallet extends LightningElement {
         this.updateTokenComputedFields();
         this.updateSendStateMultiAsset();
     }
-
-    handleTransactionTabChange(event) {
-        this.selectedTransactionType = event.target.value;
-    }
-
-    get outboundTransactionsWithUrl() {
-        return (this.outboundTransactions || []).map(tx => ({
-            ...tx,
-            cardanoScanUrl: tx.Transaction_Hash__c ? `https://cardanoscan.io/transaction/${tx.Transaction_Hash__c}` : null
-        }));
-    }
-
-    get outboundTransactionsForDisplay() {
-        // Always provide Transaction_Hash__c, Transaction_Status__c, and cardanoScanUrl for template
-        return this.visibleOutboundTransactions.map(tx => {
-            const hash = tx.Transaction_Hash__c;
-            let cardanoScanUrl = '';
-            if (hash && typeof hash === 'string' && hash.length > 0) {
-                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
-            }
-            return {
-                ...tx,
-                Transaction_Hash__c: hash,
-                Transaction_Status__c: tx.Transaction_Status__c || '',
-                cardanoScanUrl
-            };
-        });
-    }
-
-    handleAssetImgError(event) {
-        const symbol = event.target.alt;
-        this.assets = this.assets.map(asset => {
-            if (asset.symbol === symbol) {
-                return { ...asset, showFallbackIcon: true, icon: 'utility:money', imgUrl: null, iconIsImage: false };
-            }
-            return asset;
-        });
-    }
-
+    
     handleMemoChange(event) {
         this.sendMemo = event.target.value;
-        console.log('[WALLET] Memo changed:', this.sendMemo);
-        console.log('[WALLET] Memo length:', this.sendMemo.length);
+    }
+    
+    validateAddress() {
+        const address = this.sendRecipient.trim();
+        
+        if (!address) {
+            this.addressError = 'Recipient address is required';
+            this.addressValid = false;
+            return false;
+        }
+        
+        const cardanoAddressPattern = /^addr[1-9][a-z0-9]{98}$/;
+        const testAddressPattern = /^addr_test[1-9][a-z0-9]{98}$/;
+        
+        if (!cardanoAddressPattern.test(address) && !testAddressPattern.test(address)) {
+            this.addressError = 'Please enter a valid Cardano address';
+            this.addressValid = false;
+            return false;
+        }
+        
+        this.addressError = '';
+        this.addressValid = true;
+        return true;
     }
 
-    get sortedInboundTransactions() {
-        return [...this.inboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    validateAmount() {
+        const amount = parseFloat(this.sendAmount);
+        
+        if (!this.sendAmount || this.sendAmount.trim() === '') {
+            this.amountError = 'Amount is required';
+            return false;
+        }
+        
+        if (isNaN(amount) || amount <= 0) {
+            this.amountError = 'Please enter a valid amount greater than 0';
+            return false;
+        }
+        
+        const availableBalance = parseFloat(this.balance) || 0;
+        if (amount > availableBalance) {
+            this.amountError = `Insufficient balance. Available: ${availableBalance} ADA`;
+            return false;
+        }
+        
+        this.amountError = '';
+        return true;
     }
-    get sortedOutboundTransactions() {
-        return [...this.outboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    
+    formatNumber(value, decimals = 2) {
+        if (value === null || value === undefined || isNaN(value)) {
+            return '0';
+        }
+        
+        const numValue = parseFloat(value);
+        
+        if (decimals !== undefined && decimals !== null) {
+            return numValue.toFixed(decimals);
+        }
+        
+        if (numValue > 0 && numValue < 0.001) {
+            return numValue.toFixed(6);
+        }
+        
+        if (numValue < 1) {
+            return numValue.toFixed(3);
+        }
+        
+        if (numValue >= 1000000) {
+            return (numValue / 1000000).toFixed(2) + 'M';
+        } else if (numValue >= 1000) {
+            return (numValue / 1000).toFixed(2) + 'K';
+        } else {
+            return numValue.toFixed(2);
+        }
     }
-    get visibleInboundTransactions() {
-        return this.showAllInbound ? this.sortedInboundTransactions : this.sortedInboundTransactions.slice(0, 3);
-    }
-    get visibleOutboundTransactions() {
-        return this.showAllOutbound ? this.sortedOutboundTransactions : this.sortedOutboundTransactions.slice(0, 3);
-    }
-    handleViewAllInbound() {
-        this.showAllInbound = true;
-    }
-    handleViewAllOutbound() {
-        this.showAllOutbound = true;
-    }
+
     formatDate(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -841,31 +769,50 @@ export default class Wallet extends LightningElement {
             hour: '2-digit', minute: '2-digit', hour12: true
         });
     }
-
-    get inboundHasMore() {
-        return this.sortedInboundTransactions.length > 3 && !this.showAllInbound;
+    
+    async initializeWallet() {
+        this.balance = '0';
+        this.paymentAddress = 'Loading payment address...';
+        this.isLoading = false;
     }
-    get outboundHasMore() {
-        return this.sortedOutboundTransactions.length > 3 && !this.showAllOutbound;
+
+    async updateWalletBalance() {
+        const summary = await getWalletAssetSummary({ walletId: this.recordId });
+        
+        if (summary.success) {
+            this.balance = this.formatNumber(summary.adaBalance || 0, 6);
+            this.assets = this.buildAssetRows(summary.tokens || []);
+            this.hasAssets = this.assets.length > 0;
+        } else {
+            this.resetWalletData();
+        }
     }
 
-    // When preparing transactions for display, add formattedDate property
-    set inboundTransactions(value) {
-        this._inboundTransactions = (value || []).map(tx => ({
-            ...tx,
-            formattedDate: this.formatDate(tx.CreatedDate)
+    buildAssetRows(tokens) {
+        return tokens.map(token => ({
+            id: token.unit || token.symbol,
+            name: token.name || token.symbol,
+            symbol: token.symbol || token.unit,
+            amount: this.formatNumber(token.amount, token.decimals || 0),
+            rawAmount: token.rawAmount,
+            decimals: token.decimals,
+            policyId: token.policyId,
+            fingerprint: token.fingerprint,
+            imgUrl: token.icon || null,
+            icon: 'utility:apps'
         }));
     }
-    get inboundTransactions() {
-        return this._inboundTransactions || [];
+
+    resetWalletData() {
+        this.balance = '0';
+        this.assets = [];
+        this.hasAssets = false;
+        this.transactions = [];
     }
-    set outboundTransactions(value) {
-        this._outboundTransactions = (value || []).map(tx => ({
-            ...tx,
-            formattedDate: this.formatDate(tx.CreatedDate)
-        }));
-    }
-    get outboundTransactions() {
-        return this._outboundTransactions || [];
+
+    async updatePaymentAddress() {
+        const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
+        this.paymentAddress = payAddr || 'No unused address available';
+        this.isAddressInvalid = !payAddr;
     }
 }
