@@ -29,7 +29,8 @@ private class CreateNewWalletCtrlTest {
             TEST_ADDRESS,
             TEST_PRIVATE_KEY,
             TEST_PUBLIC_KEY,
-            TEST_ACCOUNT_INDEX
+            TEST_ACCOUNT_INDEX,
+            'stake1u98ujxfgvdm2ylac9t3aa6atp3cf3kmjcg8h8weqnj7ad6gq3p9jl'
         );
         Test.stopTest();
 
