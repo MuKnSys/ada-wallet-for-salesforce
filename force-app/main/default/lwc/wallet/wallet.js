@@ -6,8 +6,6 @@ import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
 
 import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
 import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
-import { MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
-import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 import createOutboundTransaction from '@salesforce/apex/TransactionController.createOutboundTransaction';
 // import getWalletTransactions from '@salesforce/apex/UTXOAssetController.getWalletTransactions';
 // import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOAssetController.getAllUtxoAssetsForWallet';
