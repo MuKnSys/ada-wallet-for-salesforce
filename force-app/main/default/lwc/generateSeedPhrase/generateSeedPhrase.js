@@ -9,6 +9,7 @@ import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
 import { labels } from './labels';
 
 export default class GenerateSeedPhrase extends NavigationMixin(LightningElement) {
+    labels = labels;
     @track step0 = true;
     @track step1 = false;
     @track step2 = false;
@@ -24,10 +25,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track originalSeedPhrase = [];
     @track isCreatingNew = false;
     @track selectedWordCount = '24';
-    @track wordCountOptions = [
-        { label: this.labels.WORD_COUNT.Option15, value: '15' },
-        { label: this.labels.WORD_COUNT.Option24, value: '24' }
-    ];
     @track bip39WordList = [];
     @track suggestions = [];
     @track activeInputIndex = -1;
@@ -47,6 +44,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     get showSuggestions() {
         return this.suggestions.length > 0 && this.activeInputIndex >= 0;
+    }
+
+    get wordCountOptions() {
+        return [
+            { label: this.labels?.WORD_COUNT?.Option15 || '15 Words', value: '15' },
+            { label: this.labels?.WORD_COUNT?.Option24 || '24 Words', value: '24' }
+        ];
     }
 
     connectedCallback() {
