@@ -28,6 +28,8 @@ export default class Wallet extends LightningElement {
     }
     
     _recordId;
+    _inboundTransactions = [];
+    _outboundTransactions = [];
     eventSubscription = null;
     
     @track balance = '0';
@@ -54,8 +56,6 @@ export default class Wallet extends LightningElement {
     @track adaAmount = '';
     @track tokens = [];
     @track tokenOptions = [];
-    @track inboundTransactions = [];
-    @track outboundTransactions = [];
     @track selectedTransactionType = 'inbound';
     @track sendMemo = '';
     @track showAllInbound = false;
@@ -116,18 +116,25 @@ export default class Wallet extends LightningElement {
     get isInboundSelected() {
         return this.selectedTransactionType === 'inbound';
     }
+
     get isOutboundSelected() {
         return this.selectedTransactionType === 'outbound';
-    }
-    handleShowInbound() {
-        this.selectedTransactionType = 'inbound';
-    }
-    handleShowOutbound() {
-        this.selectedTransactionType = 'outbound';
     }
 
     get memoCharCount() {
         return this.sendMemo ? this.sendMemo.length : 0;
+    }
+
+    connectedCallback() {
+        this.subscribeToWalletSyncEvent();
+        if (this.recordId) {
+            this.isLoading = true;
+            this.fetchUtxoCounts();
+        }
+    }
+
+    disconnectedCallback() {
+        this.unsubscribeFromWalletSyncEvent();
     }
 
 
@@ -163,7 +170,7 @@ export default class Wallet extends LightningElement {
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
             console.log('[WALLET] Asset summary:', summary);
             // Fetch all UTXO assets for the wallet
-            const allAssets = await getAllUtxoAssetsForWallet({ walletId: this.recordId });
+            const allAssets = await this.getAllUtxoAssetsForWallet({ walletId: this.recordId });
             console.log('[WALLET] All UTXO assets:', allAssets);
             
             if (summary.success) {
@@ -355,6 +362,14 @@ export default class Wallet extends LightningElement {
         }
     }
 
+    handleShowInbound() {
+        this.selectedTransactionType = 'inbound';
+    }
+    
+    handleShowOutbound() {
+        this.selectedTransactionType = 'outbound';
+    }
+
     shareLink() {
         this.showToast('Info', 'QR Code download functionality not implemented yet.', 'info');
     }
@@ -366,18 +381,6 @@ export default class Wallet extends LightningElement {
             variant: variant,
         });
         this.dispatchEvent(evt);
-    }
-
-    connectedCallback() {
-        this.subscribeToWalletSyncEvent();
-        if (this.recordId) {
-            this.isLoading = true;
-            this.fetchUtxoCounts();
-        }
-    }
-
-    disconnectedCallback() {
-        this.unsubscribeFromWalletSyncEvent();
     }
 
     subscribeToWalletSyncEvent() {
@@ -615,11 +618,11 @@ export default class Wallet extends LightningElement {
         try {
             const result = await getWalletTransactions({ walletId: this.recordId });
             console.log('[WALLET] Transactions:', result);
-            this.inboundTransactions = result.inbound || [];
-            this.outboundTransactions = result.outbound || [];
+            this._inboundTransactions = result.inbound || [];
+            this._outboundTransactions = result.outbound || [];
         } catch (error) {
-            this.inboundTransactions = [];
-            this.outboundTransactions = [];
+            this._inboundTransactions = [];
+            this._outboundTransactions = [];
         }
     }
 

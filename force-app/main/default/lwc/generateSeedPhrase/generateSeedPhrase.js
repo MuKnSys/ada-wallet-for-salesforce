@@ -24,14 +24,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track originalSeedPhrase = [];
     @track isCreatingNew = false;
     @track selectedWordCount = '24';
-    @track wordCountOptions = [
-        { label: this.labels.WORD_COUNT.Option15, value: '15' },
-        { label: this.labels.WORD_COUNT.Option24, value: '24' }
-    ];
+    @track wordCountOptions = [];
     @track bip39WordList = [];
     @track suggestions = [];
     @track activeInputIndex = -1;
     @track activeVerificationInputIndex = -1;
+
+    labels = labels;
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -67,6 +66,13 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.suggestions = [];
         this.activeInputIndex = -1;
         this.activeVerificationInputIndex = -1;
+        
+        // Initialize word count options
+        this.wordCountOptions = [
+            { label: this.labels.WORD_COUNT.Option15, value: '15' },
+            { label: this.labels.WORD_COUNT.Option24, value: '24' }
+        ];
+        
         this.initializeImportInputs();
     }
 
