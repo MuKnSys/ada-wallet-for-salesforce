@@ -1,9 +1,33 @@
 <template>
-    <template if:true={isLoading}>
-        <div class="slds-box slds-theme_default slds-p-around_medium slds-align_absolute-center">
-            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+    <lightning-card title={labels.UI.CardTitle} icon-name="standard:address">
+        <div class="slds-p-around_medium">
+            <!-- Sync Button -->
+            <div>
+                <lightning-button 
+                    label={labels.SYNC.Button}
+                    variant="brand" 
+                    onclick={handleSyncAssets}
+                    disabled={isLoading}>
+                </lightning-button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <template lwc:if={isLoading}>
+                <div class="slds-is-relative slds-m-top_medium">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                    <span class="slds-p-left_small">{labels.SYNC.LoadingText}</span>
+                </div>
+            </template>
+
+            <!-- Error Message -->
+            <template lwc:if={error}>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <div class="slds-text-heading_small">{labels.ERROR.Prefix} {error}</div>
+                </div>
+            </template>
         </div>
-    </template>
+    </lightning-card>
     <template if:true={showSuccess}>
         <div class="slds-box slds-theme_default slds-p-around_medium slds-align_absolute-center">
             Assets and Transactions synced for UTXO Address

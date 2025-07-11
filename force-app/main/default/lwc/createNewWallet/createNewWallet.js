@@ -1,7 +1,7 @@
 import { LightningElement, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
+import { showToast } from 'c/utils';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -12,7 +12,6 @@ import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     // Configuration constants
@@ -158,7 +157,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         } catch (error) {
             this.errorMessage = 'Library loading failed: ' + (error.message || error);
-            this.showToast('Error', this.errorMessage, 'error');
+            showToast(this, 'Error', this.errorMessage, 'error');
             setTimeout(() => this.loadLibraries(), 2000);
         }
     }
@@ -226,7 +225,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 const errorMessage = await isIndexValid({ walletSetId: this.selectedWalletSetId, accountIndex: parseInt(newIndex) });
                 if (errorMessage) {
                     this.accountIndexErrorMessage = errorMessage;
-                    this.showToast('Error', errorMessage, 'error');
+                    showToast(this, 'Error', errorMessage, 'error');
                 }
             } catch (error) {
                 this.handleError(error, 'Failed to validate account index');
@@ -289,7 +288,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
         try {
             await this.createWallet();
-            this.showToast('Success', `Wallet "${this.walletName}" created successfully`, 'success');
+            showToast(this, 'Success', `Wallet "${this.walletName}" created successfully`, 'success');
             this.resetForm();
         } catch (error) {
             this.errorMessage = 'Wallet creation failed: ' + (error.message || error);
@@ -464,9 +463,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         // Phase 2: Create UTXO records
         await this.createUTXORecords(addresses, typeLabel, walletId);
 
-        // Phase 3: Sync assets and transactions
-        await this.syncAddresses(addresses, typeLabel);
-
         return addresses;
     }
 
@@ -581,57 +577,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         }
     }
 
-    async syncAddresses(addresses, typeLabel) {
-        this.updateProgress(`Syncing ${typeLabel} assets & transactions`, 
-            `Syncing blockchain data for ${addresses.length} addresses...`);
-
-        let syncedCount = 0;
-        let totalUsedAddresses = 0;
-
-        for (let i = 0; i < addresses.length; i++) {
-            const address = addresses[i];
-            
-            if (!address.utxoAddressId) continue;
-
-            this.updateProgress(`Syncing ${typeLabel} address #${address.index}`, 
-                `${i + 1}/${addresses.length}...`);
-            
-            try {
-                const syncResult = await syncAssetsAndTransactions({ utxoAddressId: address.utxoAddressId });
-                
-                address.syncResult = syncResult;
-                address.syncSuccess = syncResult.success;
-                
-                if (syncResult.success && syncResult.statistics) {
-                    const stats = syncResult.statistics;
-                    const actuallyUsed = this.isAddressActuallyUsed(stats);
-                    address.actuallyUsed = actuallyUsed;
-                    
-                    if (actuallyUsed) totalUsedAddresses++;
-                }
-                
-                syncedCount++;
-            } catch (error) {
-                address.syncError = error.message;
-                address.syncSuccess = false;
-                
-                this.updateProgress(`Sync failed for ${typeLabel} address #${address.index}`, 
-                    error.message);
-            }
-        }
-
-        this.updateProgress(`Synced ${syncedCount}/${addresses.length} ${typeLabel} addresses`, 
-            `${totalUsedAddresses} actually used`);
-    }
-
-    isAddressActuallyUsed(stats) {
-        const assetsInserted = stats.assetsInserted || 0;
-        const assetsUpdated = stats.assetsUpdated || 0;
-        const transactionsInserted = stats.transactionsInserted || 0;
-        const transactionsUpdated = stats.transactionsUpdated || 0;
-        
-        return assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
-    }
 
     async createWallet() {
         // Validate account index before proceeding
@@ -767,11 +712,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.seedPhraseWordCount = 24;
     }
 
-    showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({ title, message, variant })
-        );
-    }
+
 
     // Validation helper methods
     validateWalletSetId(walletSetId) {

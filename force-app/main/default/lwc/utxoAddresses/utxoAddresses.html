@@ -6,7 +6,10 @@
                     <h2 class="slds-text-heading_small">
                         UTXO Addresses ({currentTabLabel}: {currentTabCount})
                     </h2>
-                </div>
+                    <h2 class="slds-text-heading_small">
+                        Unused: {currentUnusedCount}
+                    </h2>
+                </div>                
                 <div class="slds-col">
                     <template lwc:if={hasSeedPhrasePermission}>
                         <lightning-button

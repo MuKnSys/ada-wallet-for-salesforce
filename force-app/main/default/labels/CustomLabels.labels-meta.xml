@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
     <labels>
+        <fullName>AdaWalletsSetup_BlockfrostGetConfigAPIError</fullName>
+        <categories>apex, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup EntityPublicKey API Error</shortDescription>
+        <value>Error retrieveing the Blockfrost configuration.</value>
+    </labels>
+    <labels>
         <fullName>AdaWalletsSetup_BlockfrostHeader</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
@@ -31,7 +39,15 @@
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Blockfrost Project Id Input Header</shortDescription>
         <value>Blockfrost Project ID</value>
-    </labels>    
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostRemoveConfiguration</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Remove Configuration</shortDescription>
+        <value>Remove</value>
+    </labels>
     <labels>
         <fullName>AdaWalletsSetup_BlockfrostSaveConfiguration</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
@@ -41,12 +57,12 @@
         <value>Save Configuration</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_BlockfrostRemoveConfiguration</fullName>
+        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationButtonLabel</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Blockfrost Remove Configuration</shortDescription>
-        <value>Remove</value>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Button Label</shortDescription>
+        <value>Test Configuration</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_BlockfrostTestConfigurationHeader</fullName>
@@ -65,14 +81,6 @@
         <value>Test your Blockfrost configuration:</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationButtonLabel</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Button Label</shortDescription>
-        <value>Test Configuration</value>
-    </labels>
-    <labels>
         <fullName>AdaWalletsSetup_BlockfrostTestConfigurationResult</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
@@ -81,12 +89,36 @@
         <value>Test Result:</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_BlockfrostGetConfigAPIError</fullName>
-        <categories>apex, AdaWalletsSetup</categories>
+        <fullName>AdaWalletsSetup_Config_Header</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>AdaWalletsSetup EntityPublicKey API Error</shortDescription>
-        <value>Error retrieveing the Blockfrost configuration.</value>
+        <shortDescription>AdaWalletsSetup Config Header</shortDescription>
+        <value>Ada Wallets Setup</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Container</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Container</shortDescription>
+        <value>Container</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Header_1</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Header 1</shortDescription>
+        <value>Ada Wallets</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Header_1_Info</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Header 1 Info</shortDescription>
+        <value>Welcome to Ada Wallets! This powerful tool helps you manage your Cardano wallets with ease. Let&apos;s get started by setting up your environment.</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_LoggingDisableLogging</fullName>
@@ -145,13 +177,21 @@
         <value>Setup Logging</value>
     </labels>
     <labels>
+        <fullName>AdaWalletsSetup_PrivateKey_Button</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Private Key Button</shortDescription>
+        <value>Generate Private Key</value>
+    </labels>
+    <labels>
         <fullName>AdaWalletsSetup_PrivateKey_Info</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Private Key Info</shortDescription>
         <value>A private key is your ultimate security ally! It ensures your Seed phrase stays protected by encrypting it. In this step, we&apos;ll retrieve the private key and securely store it, locking in your data&apos;s safety with precision. Let&apos;s get started!</value>
-    </labels>    
+    </labels>
     <labels>
         <fullName>AdaWalletsSetup_PrivateKey_Sub_Header</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
@@ -161,52 +201,12 @@
         <value>Private Key</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_PrivateKey_Button</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Private Key Button</shortDescription>
-        <value>Generate Private Key</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_Config_Header</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Config Header</shortDescription>
-        <value>Ada Wallets Setup</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_Container</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Container</shortDescription>
-        <value>Container</value>
-    </labels>    
-    <labels>
-        <fullName>AdaWalletsSetup_Header_1</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Header 1</shortDescription>
-        <value>Ada Wallets</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_Header_1_Info</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Header 1 Info</shortDescription>
-        <value>Welcome to Web3! Whether you&apos;re a blockchain pro or new to decentralization, Circle&apos;s Web3 Services Console empowers you to build seamless, secure experiences with Developer-Controlled Wallets. Enjoy advanced security through MPC technology, effortless integration of digital currencies and NFTs, and cross-chain compatibility with Ethereum, Polygon, and Avalanche. Built-in transaction logs, user monitoring, and error reporting ensure reliable operations, while pay-as-you-go pricing lets you start instantly with no upfront costs. Embrace the future of Web3 with unmatched control, security, and simplicity!</value>
-    </labels>    
-    <labels>
         <fullName>AdaWalletsSetup_Success</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Success</shortDescription>
-        <value>Success</value>
+        <value>Success!</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_Success_Info</fullName>
@@ -214,6 +214,318 @@
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Success Info</shortDescription>
-        <value>Saved Ada Wallets settings</value>
-    </labels>   
+        <value>Your Ada Wallets setup is complete! You can now create and manage your Cardano wallets.</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_CardTitle</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Card Title</shortDescription>
+        <value>UTXO Assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_DefaultError</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Default Error</shortDescription>
+        <value>Failed to fetch assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_ErrorPrefix</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Error Prefix</shortDescription>
+        <value>Error fetching assets:</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_LoadingText</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Loading Text</shortDescription>
+        <value>Syncing assets...</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_SuccessMessage</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Success Message</shortDescription>
+        <value>Assets synced successfully</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_SyncButton</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Sync Button</shortDescription>
+        <value>Sync Assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_UnknownError</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Unknown Error</shortDescription>
+        <value>An error occurred</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_CardTitle</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Card Title</shortDescription>
+        <value>Create New Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ChooseMethodHeader</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Choose Method Header</shortDescription>
+        <value>Choose Wallet Set Creation Method</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_CreateNew</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Create New Option</shortDescription>
+        <value>Create New Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_CreateNewDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Create New Description</shortDescription>
+        <value>Generate a new 24-word seed phrase for a fresh wallet set.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_DownloadButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Download Button</shortDescription>
+        <value>Download Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterSeedPhraseDescription</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Description for entering seed phrase</shortDescription>
+        <value>Enter your seed phrase words in the correct order.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterSeedPhraseHeader</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Header for entering seed phrase</shortDescription>
+        <value>Enter Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterWalletNameHeader</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Header for entering wallet name</shortDescription>
+        <value>Enter Wallet Name</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorBipLibrary</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Bip Library Error</shortDescription>
+        <value>Failed to load Bip library:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorCreate</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Create Error</shortDescription>
+        <value>Error creating Wallet Set or navigating:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorGenerate</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Generate Error</shortDescription>
+        <value>Failed to generate seed phrase:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorImport</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Error</shortDescription>
+        <value>Error importing Wallet Set:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorInvalid</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Invalid Error</shortDescription>
+        <value>Seed phrase is invalid</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorLibrary</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Library Error</shortDescription>
+        <value>Cardano library not loaded yet. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorVerification</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Verification Error</shortDescription>
+        <value>Invalid seed phrase. Please check your entries.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorWordCount</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count Error</shortDescription>
+        <value>Seed phrase must contain exactly</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ImportButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Button</shortDescription>
+        <value>Import</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ImportExisting</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Existing Option</shortDescription>
+        <value>Import Existing Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ImportExistingDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Existing Description</shortDescription>
+        <value>Import your existing 15 or 24-word seed phrase to restore your wallet set.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_NextButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Next Button</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SeedPhraseHeader</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Header for seed phrase display</shortDescription>
+        <value>Your Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SeedPhraseWarning</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Warning about seed phrase security</shortDescription>
+        <value>Never share your seed phrase with anyone. Store it securely and offline.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SubmitButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Submit Button</shortDescription>
+        <value>Submit</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SuccessCreate</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Success Create Message</shortDescription>
+        <value>Wallet Set created successfully</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SuccessImport</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Success Import Message</shortDescription>
+        <value>Wallet Set imported successfully</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_VerifySeedPhraseDescription</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Description for verifying seed phrase</shortDescription>
+        <value>Enter the words in the correct order to verify your seed phrase.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_VerifySeedPhraseHeader</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Header for verifying seed phrase</shortDescription>
+        <value>Verify Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WalletNameLabel</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Wallet Name Label</shortDescription>
+        <value>Wallet Set Name</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordCount15</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count 15 Option</shortDescription>
+        <value>15 Words</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordCount24</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count 24 Option</shortDescription>
+        <value>24 Words</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordCountLabel</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count Label</shortDescription>
+        <value>Word Count</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordLabel</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Label</shortDescription>
+        <value>Word</value>
+    </labels>
 </CustomLabels>
