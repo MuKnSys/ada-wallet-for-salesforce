@@ -16,6 +16,7 @@ import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOA
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
 import { isAddressActuallyUsed, truncateText, showToast } from 'c/utils';
+import { labels } from './labels';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @api recordId;
@@ -40,7 +41,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     // Datatable columns
     columns = [
         {
-            label: 'UTXO Address Name',
+            label: labels.COLUMNS.NAME,
             fieldName: 'recordLink',
             type: 'url',
             typeAttributes: {
@@ -50,20 +51,20 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             sortable: true,
             cellAttributes: { class: 'slds-text-link' }
         },
-        { label: 'Path', fieldName: 'Path__c', type: 'text' },
+        { label: labels.COLUMNS.PATH, fieldName: 'Path__c', type: 'text' },
         {
-            label: 'Address',
+            label: labels.COLUMNS.ADDRESS,
             fieldName: 'cardanoScanLink',
             type: 'url',
             typeAttributes: {
                 label: { fieldName: 'truncatedAddress' },
                 target: '_blank',
-                tooltip: 'Go to CardanoScan explorer'
+                tooltip: labels.COLUMNS.CARDANOSCAN_TOOLTIP
             },
             cellAttributes: { class: 'slds-text-link address-link' }
         },
         {
-            label: 'Payment Key Hash',
+            label: labels.COLUMNS.PAYMENT_KEY_HASH,
             fieldName: 'truncatedPaymentKeyHash',
             type: 'text'
         }
@@ -76,6 +77,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     get hasInternalAddresses() {
         return this.internalAddresses?.length > 0;
     }
+
+    labels = labels;
 
     renderedCallback() {
         if (!this.isLibraryLoaded) {            
@@ -104,15 +107,15 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             );
             const failed = loadResults.filter(r => !r.loaded);
             if (failed.length) {
-                throw new Error('Failed to load: ' + failed.map(f => f.name).join(', '));
+                throw new Error(this.labels.ERROR.LIBRARY_LOAD_FAILED + ': ' + failed.map(f => f.name).join(', '));
             }
             if (!window.cardanoSerialization || !window.bip39) {
-                throw new Error('Required libraries (cardanoSerialization or bip39) not properly initialized');
+                throw new Error(this.labels.ERROR.LIBRARY_INIT_ERROR);
             }
             this.isLibraryLoaded = true;
         } catch (error) {
-            this.error = 'Library loading failed: ' + (error.message || error);
-            showToast(this, 'Error', this.error, 'error');
+            this.error = this.labels.ERROR.LIBRARY_LOAD_ERROR + ': ' + (error.message || error);
+            showToast(this, this.labels.UI.ERROR_TITLE, this.error, 'error');
             setTimeout(() => this.loadLibraries(), 2000);
         }
     }
@@ -149,14 +152,14 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             this.updateTabState(this.activeTab);
             this.error = undefined;
         } else if (error) {
-            this.error = error.body?.message || 'Unknown error';
+            this.error = error.body?.message || this.labels.ERROR.UNKNOWN_ERROR;
             this.externalAddresses = [];
             this.internalAddresses = [];
             this.displayedExternalAddresses = [];
             this.displayedInternalAddresses = [];
             this.currentTabCount = 0;
             this.currentUnusedCount = 0;
-            showToast(this, 'Error Loading Addresses', this.error, 'error');
+            showToast(this, this.labels.ERROR.LOAD_ERROR_TITLE, this.error, 'error');
         }
         this.isLoading = false;
     }
@@ -175,11 +178,11 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
     updateTabState(tab) {
         if (tab === 'external') {
-            this.currentTabLabel = 'External';
+            this.currentTabLabel = this.labels.UI.TAB_EXTERNAL;
             this.currentTabCount = this.externalAddresses.length;
             this.currentUnusedCount = this.externalAddresses.filter(addr => !addr.Is_Used__c).length;
         } else if (tab === 'internal') {
-            this.currentTabLabel = 'Internal';
+            this.currentTabLabel = this.labels.UI.TAB_INTERNAL;
             this.currentTabCount = this.internalAddresses.length;
             this.currentUnusedCount = this.internalAddresses.filter(addr => !addr.Is_Used__c).length;
         }
@@ -257,7 +260,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         this.isLoading = true;
         try {
             if (!this.isLibraryLoaded) {
-                throw new Error('Cardano libraries not loaded yet. Please wait and try again.');
+                throw new Error(this.labels.ERROR.LIBRARY_NOT_LOADED);
             }
 
             const type = this.activeTab === 'external' ? '0' : '1'; // '0' for receiving, '1' for change
@@ -269,7 +272,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Fetch wallet data
             const wallet = await getWallet({ walletId: this.recordId });
             if (!wallet || !wallet.Account_Private_Key__c) {
-                throw new Error('Wallet record or Account Private Key not found');
+                throw new Error(this.labels.ERROR.WALLET_NOT_FOUND);
             }
 
             // Setup cryptographic components
@@ -308,7 +311,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Key verification
             const keyMatch = this.verifyKeyMatch(CardanoWasm, utxoPrivateKey, bech32Address);
             if (!keyMatch) {
-                throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${nextIndex}`);
+                throw new Error(this.labels.ERROR.KEY_MISMATCH.replace('{typeLabel}', typeLabel).replace('{index}', nextIndex));
             }
 
             const fullPath = `m/1852'/1815'/${accountIndexNum}'/${chainType}/${nextIndex}`;
@@ -339,10 +342,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
 
-            showToast(this, 'Success', `New ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Address Generated`, 'success');
+            showToast(this, this.labels.SUCCESS.GENERATE_SUCCESS, this.labels.SUCCESS.GENERATE_SUCCESS.replace('{typeLabel}', typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)), 'success');
 
         } catch (error) {
-            showToast(this, 'Error', `Failed to generate address: ${error.message}`, 'error');
+            showToast(this, this.labels.UI.ERROR_TITLE, this.labels.ERROR.GENERATE_ERROR.replace('{error}', error.message), 'error');
         } finally {
             this.isLoading = false;
         }
@@ -353,19 +356,19 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
         try {
             if (!this.isLibraryLoaded) {
-                throw new Error('Cardano libraries not loaded yet. Please wait and try again.');
+                throw new Error(this.labels.ERROR.LIBRARY_NOT_LOADED);
             }
             await this.syncExistingAddresses();
 
             // Refresh data
             await refreshApex(this.wiredAddressesResult);
-            const message = 'UTXO refresh completed.';
+            const message = this.labels.SUCCESS.REFRESH_SUCCESS;
                 
-            showToast(this, 'Success', message, 'success');
+            showToast(this, this.labels.SUCCESS.REFRESH_SUCCESS, message, 'success');
 
         } catch (err) {
-            const msg = err.body?.message || err.message || 'Unknown error';
-            showToast(this, 'Error', `UTXO refresh failed: ${msg}`, 'error');
+            const msg = err.body?.message || err.message || this.labels.ERROR.UNKNOWN_ERROR;
+            showToast(this, this.labels.UI.ERROR_TITLE, this.labels.ERROR.REFRESH_ERROR.replace('{error}', msg), 'error');
         } finally {
             this.isLoading = false;
         }

@@ -633,6 +633,246 @@
         <value>24 words</value>
     </labels>
     <labels>
+        <fullName>UTXOAddresses_CardanoScanTooltip</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses CardanoScan Tooltip</shortDescription>
+        <value>Go to CardanoScan explorer</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnAddress</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Address</shortDescription>
+        <value>Address</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnName</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Name</shortDescription>
+        <value>UTXO Address Name</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnPath</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Path</shortDescription>
+        <value>Path</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnPaymentKeyHash</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Payment Key Hash</shortDescription>
+        <value>Payment Key Hash</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ErrorTitle</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Error Title</shortDescription>
+        <value>Error</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_FilterLabel</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Filter Label</shortDescription>
+        <value>Filter Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_FilterPlaceholder</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Filter Placeholder</shortDescription>
+        <value>Filter by Name, Path, or Address...</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_GenerateError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Generate Error</shortDescription>
+        <value>Failed to generate address: {error}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_GenerateNewAddress</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Generate New Address</shortDescription>
+        <value>Generate New Address</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_GenerateSuccess</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Generate Success</shortDescription>
+        <value>New {typeLabel} Address Generated</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_KeyMismatch</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Key Mismatch</shortDescription>
+        <value>Derived private key does not match address payment key hash for {typeLabel} address #{index}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryInitError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Init Error</shortDescription>
+        <value>Required libraries (cardanoSerialization or bip39) not properly initialized</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryLoadError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Load Error</shortDescription>
+        <value>Library loading failed: {error}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryLoadFailed</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Load Failed</shortDescription>
+        <value>Failed to load: {libraries}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryNotLoaded</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Not Loaded</shortDescription>
+        <value>Cardano libraries not loaded yet. Please wait and try again.</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LoadErrorTitle</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Load Error Title</shortDescription>
+        <value>Error Loading Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Loading</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Loading</shortDescription>
+        <value>Loading addresses...</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_RefreshError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Refresh Error</shortDescription>
+        <value>UTXO refresh failed: {error}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_RefreshSuccess</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Refresh Success</shortDescription>
+        <value>UTXO refresh completed.</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_RefreshUTXOs</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Refresh UTXOs</shortDescription>
+        <value>Refresh UTXOs</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Subtitle</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Subtitle</shortDescription>
+        <value>UTXO Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_TabExternal</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Tab External</shortDescription>
+        <value>External</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_TabInternal</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Tab Internal</shortDescription>
+        <value>Internal</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Title</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Title</shortDescription>
+        <value>UTXO Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_UnknownError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Unknown Error</shortDescription>
+        <value>Unknown error</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Unused</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Unused</shortDescription>
+        <value>Unused</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ViewAll</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses View All</shortDescription>
+        <value>View All</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ViewLess</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses View Less</shortDescription>
+        <value>View Less</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_WalletNotFound</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Wallet Not Found</shortDescription>
+        <value>Wallet record or Account Private Key not found</value>
+    </labels>
+    <labels>
         <fullName>GenerateSeedPhrase_DownloadButton</fullName>
         <categories>lwc, GenerateSeedPhrase</categories>
         <language>en_US</language>
