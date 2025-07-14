@@ -126,8 +126,7 @@ public with sharing class AdaWalletsService {
             Id requiredPsId = [SELECT Id FROM PermissionSet WHERE Name = :permissionSetName LIMIT 1].Id;
             
             return userPermissionSets.contains(requiredPsId);
-        } catch (Exception e) {
-            Logger.logError('Error checking permission set: ' + e.getMessage());
+        } catch (Exception e) {            
             return false;
         }
     }

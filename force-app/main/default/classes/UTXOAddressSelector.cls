@@ -71,8 +71,7 @@ public with sharing class UTXOAddressSelector {
             }
             
             return result;
-        } catch (Exception e) {
-            Logger.logError('Error in getUTXOAddressesWithDecryptedKeysByWalletId: ' + e.getMessage());
+        } catch (Exception e) {            
             throw new AuraHandledException('Error fetching UTXO addresses with decrypted keys: ' + e.getMessage());
         }
     }
@@ -100,8 +99,7 @@ public with sharing class UTXOAddressSelector {
             }
             
             return new UTXOAddressWithDecryptedKey(addr, decryptedKey);
-        } catch (Exception e) {
-            Logger.logError('Error in getUTXOAddressWithDecryptedKeyById: ' + e.getMessage());
+        } catch (Exception e) {            
             throw new AuraHandledException('Error fetching UTXO address with decrypted key: ' + e.getMessage());
         }
     }

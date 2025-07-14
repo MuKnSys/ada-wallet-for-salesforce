@@ -46,7 +46,7 @@ public with sharing class CreateNewWalletCtrl {
             if (wallet == null) {
                 throw new AuraHandledException('Wallet not found for ID: ' + walletId);
             }
-            Logger.logInfo('Retrieved wallet for ID: ' + walletId + ' by User: ' + UserInfo.getName());
+            
             return wallet;
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving wallet: ' + e.getMessage());
@@ -59,13 +59,6 @@ public with sharing class CreateNewWalletCtrl {
     public static Integer getNextAccountIndex(String walletSetId) {
         try {
             List<Wallet__c> wallets = walletSelector.getWalletsByWalletSetId(walletSetId);
-            
-            // If no wallets exist, default to 0
-            if (wallets.isEmpty()) {
-                Logger.logInfo('No wallets found for Wallet Set: ' + walletSetId + ', defaulting to Account Index 0');
-                return 0;
-            }
-
             // Find the first unused index (gap or next after highest)
             Set<Integer> usedIndices = new Set<Integer>();
             for (Wallet__c wallet : wallets) {
@@ -79,10 +72,8 @@ public with sharing class CreateNewWalletCtrl {
                 nextIndex++;
             }
 
-            Logger.logInfo('Next available Account Index for Wallet Set: ' + walletSetId + ' is ' + nextIndex);
             return nextIndex;
-        } catch (Exception e) {
-            Logger.logError('Error getting next account index for Wallet Set: ' + walletSetId + ': ' + e.getMessage());
+        } catch (Exception e) {            
             throw new AuraHandledException('Error getting next account index: ' + e.getMessage());
         } finally {
             Logger.commitLogs();

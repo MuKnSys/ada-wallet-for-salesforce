@@ -176,9 +176,6 @@ public with sharing class TransactionController {
                 throw new AuraHandledException('Asset is required');
             }
 
-            // Log the memo value
-            Logger.logInfo('[TransactionController.createOutboundTransaction] Memo value: ' + memo);
-
             Decimal amountDecimal;
             try {
                 amountDecimal = Decimal.valueOf(amount);

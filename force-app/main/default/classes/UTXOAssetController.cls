@@ -10,25 +10,19 @@ public with sharing class UTXOAssetController {
         asset.Name__c = (unit == 'lovelace' ? 'Cardano' : assetName);
         asset.Icon__c = null;
         
-        // Debug logging for metadata processing
-        Logger.logInfo('[UTXOAssetController.populateAssetFields] 🔍 Processing asset: ' + unit + ' with metadata: ' + (metadata != null ? JSON.serialize(metadata) : 'null'));
-        
         if (unit == 'lovelace') {
             asset.Decimals__c = 6;
             asset.Icon__c = null;
-            Logger.logInfo('[UTXOAssetController.populateAssetFields] 💰 Lovelace asset - setting default values');
         } else {
             // For non-lovelace assets, try to get decimals from metadata
             if (metadata != null) {
                 // Set Policy ID
                 if (metadata.containsKey('policy_id') && metadata.get('policy_id') != null) {
                     asset.Policy_ID__c = String.valueOf(metadata.get('policy_id'));
-                    Logger.logInfo('[UTXOAssetController.populateAssetFields] 🏷️ Set Policy ID: ' + asset.Policy_ID__c);
                 }
                 // Set Fingerprint
                 if (metadata.containsKey('fingerprint') && metadata.get('fingerprint') != null) {
                     asset.Fingerprint__c = String.valueOf(metadata.get('fingerprint'));
-                    Logger.logInfo('[UTXOAssetController.populateAssetFields] 👆 Set Fingerprint: ' + asset.Fingerprint__c);
                 }
                 // Set Decimals from metadata
                 if (metadata.containsKey('metadata') && metadata.get('metadata') != null) {
@@ -42,43 +36,34 @@ public with sharing class UTXOAssetController {
                         } else {
                             asset.Decimals__c = Integer.valueOf(String.valueOf(decimalsObj));
                         }
-                        Logger.logInfo('[UTXOAssetController.populateAssetFields] 🔢 Set Decimals from metadata: ' + asset.Decimals__c);
                     } else {
                         // If no decimals in metadata, default to 0
                         asset.Decimals__c = 0;
-                        Logger.logInfo('[UTXOAssetController.populateAssetFields] 🔢 No decimals in metadata, defaulting to 0');
                     }
                 } else {
                     // If no metadata at all, default to 0
                     asset.Decimals__c = 0;
-                    Logger.logInfo('[UTXOAssetController.populateAssetFields] 🔢 No metadata available, defaulting to 0');
                 }
                 
                 // Set Icon__c from logo if present at top level or in inner metadata
                 if (metadata.containsKey('logo') && metadata.get('logo') != null) {
                     asset.Icon__c = String.valueOf(metadata.get('logo'));
-                    Logger.logInfo('[UTXOAssetController.populateAssetFields] 🖼️ Set Icon from top-level logo: ' + asset.Icon__c);
                 } else if (metadata.containsKey('metadata') && metadata.get('metadata') != null) {
                     Map<String, Object> innerMeta = (Map<String, Object>) metadata.get('metadata');
                     if (innerMeta.containsKey('logo') && innerMeta.get('logo') != null) {
                         asset.Icon__c = String.valueOf(innerMeta.get('logo'));
-                        Logger.logInfo('[UTXOAssetController.populateAssetFields] 🖼️ Set Icon from inner metadata logo: ' + asset.Icon__c);
                     }
                 }
             } else {
                 // If no metadata at all, set defaults
                 asset.Decimals__c = 0;
-                Logger.logInfo('[UTXOAssetController.populateAssetFields] 🔢 No metadata available, defaulting to 0');
             }
         }
         
         // Fallback to default icon if not set
         if (asset.Icon__c == null) {
             asset.Icon__c = 'utility:money';
-            Logger.logInfo('[UTXOAssetController.populateAssetFields] 🖼️ Set default icon: ' + asset.Icon__c);
         }
-        
-        Logger.logInfo('[UTXOAssetController.populateAssetFields] ✅ Final asset values - Asset: ' + asset.Asset__c + ', Name: ' + asset.Name__c + ', Icon: ' + asset.Icon__c + ', Decimals: ' + asset.Decimals__c);
     }
     
     /**
@@ -89,7 +74,6 @@ public with sharing class UTXOAssetController {
     @AuraEnabled
     public static Map<String, Object> syncAssetsAndTransactions(Id utxoAddressId) {
         try {
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🚀 Starting combined sync for address ID: ' + utxoAddressId);
             Long totalStartTime = System.now().getTime();
             
             if (utxoAddressId == null) {
@@ -108,20 +92,15 @@ public with sharing class UTXOAssetController {
                 throw new AuraHandledException('UTXO Address not found');
             }
             
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📍 Processing address: ' + utxoAddress.Address__c);
-            
             // PHASE 1: ALL CALLOUTS FIRST (to avoid callout-after-DML issues)
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📡 Phase 1: Making all API callouts');
             
             // Step 1: Get UTXOs from Blockfrost (for asset calculation)
             String utxoJson = BlockfrostService.getAddressUtxos(utxoAddress.Address__c);
             List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxoJson);
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📦 Found ' + utxoList.size() + ' UTXOs');
 
             // Step 2: Get ALL transactions from Blockfrost (for usage and inbound/outbound analysis)
             String transactionsJson = BlockfrostService.getAddressTransactionsList(utxoAddress.Address__c);
             List<Object> transactionList = (List<Object>) JSON.deserializeUntyped(transactionsJson);
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Found ' + transactionList.size() + ' transactions (from /transactions endpoint)');
             
             // Step 3: Get all wallet addresses for transaction direction analysis
             List<UTXO_Address__c> walletAddresses = [
@@ -134,8 +113,6 @@ public with sharing class UTXOAssetController {
             for (UTXO_Address__c addr : walletAddresses) {
                 walletAddressList.add(addr.Address__c);
             }
-            
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🔍 Analyzing transaction directions for ' + walletAddressList.size() + ' wallet addresses');
             
             // Step 4: Extract transaction hashes and analyze directions
             List<String> txHashes = new List<String>();
@@ -158,40 +135,25 @@ public with sharing class UTXOAssetController {
                 String utxoTxHash = String.valueOf(utxo.get('tx_hash'));
                 if (String.isNotBlank(utxoTxHash)) {
                     inboundTxHashes.add(utxoTxHash);
-                    Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Found inbound transaction from UTXO: ' + utxoTxHash);
                 }
             }
             
             if (!txHashes.isEmpty()) {
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🔍 Analyzing ' + txHashes.size() + ' transactions for direction');
                 String analysisJson = BlockfrostService.analyzeMultipleTransactionDirections(txHashes, walletAddressList);
                 directionAnalysis = (Map<String, Object>) JSON.deserializeUntyped(analysisJson);
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Direction analysis completed, found ' + directionAnalysis.size() + ' results');
                 
                 // Get full transaction details for each transaction
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🔍 Fetching full transaction details for ' + txHashes.size() + ' transactions');
                 for (String txHash : txHashes) {
                     try {
                         String txDetailJson = BlockfrostService.getTransactionDetails(txHash);
                         if (txDetailJson != null && txDetailJson != '{}') {
                             Map<String, Object> txDetail = (Map<String, Object>) JSON.deserializeUntyped(txDetailJson);
                             transactionDetails.put(txHash, txDetail);
-                            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Fetched details for transaction: ' + txHash);
-                        } else {
-                            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⚠️ No details available for transaction: ' + txHash);
                         }
                     } catch (Exception e) {
-                        Logger.logError('[UTXOAssetController.syncAssetsAndTransactions] ❌ Failed to fetch details for transaction: ' + txHash + ' - ' + e.getMessage());
+                        // Continue processing other transactions
                     }
                 }
-                
-                // Debug: Log the analysis results
-                for (String txHash : directionAnalysis.keySet()) {
-                    Map<String, Object> analysis = (Map<String, Object>) directionAnalysis.get(txHash);
-                    Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🔍 Analysis for ' + txHash + ': ' + JSON.serialize(analysis));
-                }
-            } else {
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⚠️ No transaction hashes to analyze');
             }
             
             // Step 6: Process all transactions using UTXO data for direction detection
@@ -210,7 +172,6 @@ public with sharing class UTXOAssetController {
                 if (transactionDetails.containsKey(txHash)) {
                     Map<String, Object> fullDetails = (Map<String, Object>) transactionDetails.get(txHash);
                     enrichedTx.putAll(fullDetails);
-                    Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Merged full details for transaction: ' + txHash);
                 }
                 
                 // Determine direction using UTXO data (more reliable than API analysis)
@@ -218,7 +179,6 @@ public with sharing class UTXOAssetController {
                     // This transaction hash appears in UTXOs, so it's inbound
                     enrichedTx.put('direction', 'incoming');
                     inboundCount++;
-                    Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Inbound transaction confirmed from UTXO: ' + txHash);
                 } else {
                     // This transaction doesn't appear in UTXOs, so it's outbound or external
                     // Use API analysis as fallback
@@ -229,27 +189,21 @@ public with sharing class UTXOAssetController {
                             if (analysis.get('isOutbound') == true) {
                                 enrichedTx.put('direction', 'outgoing');
                                 outboundCount++;
-                                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⏭️ Outbound transaction from API analysis: ' + txHash);
                             } else {
                                 enrichedTx.put('direction', 'external');
-                                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⚠️ External transaction from API analysis: ' + txHash);
                             }
                         } else {
                             // Skip transactions that can't be analyzed - don't include them in response
-                            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⚠️ Skipping transaction with failed analysis: ' + txHash);
                             continue;
                         }
                     } else {
                         // Skip transactions without analysis - don't include them in response
-                        Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⚠️ Skipping transaction without analysis: ' + txHash);
                         continue;
                     }
                 }
                 
                 allTransactions.add(enrichedTx);
             }
-            
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Transaction analysis complete - Total: ' + allTransactions.size() + ', Inbound: ' + inboundCount + ', Outbound: ' + outboundCount);
             
             // Step 7: Collect all unique asset units and fetch metadata
             Set<String> allUnits = new Set<String>();
@@ -276,15 +230,12 @@ public with sharing class UTXOAssetController {
                             unitToMetadata.put(unit, JSON.serialize(assetData));
                         }
                     } catch (Exception e) {
-                        Logger.logError('[UTXOAssetController.syncAssetsAndTransactions] ❌ Failed to fetch metadata for unit: ' + unit + ' - ' + e.getMessage());
+                        // Continue processing other assets
                     }
                 }
             }
             
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Phase 1 complete - All callouts finished');
-            
             // PHASE 2: PROCESS AND SAVE DATA (all DML operations)
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 💾 Phase 2: Processing and saving data');
             
             // Process and aggregate assets
             Map<String, Decimal> unitToTotalAmount = new Map<String, Decimal>();
@@ -357,7 +308,7 @@ public with sharing class UTXOAssetController {
                             }
                         }
                     } catch (Exception e) {
-                        Logger.logError('[UTXOAssetController.syncAssets] ❌ Error parsing metadata for display unit: ' + unit);
+                        // Continue processing other assets
                     }
                 }
                 String intendedUnit = displayUnit;
@@ -392,9 +343,7 @@ public with sharing class UTXOAssetController {
             if (!assetsToDelete.isEmpty()) {
                 delete assetsToDelete;
                 deletedCount = assetsToDelete.size();
-                Logger.logInfo('[UTXOAssetController.syncAssets] ✅ Deleted ' + deletedCount + ' stale assets');
             }
-            Logger.logInfo('[UTXOAssetController.syncAssets] 🧹 Cleanup phase completed');
             
             // Step 2.5: Upsert Inbound_Transaction__c records for all transactions
             Map<String, Inbound_Transaction__c> existingInbound = new Map<String, Inbound_Transaction__c>();
@@ -453,20 +402,13 @@ public with sharing class UTXOAssetController {
             if (!toUpdate.isEmpty()) update toUpdate;
             
             Long processingTime = System.now().getTime() - totalStartTime;
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ✅ Combined sync completed in ' + processingTime + 'ms');
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Assets - Inserted: ' + insertedCount + ', Updated: ' + updatedCount + ', Deleted: ' + deletedCount);
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📊 Transactions - Inbound: ' + inboundCount + ', Outbound: ' + outboundCount);
             
             // Set hasTransactions based on the transaction count (transactionList), not UTXOs
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 🧮 transactionList.size()=' + transactionList.size() + ', allTransactions.size()=' + allTransactions.size());
             Boolean hasTransactions = transactionList.size() > 0;
             utxoAddress.Is_Used__c = hasTransactions;
-            Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] 📝 Preparing to upsert UTXO_Address__c: Id=' + utxoAddress.Id + ', Address=' + utxoAddress.Address__c + ', Is_Used__c=' + utxoAddress.Is_Used__c);
             try {
                 upsert utxoAddress;
-                Logger.logInfo('[UTXOAssetController.syncAssetsAndTransactions] ⬆️ Upserted Is_Used__c to ' + hasTransactions + ' for address: ' + utxoAddress.Address__c);
             } catch (Exception e) {
-                Logger.logError('[UTXOAssetController.syncAssetsAndTransactions] ❌ Failed to upsert Is_Used__c for address: ' + utxoAddress.Address__c + ' - ' + e.getMessage());
                 throw e;
             }
             
@@ -490,7 +432,6 @@ public with sharing class UTXOAssetController {
             };
             
         } catch (Exception e) {
-            Logger.logError('[UTXOAssetController.syncAssetsAndTransactions] ❌ Error: ' + e.getMessage());
             return new Map<String, Object>{
                 'success' => false,
                 'message' => e.getMessage(),
@@ -525,8 +466,6 @@ public with sharing class UTXOAssetController {
     @AuraEnabled(cacheable=true)
     public static Map<String, Object> getWalletAssetSummary(Id walletId) {
         try {
-            Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] 🚀 Getting asset summary for wallet: ' + walletId);
-            
             if (walletId == null) {
                 throw new AuraHandledException('Wallet ID cannot be null');
             }
@@ -581,8 +520,6 @@ public with sharing class UTXOAssetController {
                 }
             }
             
-            Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] 📊 Found ' + assetAggregates.size() + ' aggregated assets');
-            
             Decimal adaBalance = 0;
             List<Map<String, Object>> tokens = new List<Map<String, Object>>();
             
@@ -595,14 +532,9 @@ public with sharing class UTXOAssetController {
                 String policyId = String.valueOf(ar.get('policyId'));
                 String fingerprint = String.valueOf(ar.get('fingerprint'));
                 
-                Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] 🔍 Processing asset: ' + unit + 
-                             ' - Amount: ' + totalAmount + ', Value: ' + totalValue + 
-                             ', Name: ' + assetName + ', Decimals: ' + decimals);
-                
                 if (unit == 'ADA') {
                     // For ADA, use the Value__c field which converts lovelace to ADA
                     adaBalance = totalValue != null ? totalValue : 0;
-                    Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] 💰 ADA Balance: ' + adaBalance + ' (from ' + totalAmount + ' lovelace)');
                 } else {
                     // For tokens, add to tokens list
                     // Use Amount__c if Value__c is 0 or null, otherwise use Value__c
@@ -620,9 +552,6 @@ public with sharing class UTXOAssetController {
                         'icon' => assetToIcon.containsKey(unit) ? assetToIcon.get(unit) : 'utility:money'
                     };
                     tokens.add(tokenInfo);
-                    
-                    Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] 🪙 Token: ' + unit + 
-                                 ' - Amount: ' + displayAmount + ' (from ' + totalAmount + ' raw, Value: ' + totalValue + ')');
                 }
             }
             
@@ -634,11 +563,9 @@ public with sharing class UTXOAssetController {
                 'message' => 'Asset summary retrieved successfully'
             };
             
-            Logger.logInfo('[UTXOAssetController.getWalletAssetSummary] ✅ Summary complete - ADA: ' + adaBalance + ', Tokens: ' + tokens.size());
             return result;
             
         } catch (Exception e) {
-            Logger.logError('[UTXOAssetController.getWalletAssetSummary] ❌ Error: ' + e.getMessage());
             throw new AuraHandledException('Failed to get wallet asset summary: ' + e.getMessage());
         }
     }
@@ -651,8 +578,6 @@ public with sharing class UTXOAssetController {
     @AuraEnabled
     public static Map<String, Object> fetchWalletTransactions(Id walletId) {
         try {
-            Logger.logInfo('[UTXOAssetController.fetchWalletTransactions] 🚀 Getting transactions for wallet: ' + walletId);
-            
             if (walletId == null) {
                 throw new AuraHandledException('Wallet ID cannot be null');
             }
@@ -675,8 +600,6 @@ public with sharing class UTXOAssetController {
                 ORDER BY CreatedDate DESC
                 LIMIT 100
             ];
-            
-            Logger.logInfo('[UTXOAssetController.fetchWalletTransactions] 📊 Found ' + inboundTxs.size() + ' inbound and ' + outboundTxs.size() + ' outbound transactions');
             
             // Map inbound transactions for LWC
             List<Map<String, Object>> inbound = new List<Map<String, Object>>();
@@ -725,11 +648,9 @@ public with sharing class UTXOAssetController {
                 'message' => 'Transactions retrieved successfully'
             };
             
-            Logger.logInfo('[UTXOAssetController.fetchWalletTransactions] ✅ Transactions retrieved - Inbound: ' + inbound.size() + ', Outbound: ' + outbound.size());
             return result;
             
         } catch (Exception e) {
-            Logger.logError('[UTXOAssetController.fetchWalletTransactions] ❌ Error: ' + e.getMessage());
             throw new AuraHandledException('Failed to get wallet transactions: ' + e.getMessage());
         }
     }
@@ -791,7 +712,6 @@ public with sharing class UTXOAssetController {
                 'message' => 'Assets retrieved successfully'
             };
         } catch (Exception e) {
-            Logger.logError('[UTXOAssetController.getAllUtxoAssetsForWallet] ❌ Error: ' + e.getMessage());
             throw new AuraHandledException('Failed to get wallet assets: ' + e.getMessage());
         }
     }
