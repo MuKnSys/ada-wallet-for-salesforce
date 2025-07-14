@@ -558,6 +558,29 @@ export default class Wallet extends LightningElement {
         this.isSendButtonDisabled = !enable;
     }
 
+    validateAddress() {
+        const address = this.sendRecipient.trim();
+        
+        if (!address) {
+            this.addressError = 'Recipient address is required';
+            this.addressValid = false;
+            return false;
+        }
+        
+        const cardanoAddressPattern = /^addr[1-9][a-z0-9]{98}$/;
+        const testAddressPattern = /^addr_test[1-9][a-z0-9]{98}$/;
+        
+        if (!cardanoAddressPattern.test(address) && !testAddressPattern.test(address)) {
+            this.addressError = 'Please enter a valid Cardano address';
+            this.addressValid = false;
+            return false;
+        }
+        
+        this.addressError = '';
+        this.addressValid = true;
+        return true;
+    }
+
     async handleSend() {
         if (this.isSendButtonDisabled) return;
         this.isLoading = true;
