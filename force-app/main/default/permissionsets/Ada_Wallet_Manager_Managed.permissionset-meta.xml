@@ -142,6 +142,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Wallet__c.Stake_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Wallet_Set__c.Wallet_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>    

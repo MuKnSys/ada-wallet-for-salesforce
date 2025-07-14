@@ -277,9 +277,9 @@ public with sharing class UTXOController {
             List<UTXO_Address__c> addrs = [
                 SELECT Address__c, Index__c
                 FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId AND Type__c = '0' AND Id NOT IN (
-                    SELECT UTXO_Address__c FROM UTXO_Asset__c WHERE UTXO_Address__c != NULL
-                )
+                WHERE Wallet__c = :walletId
+                  AND Type__c = '0'
+                  AND (Is_Used__c = false OR Is_Used__c = null)
                 ORDER BY Index__c
                 LIMIT 1
             ];

@@ -86,8 +86,11 @@
                                     <template lwc:if={visibleInboundTransactions.length}>
                                         <template for:each={visibleInboundTransactions} for:item="tx">
                                             <div key={tx.Id} class="transaction-item inbound">
-                                                <div class="transaction-date">{tx.formattedDate}</div>
-                                                <div class="transaction-hash">Hash: {tx.Transaction_Hash__c}</div>
+                                                <div class="transaction-card-left">
+                                                    <a href={tx.recordUrl} target="_blank" class="slds-text-link transaction-id transaction-name">{tx.Name}</a>
+                                                    <span class="transaction-hash">{tx.Transaction_Hash__c}</span>
+                                                    <div class="transaction-date">{tx.formattedDate}</div>
+                                                </div>
                                             </div>
                                         </template>
                                         <template lwc:if={inboundHasMore}>
@@ -105,18 +108,33 @@
                                     <template lwc:if={outboundTransactionsForDisplay.length}>
                                         <template for:each={outboundTransactionsForDisplay} for:item="tx">
                                             <div key={tx.Id} class="transaction-item outbound">
-                                                <div class="transaction-date">{tx.formattedDate}</div>
-                                                <template lwc:if={tx.cardanoScanUrl}>
-                                                    <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">
-                                                        {tx.Transaction_Hash__c}
-                                                    </a>
-                                                </template>
-                                                <template lwc:elseif={tx.Transaction_Hash__c}>
-                                                    <div class="transaction-hash">Hash: {tx.Transaction_Hash__c}</div>
-                                                </template>
-                                                <template lwc:else>
-                                                    <div class="transaction-status slds-text-color_weak">Status: {tx.Transaction_Status__c}</div>
-                                                </template>
+                                                <div class="transaction-card-columns">
+                                                    <div class="transaction-card-left">
+                                                        <a href={tx.recordUrl} target="_blank" class="slds-text-link transaction-id transaction-name">{tx.Name}</a>
+                                                        <span class="transaction-hash">
+                                                            <template lwc:if={tx.cardanoScanUrl}>
+                                                                <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">{tx.truncatedHash}</a>
+                                                            </template>
+                                                            <template lwc:elseif={tx.Transaction_Hash__c}>
+                                                                {tx.truncatedHash}
+                                                            </template>
+                                                        </span>
+                                                        <div class="transaction-status slds-text-color_weak">Status: {tx.Transaction_Status__c}</div>
+                                                        <template lwc:if={tx.hasMemo}>
+                                                            <div class="transaction-memo">{tx.memo}</div>
+                                                        </template>
+                                                    </div>
+                                                    <div class="transaction-card-right">
+                                                        <div class="transaction-amounts">
+                                                            <template lwc:if={tx.adaLine}>
+                                                                <div class="tx-ada-amount">-<span>{tx.adaLine.Amount__c}</span> ADA</div>
+                                                            </template>
+                                                            <template for:each={tx.otherAssetLines} for:item="line">
+                                                                <div key={line.Id} class="tx-other-asset-amount">-<span>{line.Amount__c}</span> {line.Asset__c}</div>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </template>
                                         <template lwc:if={outboundHasMore}>

@@ -205,6 +205,11 @@
         <field>Outbound_Transaction__c.Memo__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Wallet__c.Stake_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>ADA Wallet Admin</label>
     <objectPermissions>

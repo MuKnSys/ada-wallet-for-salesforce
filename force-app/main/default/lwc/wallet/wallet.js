@@ -10,22 +10,13 @@ import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getF
 import { MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
 import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
 import createOutboundTransaction from '@salesforce/apex/TransactionController.createOutboundTransaction';
-// import getWalletTransactions from '@salesforce/apex/UTXOAssetController.getWalletTransactions';
-// import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOAssetController.getAllUtxoAssetsForWallet';
+import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOController.getAllUtxoAssetsForWallet';
 import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
+import fetchWalletTransactions from '@salesforce/apex/UTXOAssetController.fetchWalletTransactions';
 
 
 export default class Wallet extends LightningElement {
     CHANNEL_NAME = '/event/WalletSyncEvent__e';
-    
-    // Temporary dummy functions to replace missing Apex methods
-    async getWalletTransactions(params) {
-        return { success: true, transactions: [], message: 'Method not yet implemented' };
-    }
-    
-    async getAllUtxoAssetsForWallet(params) {
-        return { success: true, assets: [], message: 'Method not yet implemented' };
-    }
     
     _recordId;
     eventSubscription = null;
@@ -113,21 +104,24 @@ export default class Wallet extends LightningElement {
         return 'step-connector';
     }
 
+    get memoCharCount() {
+        return this.sendMemo ? this.sendMemo.length : 0;
+    }
+
     get isInboundSelected() {
         return this.selectedTransactionType === 'inbound';
     }
+
     get isOutboundSelected() {
         return this.selectedTransactionType === 'outbound';
     }
+
     handleShowInbound() {
         this.selectedTransactionType = 'inbound';
     }
+
     handleShowOutbound() {
         this.selectedTransactionType = 'outbound';
-    }
-
-    get memoCharCount() {
-        return this.sendMemo ? this.sendMemo.length : 0;
     }
 
 
@@ -224,6 +218,27 @@ export default class Wallet extends LightningElement {
             this.isLoading = false;
             // Fetch transactions after loading assets
             await this.fetchWalletTransactions();
+        }
+    }
+
+    async fetchWalletTransactions() {
+        try {
+            const result = await fetchWalletTransactions({ walletId: this.recordId });
+            console.log('[WALLET] Transactions:', result);
+            
+            if (result.success) {
+                this.inboundTransactions = (result.inbound || []).map(tx => ({ ...tx, recordUrl: '/' + tx.Id }));
+                this.outboundTransactions = (result.outbound || []).map(tx => ({ ...tx, recordUrl: '/' + tx.Id }));
+                console.log('[WALLET] Loaded ' + this.inboundTransactions.length + ' inbound and ' + this.outboundTransactions.length + ' outbound transactions');
+            } else {
+                this.inboundTransactions = [];
+                this.outboundTransactions = [];
+                console.log('[WALLET] No transactions found or error occurred');
+            }
+        } catch (error) {
+            console.error('[WALLET] Error fetching transactions:', error);
+            this.inboundTransactions = [];
+            this.outboundTransactions = [];
         }
     }
 
@@ -605,26 +620,11 @@ export default class Wallet extends LightningElement {
             this.fetchUtxoCounts();
         } catch (error) {
             console.error('[SEND] Error from Apex:', error);
-            this.showToast('Error', error.body?.message || error.message || 'Failed to create transaction', 'error');
+            this.showToast('Error', error.body?.message || error.message || 'Unknown error', 'error');
         } finally {
             this.isLoading = false;
         }
     }
-
-    async fetchWalletTransactions() {
-        try {
-            const result = await getWalletTransactions({ walletId: this.recordId });
-            console.log('[WALLET] Transactions:', result);
-            this.inboundTransactions = result.inbound || [];
-            this.outboundTransactions = result.outbound || [];
-        } catch (error) {
-            this.inboundTransactions = [];
-            this.outboundTransactions = [];
-        }
-    }
-
-
-
 
     // Helper method to format numbers with proper decimal places
     formatNumber(value, decimals = 2) {
@@ -777,8 +777,28 @@ export default class Wallet extends LightningElement {
         this.updateSendStateMultiAsset();
     }
 
+
+
+    handleAssetImgError(event) {
+        const asset = this.assets.find(a => a.id === event.target.dataset.assetId);
+        if (asset) {
+            asset.showFallbackIcon = true;
+        }
+    }
+
+    handleMemoChange(event) {
+        this.sendMemo = event.target.value;
+    }
+
     handleTransactionTabChange(event) {
         this.selectedTransactionType = event.target.value;
+    }
+
+    handleTransactionClick(event) {
+        const recordId = event.currentTarget.dataset.id;
+        if (recordId) {
+            window.open('/' + recordId, '_blank');
+        }
     }
 
     get outboundTransactionsWithUrl() {
@@ -788,90 +808,70 @@ export default class Wallet extends LightningElement {
         }));
     }
 
-    get outboundTransactionsForDisplay() {
-        // Always provide Transaction_Hash__c, Transaction_Status__c, and cardanoScanUrl for template
-        return this.visibleOutboundTransactions.map(tx => {
-            const hash = tx.Transaction_Hash__c;
-            let cardanoScanUrl = '';
-            if (hash && typeof hash === 'string' && hash.length > 0) {
-                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
-            }
-            return {
-                ...tx,
-                Transaction_Hash__c: hash,
-                Transaction_Status__c: tx.Transaction_Status__c || '',
-                cardanoScanUrl
-            };
-        });
-    }
-
-    handleAssetImgError(event) {
-        const symbol = event.target.alt;
-        this.assets = this.assets.map(asset => {
-            if (asset.symbol === symbol) {
-                return { ...asset, showFallbackIcon: true, icon: 'utility:money', imgUrl: null, iconIsImage: false };
-            }
-            return asset;
-        });
-    }
-
-    handleMemoChange(event) {
-        this.sendMemo = event.target.value;
-        console.log('[WALLET] Memo changed:', this.sendMemo);
-        console.log('[WALLET] Memo length:', this.sendMemo.length);
-    }
-
-    get sortedInboundTransactions() {
-        return [...this.inboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
-    }
-    get sortedOutboundTransactions() {
-        return [...this.outboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
-    }
     get visibleInboundTransactions() {
-        return this.showAllInbound ? this.sortedInboundTransactions : this.sortedInboundTransactions.slice(0, 3);
+        return this.showAllInbound ? this.inboundTransactions : this.inboundTransactions.slice(0, 5);
     }
+
     get visibleOutboundTransactions() {
-        return this.showAllOutbound ? this.sortedOutboundTransactions : this.sortedOutboundTransactions.slice(0, 3);
-    }
-    handleViewAllInbound() {
-        this.showAllInbound = true;
-    }
-    handleViewAllOutbound() {
-        this.showAllOutbound = true;
-    }
-    formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleString('en-US', {
-            year: 'numeric', month: 'short', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', hour12: true
-        });
+        return this.showAllOutbound ? this.outboundTransactions : this.outboundTransactions.slice(0, 5);
     }
 
     get inboundHasMore() {
-        return this.sortedInboundTransactions.length > 3 && !this.showAllInbound;
-    }
-    get outboundHasMore() {
-        return this.sortedOutboundTransactions.length > 3 && !this.showAllOutbound;
+        return this.inboundTransactions.length > 5;
     }
 
-    // When preparing transactions for display, add formattedDate property
-    set inboundTransactions(value) {
-        this._inboundTransactions = (value || []).map(tx => ({
-            ...tx,
-            formattedDate: this.formatDate(tx.CreatedDate)
-        }));
+    get outboundHasMore() {
+        return this.outboundTransactions.length > 5;
     }
-    get inboundTransactions() {
-        return this._inboundTransactions || [];
+
+    handleViewAllInbound() {
+        this.showAllInbound = true;
     }
-    set outboundTransactions(value) {
-        this._outboundTransactions = (value || []).map(tx => ({
-            ...tx,
-            formattedDate: this.formatDate(tx.CreatedDate)
-        }));
+
+    handleViewAllOutbound() {
+        this.showAllOutbound = true;
     }
-    get outboundTransactions() {
-        return this._outboundTransactions || [];
+
+    get computeRecordUrl() {
+        return (id) => `/${id}`;
+    }
+
+    // Helper to truncate a hash (e.g., 64 chars to 10+...+10)
+    truncateHash(hash, front = 10, back = 10) {
+        if (!hash || hash.length <= front + back + 3) return hash;
+        return `${hash.slice(0, front)}...${hash.slice(-back)}`;
+    }
+
+    get outboundTransactionsForDisplay() {
+        return this.visibleOutboundTransactions.map(tx => {
+            const hash = tx.Transaction_Hash__c;
+            let cardanoScanUrl = '';
+            let truncatedHash = '';
+            if (hash && typeof hash === 'string' && hash.length > 0) {
+                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
+                truncatedHash = this.truncateHash(hash);
+            }
+            // Prepare asset/amount display for ADA and other assets
+            let adaLine = null;
+            let otherAssetLines = [];
+            if (Array.isArray(tx.lines)) {
+                tx.lines.forEach(line => {
+                    if (line.Asset__c && (line.Asset__c.toLowerCase() === 'ada' || line.Asset__c.toLowerCase() === 'lovelace')) {
+                        adaLine = line;
+                    } else if (line.Asset__c) {
+                        otherAssetLines.push(line);
+                    }
+                });
+            }
+            return {
+                ...tx,
+                cardanoScanUrl,
+                truncatedHash,
+                hasMemo: !!(tx.Memo__c && tx.Memo__c.trim()),
+                memo: tx.Memo__c,
+                adaLine,
+                otherAssetLines
+            };
+        });
     }
 }

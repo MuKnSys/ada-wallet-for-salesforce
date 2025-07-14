@@ -63,9 +63,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             cellAttributes: { class: 'slds-text-link address-link' }
         },
         {
-            label: 'Payment Key Hash',
-            fieldName: 'truncatedPaymentKeyHash',
-            type: 'text'
+            label: 'Is Used',
+            fieldName: 'Is_Used__c',
+            type: 'boolean',
+            cellAttributes: { alignment: 'center' }
         }
     ];
     
@@ -138,9 +139,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 ...addr,
                 recordLink: `/lightning/r/UTXO_Address__c/${addr.Id}/view`,
                 cardanoScanLink: `https://cardanoscan.io/address/${addr.Address__c}`,
-                truncatedAddress: truncateText(addr.Address__c, 40, 20, 10),
-                truncatedPaymentKeyHash: truncateText(addr.Payment_Key_Hash__c, 40, 20, 10),
-                truncatedStakingKeyHash: truncateText(addr.Staking_Key_Hash__c, 40, 20, 10)
+                truncatedAddress: truncateText(addr.Address__c, 40, 20, 10)
             }));
             this.externalAddresses = addresses.filter(addr => addr.Type__c === '0');
             this.internalAddresses = addresses.filter(addr => addr.Type__c === '1');

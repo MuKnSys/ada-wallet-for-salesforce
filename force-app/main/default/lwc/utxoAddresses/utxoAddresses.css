@@ -7,3 +7,20 @@
 .address-link:hover {
     text-decoration: underline;
 }
+
+.slds-button.slds-button_neutral {
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: unset;
+    color: unset;
+    border: unset;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.slds-button.slds-button_neutral:hover {
+    background: unset;
+    color: unset;
+    box-shadow: unset;
+}

@@ -12,7 +12,7 @@ public with sharing class UTXOAddressSelector {
     }
     
     public static List<UTXO_Address__c> getUTXOAddressesByWalletId(Id walletId, Set<String> types) {
-        String query = 'SELECT Id, Name, Address__c, Is_Used__c, Public_Key__c, Path__c, Staking_Key_Hash__c, Payment_Key_Hash__c, Index__c, Type__c, Private_Key__c' + 
+        String query = 'SELECT Id, Name, Address__c, Is_Used__c, Public_Key__c, Path__c, Index__c, Type__c, Private_Key__c' + 
             ' FROM UTXO_Address__c' +
             ' WHERE Wallet__c = :walletId';
             
@@ -27,7 +27,7 @@ public with sharing class UTXOAddressSelector {
 
     public static List<UTXO_Address__c> getLastUTXOAddressByType(Id walletId, String type) {
         return [
-            SELECT Id, Name, Address__c, Public_Key__c, Path__c, Payment_Key_Hash__c, Index__c, Type__c, Private_Key__c
+            SELECT Id, Name, Address__c, Public_Key__c, Path__c, Index__c, Type__c, Private_Key__c
             FROM UTXO_Address__c
             WHERE Wallet__c = :walletId
             AND Type__c = :type
@@ -39,7 +39,7 @@ public with sharing class UTXOAddressSelector {
 
     public static List<UTXO_Address__c> getUTXOAddressesByWalletIdAndTypeOrdered(Id walletId, String type) {
         return [
-            SELECT Id, Name, Address__c, Public_Key__c, Path__c, Payment_Key_Hash__c, Index__c, Type__c, Private_Key__c
+            SELECT Id, Name, Address__c, Public_Key__c, Path__c, Index__c, Type__c, Private_Key__c
             FROM UTXO_Address__c
             WHERE Wallet__c = :walletId
             AND Type__c = :type
@@ -93,7 +93,7 @@ public with sharing class UTXOAddressSelector {
             }
             
             UTXO_Address__c addr = [
-                SELECT Id, Name, Address__c, Public_Key__c, Path__c, Payment_Key_Hash__c, Index__c, Type__c, Private_Key__c
+                SELECT Id, Name, Address__c, Public_Key__c, Path__c, Index__c, Type__c, Private_Key__c
                 FROM UTXO_Address__c
                 WHERE Id = :utxoAddressId
                 WITH SECURITY_ENFORCED

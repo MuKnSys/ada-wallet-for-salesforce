@@ -650,13 +650,29 @@
 }
 .transaction-item {
     display: flex;
-    flex-direction: column;
-    background: #f8f8f8;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1.5rem;
     padding: 0.75rem 1rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    background: #f8f8f8;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: none;
+}
+.transaction-name {
+    font-weight: 500;
+    min-width: 90px;
+    margin-right: 1rem;
+    color: #2e7d32;
+}
+.transaction-hash, .transaction-status, .transaction-date {
+    font-weight: 400;
+    color: #555;
+    margin-right: 0;
+    margin-bottom: 0.1rem;
+    text-align: left;
+    padding-left: 0;
 }
 .transaction-type {
     font-size: 0.95rem;
@@ -683,6 +699,19 @@
     font-size: 0.8rem;
     color: #aaa;
     word-break: break-all;
+}
+
+.transaction-memo {
+    font-size: 0.88rem;
+    color: #6b6b6b;
+    margin-top: 0.1rem;
+    margin-bottom: 0.1rem;
+    font-style: italic;
+    padding-left: 2px;
+}
+.memo-info-icon {
+    --slds-c-icon-color-foreground-default: #0070d2;
+    margin-bottom: 2px;
 }
 
 .slds-form-element__label, .form-label {
@@ -753,4 +782,207 @@
 .send-modal .slds-m-bottom_medium .slds-input::placeholder {
     color: #e0e0e0;
     opacity: 1;
+}
+.transaction-amounts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    gap: 0.1rem;
+}
+.tx-ada-amount {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #232533;
+    letter-spacing: 0.01em;
+}
+.tx-ada-amount span {
+    font-variant-numeric: tabular-nums;
+}
+.tx-other-asset-amount {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #232533;
+    margin-top: 0.1rem;
+}
+.transaction-details-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    margin-bottom: 0.2rem;
+    flex: 1 1 auto;
+}
+.transaction-item.inbound {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.06);
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.7rem;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.transaction-item.inbound .transaction-name {
+    color: #006dcc;
+    font-weight: 400;
+    font-size: 1rem;
+    min-width: 70px;
+    margin-right: 1rem;
+    margin-top: 0.1rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.transaction-item.inbound .transaction-name:hover {
+    text-decoration: underline;
+    color: #005fb2;
+}
+.transaction-item.inbound .transaction-details-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    flex: 1 1 auto;
+}
+.transaction-item.inbound .transaction-hash {
+    color: #444;
+    font-size: 0.82rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 400;
+    margin-bottom: 0.05rem;
+    text-align: left;
+    padding-left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+    word-break: normal;
+}
+.transaction-item.inbound .transaction-date {
+    color: #888;
+    font-size: 0.78rem;
+    margin-bottom: 0.05rem;
+    text-align: left;
+    padding-left: 0;
+    font-weight: 400;
+}
+.transaction-main-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.7rem;
+}
+.transaction-item.outbound {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.06);
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.7rem;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    font-size: 0.95rem;
+    font-weight: 400;
+}
+.transaction-item.outbound .transaction-name {
+    color: #006dcc;
+    font-weight: 400;
+    font-size: 0.98rem;
+    min-width: 70px;
+    margin-right: 1rem;
+    margin-top: 0.1rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.transaction-item.outbound .transaction-name:hover {
+    text-decoration: underline;
+    color: #005fb2;
+}
+.transaction-item.outbound .transaction-hash {
+    color: #444;
+    font-size: 0.82rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 400;
+    margin-bottom: 0.05rem;
+    text-align: left;
+    padding-left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+    word-break: normal;
+}
+.transaction-item.outbound .transaction-details-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    flex: 1 1 auto;
+}
+.transaction-card-columns {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+}
+.transaction-card-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 2 1 0;
+    min-width: 0;
+}
+.transaction-card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: right;
+}
+.transaction-card-right .transaction-amounts {
+    text-align: right;
+    width: 100%;
+}
+.tx-ada-amount, .tx-other-asset-amount {
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: right;
+}
+.transaction-card-left .transaction-name {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-card-left .transaction-hash {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-card-left .transaction-status {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-item.inbound .transaction-card-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1 1 0;
+    min-width: 0;
+}
+.transaction-item.inbound .transaction-name {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-item.inbound .transaction-hash {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-item.inbound .transaction-date {
+    margin-bottom: 0.1rem;
+    text-align: left;
 }

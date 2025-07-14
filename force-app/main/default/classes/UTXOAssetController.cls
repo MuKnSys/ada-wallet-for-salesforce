@@ -1,7 +1,7 @@
 /**
  * UTXOAssetController - Clean controller for UTXO asset and transaction synchronization
  */
-public with sharing class UTXOAssetController {
+public without sharing class UTXOAssetController {
     
     // Place this at the class level, outside of any method
     private static void populateAssetFields(UTXO_Asset__c asset, String unit, Decimal totalAmount, String assetName, String displayUnit, Map<String, Object> metadata) {
@@ -640,6 +640,165 @@ public with sharing class UTXOAssetController {
         } catch (Exception e) {
             Logger.logError('[UTXOAssetController.getWalletAssetSummary] ❌ Error: ' + e.getMessage());
             throw new AuraHandledException('Failed to get wallet asset summary: ' + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get all transactions for a wallet
+     * @param walletId The wallet ID to get transactions for
+     * @return Map with transaction data
+     */
+    @AuraEnabled
+    public static Map<String, Object> fetchWalletTransactions(Id walletId) {
+        try {
+            Logger.logInfo('[UTXOAssetController.fetchWalletTransactions] 🚀 Getting transactions for wallet: ' + walletId);
+            
+            if (walletId == null) {
+                throw new AuraHandledException('Wallet ID cannot be null');
+            }
+            
+            // Get Inbound Transactions
+            List<Inbound_Transaction__c> inboundTxs = [
+                SELECT Id, Name, Transaction_Hash__c, Block_Time__c, Block_Height__c, 
+                       UTXO_Address__c, Wallet__c
+                FROM Inbound_Transaction__c
+                WHERE UTXO_Address__r.Wallet__c = :walletId
+                ORDER BY Block_Time__c DESC
+                LIMIT 100
+            ];
+            
+            // Get Outbound Transactions with joined lines
+            List<Outbound_Transaction__c> outboundTxs = [
+                SELECT Id, Name, Transaction_Hash__c, Transaction_Status__c, Memo__c, 
+                       To_Address__c, Wallet__c, CreatedDate,
+                       (SELECT Id, Asset__c, Amount__c FROM Outbound_Transaction_Lines__r)
+                FROM Outbound_Transaction__c
+                WHERE Wallet__c = :walletId
+                ORDER BY CreatedDate DESC
+                LIMIT 100
+            ];
+            
+            Logger.logInfo('[UTXOAssetController.fetchWalletTransactions] 📊 Found ' + inboundTxs.size() + ' inbound and ' + outboundTxs.size() + ' outbound transactions');
+            
+            // Map inbound transactions for LWC
+            List<Map<String, Object>> inbound = new List<Map<String, Object>>();
+            for (Inbound_Transaction__c tx : inboundTxs) {
+                inbound.add(new Map<String, Object>{
+                    'Id' => tx.Id,
+                    'Name' => tx.Name,
+                    'Transaction_Hash__c' => tx.Transaction_Hash__c,
+                    'Block_Time__c' => tx.Block_Time__c,
+                    'Block_Height__c' => tx.Block_Height__c,
+                    'UTXO_Address__c' => tx.UTXO_Address__c,
+                    'Wallet__c' => tx.Wallet__c,
+                    'type' => 'inbound'
+                });
+            }
+            
+            // Map outbound transactions for LWC
+            List<Map<String, Object>> outbound = new List<Map<String, Object>>();
+            for (Outbound_Transaction__c tx : outboundTxs) {
+                List<Map<String, Object>> lines = new List<Map<String, Object>>();
+                if (tx.Outbound_Transaction_Lines__r != null) {
+                    for (Outbound_Transaction_Line__c line : tx.Outbound_Transaction_Lines__r) {
+                        lines.add(new Map<String, Object>{
+                            'Id' => line.Id,
+                            'Asset__c' => line.Asset__c,
+                            'Amount__c' => line.Amount__c
+                        });
+                    }
+                }
+                outbound.add(new Map<String, Object>{
+                    'Id' => tx.Id,
+                    'Name' => tx.Name,
+                    'Transaction_Hash__c' => tx.Transaction_Hash__c,
+                    'Transaction_Status__c' => tx.Transaction_Status__c,
+                    'Memo__c' => tx.Memo__c,
+                    'To_Address__c' => tx.To_Address__c,
+                    'Wallet__c' => tx.Wallet__c,
+                    'CreatedDate' => tx.CreatedDate,
+                    'type' => 'outbound',
+                    'lines' => lines
+                });
+            }
+            
+            Map<String, Object> result = new Map<String, Object>{
+                'success' => true,
+                'inbound' => inbound,
+                'outbound' => outbound,
+                'totalInbound' => inbound.size(),
+                'totalOutbound' => outbound.size(),
+                'message' => 'Transactions retrieved successfully'
+            };
+            
+            Logger.logInfo('[UTXOAssetController.fetchWalletTransactions] ✅ Transactions retrieved - Inbound: ' + inbound.size() + ', Outbound: ' + outbound.size());
+            return result;
+            
+        } catch (Exception e) {
+            Logger.logError('[UTXOAssetController.fetchWalletTransactions] ❌ Error: ' + e.getMessage());
+            throw new AuraHandledException('Failed to get wallet transactions: ' + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get all UTXO assets for a wallet
+     * @param walletId The wallet ID to get assets for
+     * @return Map with asset data
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> getAllUtxoAssetsForWallet(Id walletId) {
+        try {
+            if (walletId == null) {
+                throw new AuraHandledException('Wallet ID cannot be null');
+            }
+            // Get all UTXO addresses for this wallet
+            List<UTXO_Address__c> utxoAddresses = [
+                SELECT Id
+                FROM UTXO_Address__c
+                WHERE Wallet__c = :walletId
+            ];
+            if (utxoAddresses.isEmpty()) {
+                return new Map<String, Object>{
+                    'success' => true,
+                    'assets' => new List<Object>(),
+                    'message' => 'No UTXO addresses found for this wallet'
+                };
+            }
+            Set<Id> utxoAddressIds = new Set<Id>();
+            for (UTXO_Address__c addr : utxoAddresses) {
+                utxoAddressIds.add(addr.Id);
+            }
+            // Get all assets for these addresses
+            List<UTXO_Asset__c> assets = [
+                SELECT Id, Asset__c, Amount__c, Value__c, Name__c, Decimals__c, 
+                       Policy_ID__c, Fingerprint__c, Icon__c, UTXO_Address__c
+                FROM UTXO_Asset__c
+                WHERE UTXO_Address__c IN :utxoAddressIds
+                ORDER BY Asset__c
+            ];
+            List<Map<String, Object>> assetList = new List<Map<String, Object>>();
+            for (UTXO_Asset__c asset : assets) {
+                assetList.add(new Map<String, Object>{
+                    'id' => asset.Id,
+                    'asset' => asset.Asset__c,
+                    'amount' => asset.Amount__c,
+                    'value' => asset.Value__c,
+                    'name' => asset.Name__c,
+                    'decimals' => asset.Decimals__c,
+                    'policyId' => asset.Policy_ID__c,
+                    'fingerprint' => asset.Fingerprint__c,
+                    'icon' => asset.Icon__c,
+                    'utxoAddressId' => asset.UTXO_Address__c
+                });
+            }
+            return new Map<String, Object>{
+                'success' => true,
+                'assets' => assetList,
+                'message' => 'Assets retrieved successfully'
+            };
+        } catch (Exception e) {
+            Logger.logError('[UTXOAssetController.getAllUtxoAssetsForWallet] ❌ Error: ' + e.getMessage());
+            throw new AuraHandledException('Failed to get wallet assets: ' + e.getMessage());
         }
     }
 } 
