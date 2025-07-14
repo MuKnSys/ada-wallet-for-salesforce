@@ -588,7 +588,6 @@ public with sharing class UTXOAssetController {
                 FROM Inbound_Transaction__c
                 WHERE UTXO_Address__r.Wallet__c = :walletId
                 ORDER BY CreatedDate DESC
-                LIMIT 100
             ];
             
             // Get Outbound Transactions with joined lines
@@ -598,7 +597,6 @@ public with sharing class UTXOAssetController {
                 FROM Outbound_Transaction__c
                 WHERE Wallet__c = :walletId
                 ORDER BY CreatedDate DESC
-                LIMIT 100
             ];
             
             // Map inbound transactions for LWC

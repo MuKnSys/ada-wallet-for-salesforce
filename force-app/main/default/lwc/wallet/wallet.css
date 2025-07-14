@@ -700,6 +700,13 @@
     color: #aaa;
     word-break: break-all;
 }
+.transaction-hash a {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .transaction-memo {
     font-size: 0.88rem;
@@ -855,11 +862,12 @@
     margin-bottom: 0.05rem;
     text-align: left;
     padding-left: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 320px;
-    word-break: normal;
+    /* Remove truncation styles */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    max-width: 100%;
+    word-break: break-all;
 }
 .transaction-item.inbound .transaction-date {
     color: #888;
@@ -985,4 +993,127 @@
 .transaction-item.inbound .transaction-date {
     margin-bottom: 0.1rem;
     text-align: left;
+}
+.token-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.token-select, .token-amount {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.95rem;
+    height: 2.1rem;
+    padding: 0 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #d8dde6;
+    box-sizing: border-box;
+}
+.token-select {
+    max-width: 9.5rem;
+}
+.token-amount {
+    max-width: 8rem;
+}
+.send-max-btn {
+    margin-left: 0.5rem;
+    padding: 0 0.9rem;
+    font-size: 0.95rem;
+    height: 2.1rem;
+    cursor: pointer;
+    background: #e6f7ff;
+    border: 1px solid #b3e0ff;
+    border-radius: 4px;
+    color: #0070d2;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+.send-max-btn:hover {
+    background: #b3e0ff;
+}
+.send-max-btn:disabled {
+    background: #e0e0e0;
+    color: #aaa;
+    border: 1px solid #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.remove-token-btn {
+    margin-left: 0.5rem;
+    background: none;
+    border: none;
+    color: #d9534f;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    height: 2.1rem;
+    display: flex;
+    align-items: center;
+}
+.add-token-btn {
+    margin-top: 0.5rem;
+    width: 100%;
+    background: #f4f6f9;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    padding: 0.4rem 0;
+    color: #0070d2;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.add-token-btn:hover {
+    background: #e6f7ff;
+}
+.add-token-btn:disabled {
+    background: #e0e0e0;
+    color: #aaa;
+    border: 1px solid #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.transaction-memo-singleline {
+    text-align: left;
+    margin: 0;
+    padding: 0;
+    font-size: 0.95em;
+    color: #444;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.asset-lines-bottom {
+    width: 100%;
+    align-items: flex-end;
+    margin-top: 8px;
+    padding-left: 0;
+    /* Remove border, background, and extra padding */
+    border-left: none;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+}
+.asset-lines-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+}
+.tx-asset-amount {
+    font-size: 0.93em;
+    font-weight: 380;
+    color: #555;
+    text-align: right;
+    margin: 0;
+    padding: 0 0 0 0;
+}
+.tx-ada-amount {
+    font-size: 1em;
+    font-weight: 500;
+    color: #222;
+    margin-bottom: 2px;
+    letter-spacing: 0.01em;
 }
