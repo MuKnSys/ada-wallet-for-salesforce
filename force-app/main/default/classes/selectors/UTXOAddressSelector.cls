@@ -9,6 +9,15 @@ public with sharing class UTXOAddressSelector {
         ];
     }
 
+    public static List<UTXO_Address__c> getAddressesByIds(List<Id> addressIds) {
+        return [
+            SELECT Id, Wallet__c, Is_Used__c
+            FROM UTXO_Address__c
+            WHERE Id IN :addressIds
+            WITH SECURITY_ENFORCED
+        ];
+    }
+
     public static List<UTXO_Address__c> getLastUTXOAddressByType(String walletId, String type) {
         return [
             SELECT Id, Name, Address__c, Public_Key__c, Path__c, Index__c, Type__c, Private_Key__c

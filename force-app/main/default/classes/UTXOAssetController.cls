@@ -1,9 +1,4 @@
-/**
- * UTXOAssetController - Clean controller for UTXO asset and transaction synchronization
- */
 public with sharing class UTXOAssetController {
-    
-    // Place this at the class level, outside of any method
     private static void populateAssetFields(UTXO_Asset__c asset, String unit, Decimal totalAmount, String assetName, String displayUnit, Map<String, Object> metadata) {
         asset.Amount__c = totalAmount;
         asset.Asset__c = (unit == 'lovelace' ? 'ADA' : displayUnit);
@@ -81,12 +76,8 @@ public with sharing class UTXOAssetController {
             }
             
             // Get the UTXO Address record
-            UTXO_Address__c utxoAddress = [
-                SELECT Id, Address__c, Wallet__c, Is_Used__c
-                FROM UTXO_Address__c
-                WHERE Id = :utxoAddressId
-                LIMIT 1
-            ];
+            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByIds(new List<Id>{utxoAddressId});
+            UTXO_Address__c utxoAddress = utxoAddresses.isEmpty() ? null : utxoAddresses[0];
             
             if (utxoAddress == null) {
                 throw new AuraHandledException('UTXO Address not found');
@@ -103,11 +94,7 @@ public with sharing class UTXOAssetController {
             List<Object> transactionList = (List<Object>) JSON.deserializeUntyped(transactionsJson);
             
             // Step 3: Get all wallet addresses for transaction direction analysis
-            List<UTXO_Address__c> walletAddresses = [
-                SELECT Id, Address__c
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :utxoAddress.Wallet__c
-            ];
+            List<UTXO_Address__c> walletAddresses = UTXOAddressSelector.getAddressesByWalletId(utxoAddress.Wallet__c);
             
             List<String> walletAddressList = new List<String>();
             for (UTXO_Address__c addr : walletAddresses) {
@@ -257,21 +244,8 @@ public with sharing class UTXOAssetController {
                 }
             }
             
-            // Get existing assets and transactions
-            List<UTXO_Asset__c> existingAssets = [
-                SELECT Id, Asset__c, Amount__c, UTXO_Address__c
-                FROM UTXO_Asset__c
-                WHERE UTXO_Address__c = :utxoAddress.Id
-            ];
-            
-            Map<String, Inbound_Transaction__c> existingTransactions = new Map<String, Inbound_Transaction__c>();
-            for (Inbound_Transaction__c existing : [
-                SELECT Id, Transaction_Hash__c, Block_Height__c, Block_Time__c
-                FROM Inbound_Transaction__c
-                WHERE UTXO_Address__c = :utxoAddress.Id
-            ]) {
-                existingTransactions.put(existing.Transaction_Hash__c, existing);
-            }
+            // Get existing assets
+            List<UTXO_Asset__c> existingAssets = UTXOAssetSelector.getAllAssetsByUtxoAddressIds(new Set<Id>{utxoAddress.Id});
             
             // Prepare asset operations - Create a comprehensive lookup map for existing assets
             // We need to handle cases where existing records might have old or new unit formats
@@ -334,11 +308,13 @@ public with sharing class UTXOAssetController {
                 updatedCount = assetsToUpdate.size();
             }
             // After all upserts, clean up any assets not in the current sync
-            List<UTXO_Asset__c> assetsToDelete = [
-                SELECT Id, Asset__c FROM UTXO_Asset__c
-                WHERE UTXO_Address__c = :utxoAddress.Id
-                AND Asset__c NOT IN :validUnits
-            ];
+            List<UTXO_Asset__c> allAssets = UTXOAssetSelector.getAllAssetsByUtxoAddressIds(new Set<Id>{utxoAddress.Id});
+            List<UTXO_Asset__c> assetsToDelete = new List<UTXO_Asset__c>();
+            for (UTXO_Asset__c asset : allAssets) {
+                if (!validUnits.contains(asset.Asset__c)) {
+                    assetsToDelete.add(asset);
+                }
+            }
             Integer deletedCount = 0;
             if (!assetsToDelete.isEmpty()) {
                 delete assetsToDelete;
@@ -347,11 +323,7 @@ public with sharing class UTXOAssetController {
             
             // Step 2.5: Upsert Inbound_Transaction__c records for all transactions
             Map<String, Inbound_Transaction__c> existingInbound = new Map<String, Inbound_Transaction__c>();
-            for (Inbound_Transaction__c itx : [
-                SELECT Id, Transaction_Hash__c, Block_Height__c, Block_Time__c, Transaction_Index__c
-                FROM Inbound_Transaction__c
-                WHERE UTXO_Address__c = :utxoAddress.Id
-            ]) {
+            for (Inbound_Transaction__c itx : InboundTransactionSelector.getInboundTransactionsByUtxoAddressId(utxoAddress.Id)) {
                 existingInbound.put(itx.Transaction_Hash__c, itx);
             }
 
@@ -447,9 +419,7 @@ public with sharing class UTXOAssetController {
     @AuraEnabled
     public static void setAddressesUsed(List<Id> utxoAddressIds) {
         if (utxoAddressIds == null || utxoAddressIds.isEmpty()) return;
-        List<UTXO_Address__c> addressesToUpdate = [
-            SELECT Id, Is_Used__c FROM UTXO_Address__c WHERE Id IN :utxoAddressIds
-        ];
+        List<UTXO_Address__c> addressesToUpdate = UTXOAddressSelector.getAddressesByIds(utxoAddressIds);
         for (UTXO_Address__c addr : addressesToUpdate) {
             addr.Is_Used__c = true;
         }
@@ -471,11 +441,7 @@ public with sharing class UTXOAssetController {
             }
             
             // Get all UTXO addresses for this wallet
-            List<UTXO_Address__c> utxoAddresses = [
-                SELECT Id
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId
-            ];
+            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
             
             if (utxoAddresses.isEmpty()) {
                 return new Map<String, Object>{
@@ -493,16 +459,7 @@ public with sharing class UTXOAssetController {
             }
             
             // Get all assets for these addresses, aggregated by Asset
-            AggregateResult[] assetAggregates = [
-                SELECT Asset__c, SUM(Amount__c) totalAmount, SUM(Value__c) totalValue, 
-                       MAX(Name__c) assetName, 
-                       MAX(Decimals__c) decimals, MAX(Policy_ID__c) policyId,
-                       MAX(Fingerprint__c) fingerprint
-                FROM UTXO_Asset__c
-                WHERE UTXO_Address__c IN :utxoAddressIds
-                GROUP BY Asset__c
-                ORDER BY Asset__c
-            ];
+            AggregateResult[] assetAggregates = UTXOAssetSelector.getAssetAggregatesByUtxoAddressIds(utxoAddressIds);
 
             // Build a set of all asset units
             Set<String> assetUnits = new Set<String>();
@@ -511,11 +468,9 @@ public with sharing class UTXOAssetController {
             }
             // Query one UTXO_Asset__c per asset to get Icon__c
             Map<String, String> assetToIcon = new Map<String, String>();
-            for (UTXO_Asset__c asset : [
-                SELECT Asset__c, Icon__c FROM UTXO_Asset__c
-                WHERE UTXO_Address__c IN :utxoAddressIds AND Asset__c IN :assetUnits
-            ]) {
-                if (asset.Icon__c != null && !assetToIcon.containsKey(asset.Asset__c)) {
+            List<UTXO_Asset__c> allAssetsWithIcons = UTXOAssetSelector.getAllAssetsByUtxoAddressIds(utxoAddressIds);
+            for (UTXO_Asset__c asset : allAssetsWithIcons) {
+                if (assetUnits.contains(asset.Asset__c) && asset.Icon__c != null && !assetToIcon.containsKey(asset.Asset__c)) {
                     assetToIcon.put(asset.Asset__c, asset.Icon__c);
                 }
             }
@@ -583,21 +538,10 @@ public with sharing class UTXOAssetController {
             }
             
             // Get Inbound Transactions
-            List<Inbound_Transaction__c> inboundTxs = [
-                SELECT Id, Name, Transaction_Hash__c, CreatedDate, UTXO_Address__c
-                FROM Inbound_Transaction__c
-                WHERE UTXO_Address__r.Wallet__c = :walletId
-                ORDER BY CreatedDate DESC
-            ];
+            List<Inbound_Transaction__c> inboundTxs = InboundTransactionSelector.getInboundTransactionsByWalletId(walletId);
             
             // Get Outbound Transactions with joined lines
-            List<Outbound_Transaction__c> outboundTxs = [
-                SELECT Id, Name, Transaction_Hash__c, Transaction_Status__c, Memo__c, CreatedDate,
-                       (SELECT Id, Asset__c, Amount__c FROM Outbound_Transaction_Lines__r)
-                FROM Outbound_Transaction__c
-                WHERE Wallet__c = :walletId
-                ORDER BY CreatedDate DESC
-            ];
+            List<Outbound_Transaction__c> outboundTxs = OutboundTransactionSelector.getOutboundTransactionsByWalletId(walletId);
             
             // Map inbound transactions for LWC
             List<Map<String, Object>> inbound = new List<Map<String, Object>>();
@@ -665,11 +609,7 @@ public with sharing class UTXOAssetController {
                 throw new AuraHandledException('Wallet ID cannot be null');
             }
             // Get all UTXO addresses for this wallet
-            List<UTXO_Address__c> utxoAddresses = [
-                SELECT Id
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId
-            ];
+            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
             if (utxoAddresses.isEmpty()) {
                 return new Map<String, Object>{
                     'success' => true,
@@ -682,13 +622,7 @@ public with sharing class UTXOAssetController {
                 utxoAddressIds.add(addr.Id);
             }
             // Get all assets for these addresses
-            List<UTXO_Asset__c> assets = [
-                SELECT Id, Asset__c, Amount__c, Value__c, Name__c, Decimals__c, 
-                       Policy_ID__c, Fingerprint__c, Icon__c, UTXO_Address__c
-                FROM UTXO_Asset__c
-                WHERE UTXO_Address__c IN :utxoAddressIds
-                ORDER BY Asset__c
-            ];
+            List<UTXO_Asset__c> assets = UTXOAssetSelector.getAllAssetsByUtxoAddressIds(utxoAddressIds);
             List<Map<String, Object>> assetList = new List<Map<String, Object>>();
             for (UTXO_Asset__c asset : assets) {
                 assetList.add(new Map<String, Object>{

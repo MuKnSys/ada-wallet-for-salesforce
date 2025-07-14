@@ -11,8 +11,6 @@ public with sharing class UTXOController {
         @AuraEnabled public String privateKey { get; set; }
     }
 
-
-
     // Core wallet and address methods
     @AuraEnabled(cacheable=true)
     public static String getEncryptedSeedPhrase(Id walletSetId) {

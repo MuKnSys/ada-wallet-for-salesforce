@@ -19,5 +19,14 @@ public with sharing class OutboundTransactionSelector {
         ];
     }
 
-
+    public static List<Outbound_Transaction__c> getOutboundTransactionsByWalletId(Id walletId) {
+        return [
+            SELECT Id, Name, Transaction_Hash__c, Transaction_Status__c, Memo__c, CreatedDate,
+                    (SELECT Id, Asset__c, Amount__c FROM Outbound_Transaction_Lines__r)
+            FROM Outbound_Transaction__c
+            WHERE Wallet__c = :walletId
+            WITH SECURITY_ENFORCED
+            ORDER BY CreatedDate DESC
+        ];
+    }
 } 
