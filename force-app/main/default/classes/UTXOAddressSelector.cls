@@ -21,7 +21,6 @@ public with sharing class UTXOAddressSelector {
         }
         
         query += ' WITH SECURITY_ENFORCED ORDER BY Name ASC';
-        System.debug('UTXOAddressSelector.getUTXOAddressesByWalletId query: ' + query);
         return Database.query(query);
     }
 
@@ -66,12 +65,7 @@ public with sharing class UTXOAddressSelector {
             for (UTXO_Address__c addr : addresses) {
                 String decryptedKey = null;
                 if (String.isNotBlank(addr.Private_Key__c)) {
-                    try {
-                        decryptedKey = DataEncryptor.decrypt(addr.Private_Key__c);
-                    } catch (Exception e) {
-                        System.debug('Failed to decrypt private key for address ' + addr.Id + ': ' + e.getMessage());
-                        // Continue with null decrypted key
-                    }
+                    decryptedKey = DataEncryptor.decrypt(addr.Private_Key__c);
                 }
                 result.add(new UTXOAddressWithDecryptedKey(addr, decryptedKey));
             }
@@ -102,12 +96,7 @@ public with sharing class UTXOAddressSelector {
             
             String decryptedKey = null;
             if (String.isNotBlank(addr.Private_Key__c)) {
-                try {
-                    decryptedKey = DataEncryptor.decrypt(addr.Private_Key__c);
-                } catch (Exception e) {
-                    System.debug('Failed to decrypt private key for address ' + addr.Id + ': ' + e.getMessage());
-                    // Continue with null decrypted key
-                }
+                decryptedKey = DataEncryptor.decrypt(addr.Private_Key__c);
             }
             
             return new UTXOAddressWithDecryptedKey(addr, decryptedKey);

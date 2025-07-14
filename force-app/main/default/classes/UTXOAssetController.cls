@@ -1,7 +1,7 @@
 /**
  * UTXOAssetController - Clean controller for UTXO asset and transaction synchronization
  */
-public without sharing class UTXOAssetController {
+public with sharing class UTXOAssetController {
     
     // Place this at the class level, outside of any method
     private static void populateAssetFields(UTXO_Asset__c asset, String unit, Decimal totalAmount, String assetName, String displayUnit, Map<String, Object> metadata) {
