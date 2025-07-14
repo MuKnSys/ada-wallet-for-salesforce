@@ -44,10 +44,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         return this.importInputs.some(input => !input.value || !input.value.trim());
     }
 
-    get showSuggestions() {
-        return this.suggestions.length > 0 && this.activeInputIndex >= 0;
-    }
-
     connectedCallback() {
         this.walletName = '';
         this.seedPhrase = [];
@@ -169,6 +165,33 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         this.activeInputIndex = -1;
     }
 
+    updateSuggestions(value, array, index) {
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word =>
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5);
+            array.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            array.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    clearSuggestions(array, activeIndexProp) {
+        this.suggestions = [];
+        array.forEach(input => input.showSuggestions = false);
+        this[activeIndexProp] = -1;
+    }
+
+    focusNextInputBySelector(selector, index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[${selector}="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, 100);
+    }
+
     handleImportInputChange(event) {
         const index = parseInt(event.target.dataset.index);
         const value = event.target.value ? event.target.value.toLowerCase().trim() : '';
@@ -177,21 +200,10 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
             this.importInputs[index].value = value;
             this.importInputs = [...this.importInputs];
             this.activeInputIndex = index;
-            
-            // Generate suggestions based on input
-            if (value.length > 0 && this.bip39WordList.length > 0) {
-                this.suggestions = this.bip39WordList.filter(word => 
-                    word.toLowerCase().startsWith(value)
-                ).slice(0, 5); // Limit to 5 suggestions
-                this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
-            } else {
-                this.suggestions = [];
-                this.importInputs.forEach(input => input.showSuggestions = false);
-            }
+            this.updateSuggestions(value, this.importInputs, index);
         }
     }
 
-    // Method to handle suggestion selection
     handleSuggestionClick(event) {
         const selectedWord = event.currentTarget.dataset.word;
         const index = this.activeInputIndex;
@@ -199,54 +211,25 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         if (index >= 0 && index < this.importInputs.length) {
             this.importInputs[index].value = selectedWord;
             this.importInputs = [...this.importInputs];
-            this.suggestions = [];
-            this.importInputs.forEach(input => input.showSuggestions = false);
-            this.activeInputIndex = -1;
-            
-            // Focus on next input if available
+            this.clearSuggestions(this.importInputs, 'activeInputIndex');
             if (index < this.importInputs.length - 1) {
-                this.focusNextInput(index + 1);
+                this.focusNextInputBySelector('data-index', index + 1);
             }
         }
     }
 
-    // Method to focus on next input
-    focusNextInput(index) {
-        setTimeout(() => {
-            const nextInput = this.template.querySelector(`[data-index="${index}"]`);
-            if (nextInput) {
-                nextInput.focus();
-            }
-        }, 100);
-    }
-
-    // Method to handle input focus
     handleInputFocus(event) {
         const index = parseInt(event.target.dataset.index);
         this.activeInputIndex = index;
-        
         if (index >= 0 && index < this.importInputs.length) {
-            // Show suggestions if there's a value
             const value = this.importInputs[index].value ? this.importInputs[index].value.toLowerCase().trim() : '';
-            if (value.length > 0 && this.bip39WordList.length > 0) {
-                this.suggestions = this.bip39WordList.filter(word => 
-                    word.toLowerCase().startsWith(value)
-                ).slice(0, 5);
-                this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
-            } else {
-                this.suggestions = [];
-                this.importInputs.forEach(input => input.showSuggestions = false);
-            }
+            this.updateSuggestions(value, this.importInputs, index);
         }
     }
 
-    // Method to handle input blur
     handleInputBlur() {
-        // Delay hiding suggestions to allow for clicks
         setTimeout(() => {
-            this.suggestions = [];
-            this.importInputs.forEach(input => input.showSuggestions = false);
-            this.activeInputIndex = -1;
+            this.clearSuggestions(this.importInputs, 'activeInputIndex');
         }, 200);
     }
 
@@ -330,22 +313,11 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     handleVerificationChange(event) {
         const index = parseInt(event.target.dataset.verifIndex);
         const value = event.target.value ? event.target.value.toLowerCase().trim() : '';
-        
         if (index >= 0 && index < this.verificationInputs.length) {
             this.verificationInputs[index].value = value;
             this.verificationInputs = [...this.verificationInputs];
             this.activeVerificationInputIndex = index;
-            
-            // Generate suggestions based on input
-            if (value.length > 0 && this.bip39WordList.length > 0) {
-                this.suggestions = this.bip39WordList.filter(word => 
-                    word.toLowerCase().startsWith(value)
-                ).slice(0, 5);
-                this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
-            } else {
-                this.suggestions = [];
-                this.verificationInputs.forEach(input => input.showSuggestions = false);
-            }
+            this.updateSuggestions(value, this.verificationInputs, index);
         }
     }
 
@@ -355,11 +327,9 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         if (index >= 0 && index < this.verificationInputs.length) {
             this.verificationInputs[index].value = selectedWord;
             this.verificationInputs = [...this.verificationInputs];
-            this.suggestions = [];
-            this.verificationInputs.forEach(input => input.showSuggestions = false);
-            this.activeVerificationInputIndex = -1;
+            this.clearSuggestions(this.verificationInputs, 'activeVerificationInputIndex');
             if (index < this.verificationInputs.length - 1) {
-                this.focusNextVerificationInput(index + 1);
+                this.focusNextInputBySelector('data-verif-index', index + 1);
             }
         }
     }
@@ -376,26 +346,15 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     handleVerificationInputFocus(event) {
         const index = parseInt(event.target.dataset.verifIndex);
         this.activeVerificationInputIndex = index;
-        
         if (index >= 0 && index < this.verificationInputs.length) {
             const value = this.verificationInputs[index].value ? this.verificationInputs[index].value.toLowerCase().trim() : '';
-            if (value.length > 0 && this.bip39WordList.length > 0) {
-                this.suggestions = this.bip39WordList.filter(word => 
-                    word.toLowerCase().startsWith(value)
-                ).slice(0, 5);
-                this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
-            } else {
-                this.suggestions = [];
-                this.verificationInputs.forEach(input => input.showSuggestions = false);
-            }
+            this.updateSuggestions(value, this.verificationInputs, index);
         }
     }
 
     handleVerificationInputBlur() {
         setTimeout(() => {
-            this.suggestions = [];
-            this.verificationInputs.forEach(input => input.showSuggestions = false);
-            this.activeVerificationInputIndex = -1;
+            this.clearSuggestions(this.verificationInputs, 'activeVerificationInputIndex');
         }, 200);
     }
 
