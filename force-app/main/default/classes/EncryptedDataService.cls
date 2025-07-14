@@ -9,20 +9,6 @@ public with sharing class EncryptedDataService {
         return walletSet.Seed_Phrase__c;
     }
 
-    public static ShowWalletKeysCtrl.WalletKeyWrapper getDecryptedWalletKeys(Id recordId) {
-        Wallet__c wallet = WalletSelector.getWalletById(recordId);
-
-        if (!hasAccessToDecrypt()) {
-            throw new SecurityException('Access denied to decrypt wallet keys');
-        }
-
-        ShowWalletKeysCtrl.WalletKeyWrapper keys = new ShowWalletKeysCtrl.WalletKeyWrapper();            
-        keys.privateKey = DataEncryptor.decrypt(wallet.Account_Private_Key__c);
-        keys.publicKey  = DataEncryptor.decrypt(wallet.Account_Public_Key__c);
-
-        return keys;
-    }
-
     public static Boolean hasAccessToDecrypt() {        
         try {
             Set<Id> psIds = new Set<Id>();

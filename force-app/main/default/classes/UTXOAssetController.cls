@@ -659,18 +659,16 @@ public without sharing class UTXOAssetController {
             
             // Get Inbound Transactions
             List<Inbound_Transaction__c> inboundTxs = [
-                SELECT Id, Name, Transaction_Hash__c, Block_Time__c, Block_Height__c, 
-                       UTXO_Address__c, Wallet__c
+                SELECT Id, Name, Transaction_Hash__c, CreatedDate, UTXO_Address__c
                 FROM Inbound_Transaction__c
                 WHERE UTXO_Address__r.Wallet__c = :walletId
-                ORDER BY Block_Time__c DESC
+                ORDER BY CreatedDate DESC
                 LIMIT 100
             ];
             
             // Get Outbound Transactions with joined lines
             List<Outbound_Transaction__c> outboundTxs = [
-                SELECT Id, Name, Transaction_Hash__c, Transaction_Status__c, Memo__c, 
-                       To_Address__c, Wallet__c, CreatedDate,
+                SELECT Id, Name, Transaction_Hash__c, Transaction_Status__c, Memo__c, CreatedDate,
                        (SELECT Id, Asset__c, Amount__c FROM Outbound_Transaction_Lines__r)
                 FROM Outbound_Transaction__c
                 WHERE Wallet__c = :walletId
@@ -687,10 +685,8 @@ public without sharing class UTXOAssetController {
                     'Id' => tx.Id,
                     'Name' => tx.Name,
                     'Transaction_Hash__c' => tx.Transaction_Hash__c,
-                    'Block_Time__c' => tx.Block_Time__c,
-                    'Block_Height__c' => tx.Block_Height__c,
+                    'CreatedDate' => tx.CreatedDate,
                     'UTXO_Address__c' => tx.UTXO_Address__c,
-                    'Wallet__c' => tx.Wallet__c,
                     'type' => 'inbound'
                 });
             }
@@ -714,8 +710,6 @@ public without sharing class UTXOAssetController {
                     'Transaction_Hash__c' => tx.Transaction_Hash__c,
                     'Transaction_Status__c' => tx.Transaction_Status__c,
                     'Memo__c' => tx.Memo__c,
-                    'To_Address__c' => tx.To_Address__c,
-                    'Wallet__c' => tx.Wallet__c,
                     'CreatedDate' => tx.CreatedDate,
                     'type' => 'outbound',
                     'lines' => lines

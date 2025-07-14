@@ -4,23 +4,23 @@
             <div class="slds-grid slds-grid_align-spread slds-p-bottom_small">
                 <div class="slds-col">
                     <h2 class="slds-text-heading_small">
-                        UTXO Addresses ({currentTabLabel}: {currentTabCount})
+                        {labels.UI.SUBTITLE} ({currentTabLabel}: {currentTabCount})
                     </h2>
                     <h2 class="slds-text-heading_small">
-                        Unused: {currentUnusedCount}
+                        {labels.UI.UNUSED}: {currentUnusedCount}
                     </h2>
                 </div>                
                 <div class="slds-col">
                     <template lwc:if={hasSeedPhrasePermission}>
                         <lightning-button
-                            label="Generate New Address"
+                            label={labels.UI.GENERATE_NEW_ADDRESS}
                             variant="brand"
                             onclick={generateAddress}
                             class="slds-m-right_small"
                         ></lightning-button>
                     </template>
                     <lightning-button
-                        label="Refresh UTXOs"
+                        label={labels.UI.REFRESH_UTXOS}
                         variant="neutral"
                         onclick={handleRefreshAddressCounts}
                     ></lightning-button>
@@ -29,23 +29,23 @@
             <div class="slds-m-bottom_small">
                 <lightning-input
                     type="text"
-                    label="Filter Addresses"
-                    placeholder="Filter by Name, Path, or Address..."
+                    label={labels.UI.FILTER_LABEL}
+                    placeholder={labels.UI.FILTER_PLACEHOLDER}
                     onchange={handleFilterChange}
                     value={filterText}
                 ></lightning-input>
             </div>
             <template lwc:if={isLoading}>
-                <lightning-spinner alternative-text="Loading addresses..."></lightning-spinner>
+                <lightning-spinner alternative-text={labels.UI.LOADING}></lightning-spinner>
             </template>
             <template lwc:if={error}>
-                <lightning-alert variant="error" title="Error">
+                <lightning-alert variant="error" title={labels.UI.ERROR_TITLE}>
                     {error}
                 </lightning-alert>
             </template>
             <template lwc:else>
                 <lightning-tabset active-tab-value={activeTab}>
-                    <lightning-tab label="External" value="external" onactive={handleExternalTabActive}>
+                    <lightning-tab label={labels.UI.TAB_EXTERNAL} value="external" onactive={handleExternalTabActive}>
                         <lightning-datatable
                             key-field="Id"
                             data={displayedExternalAddresses}
@@ -56,12 +56,12 @@
                         ></lightning-datatable>
                         <div class="slds-align_absolute-center slds-p-vertical_small">
                             <template lwc:if={hasExternalAddresses}>
-                                <button lwc:if={viewLess} class="slds-button slds-button_neutral" onclick={handleViewAll}>View All</button>
-                                <button lwc:else class="slds-button slds-button_neutral" onclick={handleViewLess}>View Less</button>
+                                <button lwc:if={viewLess} onclick={handleViewAll}>{labels.UI.VIEW_ALL}</button>
+                                <button lwc:else onclick={handleViewLess}>{labels.UI.VIEW_LESS}</button>
                             </template>
                         </div>
                     </lightning-tab>
-                    <lightning-tab label="Internal" value="internal" onactive={handleInternalTabActive}>
+                    <lightning-tab label={labels.UI.TAB_INTERNAL} value="internal" onactive={handleInternalTabActive}>
                         <lightning-datatable
                             key-field="Id"
                             data={displayedInternalAddresses}
@@ -72,8 +72,8 @@
                         ></lightning-datatable>
                         <div class="slds-align_absolute-center slds-p-vertical_small">
                             <template lwc:if={hasInternalAddresses}>
-                                <button lwc:if={viewLess} class="slds-button slds-button_neutral" onclick={handleViewAll}>View All</button>
-                                <button lwc:else class="slds-button slds-button_neutral" onclick={handleViewLess}>View Less</button>
+                                <button lwc:if={viewLess} onclick={handleViewAll}>{labels.UI.VIEW_ALL}</button>
+                                <button lwc:else onclick={handleViewLess}>{labels.UI.VIEW_LESS}</button>
                             </template>
                         </div>
                     </lightning-tab>
