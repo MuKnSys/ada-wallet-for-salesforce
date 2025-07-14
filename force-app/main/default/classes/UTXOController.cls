@@ -51,7 +51,7 @@ public with sharing class UTXOController {
     public static List<UTXO_Address__c> getUTXOAddresses(String walletId) {
         try {
             validateWalletId(walletId);
-            return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId, null);
+            return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
         }
