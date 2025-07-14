@@ -89,14 +89,14 @@
                                                 <div class="transaction-card-left">
                                                     <a href={tx.recordUrl} target="_blank" class="slds-text-link transaction-id transaction-name">{tx.Name}</a>
                                                     <template lwc:if={tx.Transaction_Hash__c}>
-                                                        <span class="transaction-hash">
+                                                        <div class="transaction-hash">
                                                             <template lwc:if={tx.cardanoScanUrl}>
-                                                                <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">{tx.truncatedHash}</a>
+                                                                <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">{tx.splitHash}</a>
                                                             </template>
                                                             <template lwc:else>
-                                                                {tx.truncatedHash}
+                                                                {tx.splitHash}
                                                             </template>
-                                                        </span>
+                                                        </div>
                                                     </template>
                                                     <div class="transaction-date">{tx.formattedDate}</div>
                                                 </div>
@@ -118,30 +118,28 @@
                                         <template for:each={outboundTransactionsForDisplay} for:item="tx">
                                             <div key={tx.Id} class="transaction-item outbound">
                                                 <div class="transaction-card-columns">
-                                                    <div class="transaction-card-left">
+                                                    <div class="transaction-card-left" style="width:100%">
                                                         <a href={tx.recordUrl} target="_blank" class="slds-text-link transaction-id transaction-name">{tx.Name}</a>
                                                         <template lwc:if={tx.Transaction_Hash__c}>
                                                             <span class="transaction-hash">
                                                                 <template lwc:if={tx.cardanoScanUrl}>
-                                                                    <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">{tx.truncatedHash}</a>
+                                                                    <a href={tx.cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link transaction-hash">{tx.Transaction_Hash__c}</a>
                                                                 </template>
                                                                 <template lwc:else>
-                                                                    {tx.truncatedHash}
+                                                                    {tx.Transaction_Hash__c}
                                                                 </template>
                                                             </span>
                                                         </template>
                                                         <div class="transaction-status slds-text-color_weak">Status: {tx.Transaction_Status__c}</div>
-                                                        <template lwc:if={tx.hasMemo}>
-                                                            <div class="transaction-memo">{tx.memo}</div>
+                                                        <template lwc:if={tx.Memo__c}>
+                                                            <div class="transaction-memo-singleline">{tx.Memo__c}</div>
                                                         </template>
-                                                    </div>
-                                                    <div class="transaction-card-right">
-                                                        <div class="transaction-amounts">
+                                                        <div class="transaction-amounts asset-lines-flex asset-lines-bottom">
                                                             <template lwc:if={tx.adaLine}>
-                                                                <div class="tx-ada-amount">-<span>{tx.adaLine.Amount__c}</span> ADA</div>
+                                                                <div class="tx-asset-amount tx-ada-amount">-<span>{tx.adaLine.Amount__c}</span> ADA</div>
                                                             </template>
                                                             <template for:each={tx.otherAssetLines} for:item="line">
-                                                                <div key={line.Id} class="tx-other-asset-amount">-<span>{line.Amount__c}</span> {line.Asset__c}</div>
+                                                                <div key={line.Id} class="tx-asset-amount">-<span>{line.Amount__c}</span> {line.Asset__c}</div>
                                                             </template>
                                                         </div>
                                                     </div>
@@ -244,8 +242,9 @@
                                         id="send-address" 
                                         class="form-input form-textarea" 
                                         placeholder="Enter Cardano address" 
-                                        onchange={handleAddressChange}
-                                        onblur={validateAddress}>{sendRecipient}</textarea>
+                                        oninput={handleAddressChange}
+                                        onblur={validateAddress}
+                                    >{sendRecipient}</textarea>
                                 </div>
                                 <!-- Memo Field -->
                                 <div class="form-field">
@@ -254,7 +253,7 @@
                                         id="send-memo" 
                                         class="form-input form-textarea" 
                                         placeholder="Enter memo" 
-                                        onchange={handleMemoChange}
+                                        oninput={handleMemoChange}
                                         maxlength="255"
                                         rows="3">{sendMemo}</textarea>
                                     <div class="char-count">{memoCharCount}/255</div>
@@ -293,8 +292,8 @@
                                         name="adaAmount"
                                         value={adaAmount}
                                         min="0"
-                                        step="0.000001"
-                                        onchange={handleAdaAmountChange}
+                                        step="1"
+                                        oninput={handleAdaAmountChange}
                                         placeholder="Enter amount in ADA"
                                     />
                                 </div>
@@ -302,54 +301,21 @@
                                 <div class="form-field">
                                     <label class="form-label">Tokens</label>
                                     <template for:each={safeTokens} for:item="token" for:index="index">
-                                        <div key={token.id} class="slds-grid slds-gutters slds-m-bottom_x-small">
-                                            <div class="slds-col">
-                                                <lightning-combobox
-                                                    name="tokenName"
-                                                    label="Token"
-                                                    value={token.asset}
-                                                    options={tokenOptions}
-                                                    data-index={index}
-                                                    onchange={handleTokenChange}>
-                                                </lightning-combobox>
-                                            </div>
-                                            <div class="slds-col">
-                                                <input
-                                                    type="number"
-                                                    name="tokenAmount"
-                                                    class="form-input"
-                                                    value={token.amount}
-                                                    min="0"
-                                                    step="0.000001"
-                                                    data-index={index}
-                                                    placeholder={token.placeholder}
-                                                    onchange={handleTokenAmountChange}
-                                                />
-                                                <lightning-button
-                                                    variant="base"
-                                                    label="Send Max"
-                                                    title="Send Max"
-                                                    data-index={index}
-                                                    onclick={handleSendMaxToken}
-                                                    class="slds-m-left_x-small slds-m-bottom_xx-small">
-                                                </lightning-button>
-                                                <template lwc:if={token.asset}>
-                                                    <div class="token-available slds-text-color_weak slds-text-body_small">
-                                                        Available: {token.available}
-                                                    </div>
+                                        <div key={token.id} class="token-row">
+                                            <select class="token-select" data-index={index} value={token.asset} onchange={handleTokenChange}>
+                                                <option value="">Select asset...</option>
+                                                <template for:each={token.options} for:item="option">
+                                                    <option key={option.value} value={option.value}>{option.label}</option>
                                                 </template>
-                                                <template lwc:if={token.warning}>
-                                                    <div class="token-warning slds-text-color_destructive slds-text-body_small">
-                                                        {token.warning}
-                                                    </div>
-                                                </template>
-                                            </div>
-                                            <div class="slds-col slds-align-middle">
-                                                <lightning-button-icon icon-name="utility:close" alternative-text="Remove" title="Remove" data-index={index} onclick={removeToken}></lightning-button-icon>
-                                            </div>
+                                            </select>
+                                            <input class="token-amount" type="number" min="0" step="1" data-index={index} value={token.amount} oninput={handleTokenAmountChange} placeholder="Amount" />
+                                            <button class="send-max-btn" type="button" data-index={index} onclick={handleSendMaxToken} disabled={token.sendMaxDisabled}>Send Max</button>
+                                            <button class="remove-token-btn" type="button" data-index={index} onclick={removeToken} key={token.id}>×</button>
                                         </div>
                                     </template>
-                                    <lightning-button variant="neutral" label="Add Token" onclick={addToken} class="slds-m-top_small"></lightning-button>
+                                    <template lwc:if={tokenOptions.length}>
+                                        <button class="add-token-btn" type="button" onclick={addToken} disabled={isAddTokenDisabled}>Add Token</button>
+                                    </template>
                                 </div>
                             </div>
                         </div>
