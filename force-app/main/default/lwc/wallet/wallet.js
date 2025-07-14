@@ -254,7 +254,7 @@ export default class Wallet extends LightningElement {
     async fetchUtxoCounts() {
         try {
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
-            const allAssets = await this.getAllUtxoAssetsForWallet({ walletId: this.recordId });
+            const allAssets = await getAllUtxoAssetsForWallet({ walletId: this.recordId });
             
             if (summary.success) {
                 const tokens = summary.tokens || [];
@@ -385,10 +385,6 @@ export default class Wallet extends LightningElement {
         this.assets = [];
         this.hasAssets = false;
         this.transactions = [];
-    }
-    
-    async getAllUtxoAssetsForWallet(params) {
-        return { success: true, assets: [], message: labels.ERROR.METHOD_NOT_YET_IMPLEMENTED };
     }
     
     generateQrCode() {
