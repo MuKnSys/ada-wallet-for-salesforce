@@ -11,22 +11,7 @@ public with sharing class UTXOController {
         @AuraEnabled public String privateKey { get; set; }
     }
 
-    public class TransactionWrapper {
-        @AuraEnabled public String assetName { get; set; }
-        @AuraEnabled public Decimal amount { get; set; }
-        @AuraEnabled public String txHash { get; set; }
-        @AuraEnabled public Datetime receivedAt { get; set; }
-    }
 
-    public class TokenCount {
-        @AuraEnabled public String symbol;
-        @AuraEnabled public Decimal amount;
-    }
-
-    public class AssetTokenSummary {
-        @AuraEnabled public Decimal ada;
-        @AuraEnabled public List<TokenCount> tokens;
-    }
 
     // Core wallet and address methods
     @AuraEnabled(cacheable=true)
@@ -51,7 +36,7 @@ public with sharing class UTXOController {
     public static List<UTXO_Address__c> getUTXOAddresses(String walletId) {
         try {
             validateWalletId(walletId);
-            return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId);
+            return UTXOAddressSelector.getAddressesByWalletId(walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
         }
@@ -61,14 +46,7 @@ public with sharing class UTXOController {
     public static List<UTXO_Address__c> getAllWalletAddresses(String walletId) {
         try {
             validateWalletId(walletId);
-            
-            return [
-                SELECT Id, Address__c, Index__c, Type__c, Path__c, 
-                       Private_Key__c, Public_Key__c, Payment_Key_Hash__c
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId
-                ORDER BY Type__c, Index__c
-            ];
+            return UTXOAddressSelector.getAddressesByWalletId(walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving wallet addresses: ' + e.getMessage());
         }
@@ -168,15 +146,7 @@ public with sharing class UTXOController {
     public static String getFirstUnusedReceivingAddress(String walletId) {
         try {
             validateWalletId(walletId);
-            List<UTXO_Address__c> addrs = [
-                SELECT Address__c, Index__c
-                FROM UTXO_Address__c
-                WHERE Wallet__c = :walletId
-                  AND Type__c = '0'
-                  AND (Is_Used__c = false OR Is_Used__c = null)
-                ORDER BY Index__c
-                LIMIT 1
-            ];
+            List<UTXO_Address__c> addrs = UTXOAddressSelector.getFirstUnusedAddressByType(walletId, '0');
             return addrs.isEmpty() ? null : addrs[0].Address__c;
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching unused receiving address: ' + e.getMessage());
@@ -187,15 +157,7 @@ public with sharing class UTXOController {
     public static List<UTXO_Asset__c> getAllUtxoAssetsForWallet(String walletId) {
         try {
             validateWalletId(walletId);
-
-            return [
-                SELECT Id, UTXO_Address__c, Asset__c, Amount__c, Name__c, 
-                       Decimals__c, Policy_ID__c, Fingerprint__c,
-                       UTXO_Address__r.Address__c, UTXO_Address__r.Index__c
-                FROM UTXO_Asset__c
-                WHERE UTXO_Address__r.Wallet__c = :walletId
-                ORDER BY UTXO_Address__r.Index__c, Asset__c
-            ];
+            return UTXOAssetSelector.getAssetsByWalletId(walletId);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO assets: ' + e.getMessage());
         }
@@ -216,8 +178,8 @@ public with sharing class UTXOController {
             Outbound_Transaction__c txRecord = new Outbound_Transaction__c(
                 Wallet__c = walletId,
                 To_Address__c = toAddress,
-                Approved__c = 'Not Approved',
-                Transaction_Status__c = 'Ready to Sign',
+                Approved__c = OutboundTransactionHelper.APPROVAL_STATUS_NOT_APPROVED,
+                Transaction_Status__c = OutboundTransactionHelper.STATUS_READY_TO_SIGN,
                 Memo__c = String.isBlank(memo) ? null : memo
             );
             SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
@@ -258,12 +220,7 @@ public with sharing class UTXOController {
     public static List<Outbound_Transaction_Line__c> getTransactionLinesForOutbound(String outboundTransactionId) {
         try {
             validateId(outboundTransactionId, 'Outbound Transaction ID');
-            return [
-                SELECT Id, Amount__c, Asset__c
-                FROM Outbound_Transaction_Line__c
-                WHERE Outbound_Transaction__c = :outboundTransactionId
-                ORDER BY Id
-            ];
+            return OutboundTransactionLineSelector.getTransactionLinesByOutboundId(outboundTransactionId);
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching transaction lines: ' + e.getMessage());
         }
@@ -273,12 +230,7 @@ public with sharing class UTXOController {
     public static Outbound_Transaction__c getOutboundTransaction(String outboundTransactionId) {
         try {
             validateId(outboundTransactionId, 'Outbound Transaction ID');
-            List<Outbound_Transaction__c> results = [
-                SELECT Id, To_Address__c, Wallet__c, Memo__c
-                FROM Outbound_Transaction__c
-                WHERE Id = :outboundTransactionId
-                LIMIT 1
-            ];
+            List<Outbound_Transaction__c> results = OutboundTransactionSelector.getOutboundTransactionById(outboundTransactionId);
             
             if (results.isEmpty()) {
                 throw new AuraHandledException('Outbound Transaction not found');
@@ -301,18 +253,13 @@ public with sharing class UTXOController {
             if (String.isBlank(signedCbor)) {
                 throw new AuraHandledException('Signed CBOR is required');
             }
-            List<Outbound_Transaction__c> txList = [
-                SELECT Id, Signed_Transaction_CBOR__c, Transaction_Status__c, Memo__c
-                FROM Outbound_Transaction__c
-                WHERE Id = :recordId
-                LIMIT 1
-            ];
+            List<Outbound_Transaction__c> txList = OutboundTransactionSelector.getOutboundTransactionById(recordId);
             if (txList.isEmpty()) {
                 throw new AuraHandledException('Outbound Transaction not found');
             }
             Outbound_Transaction__c tx = txList[0];
             tx.Signed_Transaction_CBOR__c = signedCbor;
-            tx.Transaction_Status__c = 'Ready to Send';
+            tx.Transaction_Status__c = OutboundTransactionHelper.STATUS_READY_TO_SEND;
             update tx;
         } catch (Exception e) {
             throw new AuraHandledException('Error updating outbound transaction: ' + e.getMessage());
