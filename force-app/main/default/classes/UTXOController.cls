@@ -47,50 +47,6 @@ public with sharing class UTXOController {
         }
     }
 
-    @AuraEnabled
-    public static void createUTXOAddresses(String walletId, List<UTXOAddress> receivingAddresses, List<UTXOAddress> changeAddresses) {
-        try {
-            if (receivingAddresses == null || changeAddresses == null) {
-                throw new AuraHandledException('Address lists cannot be null');
-            }
-
-            List<UTXO_Address__c> utxoRecords = new List<UTXO_Address__c>();
-            utxoRecords.addAll(createAddressRecords(walletId, receivingAddresses, '0'));
-            utxoRecords.addAll(createAddressRecords(walletId, changeAddresses, '1'));
-
-            if (!utxoRecords.isEmpty()) {
-                SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, utxoRecords);
-                insert decision.getRecords();
-            }
-        } catch (Exception e) {
-            throw new AuraHandledException('Error creating UTxO addresses: ' + e.getMessage());
-        }
-    }
-
-    private static List<UTXO_Address__c> createAddressRecords(String walletId, List<UTXOAddress> addresses, String type) {
-        List<UTXO_Address__c> records = new List<UTXO_Address__c>();
-        
-        for (UTXOAddress addr : addresses) {
-            if (addr.index == null || String.isBlank(addr.address) || String.isBlank(addr.publicKey) || 
-                String.isBlank(addr.paymentKeyHash) || String.isBlank(addr.path)) {
-                throw new AuraHandledException('Invalid address data for index ' + addr.index);
-            }
-            
-            records.add(new UTXO_Address__c(
-                Wallet__c = walletId,
-                Address__c = addr.address,
-                Index__c = addr.index,
-                Public_Key__c = addr.publicKey,
-                Payment_Key_Hash__c = addr.paymentKeyHash,
-                Path__c = addr.path,
-                Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
-                Type__c = type
-            ));
-        }
-        
-        return records;
-    }
-
     @AuraEnabled(cacheable=true)
     public static List<UTXO_Address__c> getUTXOAddresses(String walletId) {
         try {
@@ -98,48 +54,6 @@ public with sharing class UTXOController {
             return UTXOAddressSelector.getUTXOAddressesByWalletId(walletId, null);
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving UTXO addresses: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
-    public static List<UTXO_Address__c> getUTXOAddressesWithAssets(String walletId) {
-        try {
-            validateWalletId(walletId);
-            
-            List<UTXO_Address__c> allAddresses = [
-                SELECT Id, Address__c, Index__c, Public_Key__c, Payment_Key_Hash__c, 
-                       Path__c, Private_Key__c, Type__c, Name
-                FROM UTXO_Address__c 
-                WHERE Wallet__c = :walletId
-                ORDER BY Index__c ASC
-            ];
-            
-            List<UTXO_Address__c> filteredAddresses = new List<UTXO_Address__c>();
-            for (UTXO_Address__c addr : allAddresses) {
-                if (addr.Private_Key__c != null) {
-                    filteredAddresses.add(addr);
-                }
-            }
-            
-            Set<Id> addressesWithAssets = new Set<Id>();
-            for (UTXO_Asset__c asset : [
-                SELECT UTXO_Address__c 
-                FROM UTXO_Asset__c 
-                WHERE UTXO_Address__c IN :filteredAddresses
-            ]) {
-                addressesWithAssets.add(asset.UTXO_Address__c);
-            }
-            
-            List<UTXO_Address__c> result = new List<UTXO_Address__c>();
-            for (UTXO_Address__c addr : allAddresses) {
-                if (addressesWithAssets.contains(addr.Id)) {
-                    result.add(addr);
-                }
-            }
-            
-            return result;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving UTXO addresses with assets: ' + e.getMessage());
         }
     }
 
@@ -157,26 +71,6 @@ public with sharing class UTXOController {
             ];
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving wallet addresses: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static List<UTXOAddressSelector.UTXOAddressWithDecryptedKey> getUTXOAddressesWithDecryptedKeys(String walletId) {
-        try {
-            validateWalletId(walletId);
-            return UTXOAddressSelector.getUTXOAddressesWithDecryptedKeysByWalletId(walletId, null);
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving UTXO addresses with decrypted keys: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static UTXOAddressSelector.UTXOAddressWithDecryptedKey getUTXOAddressWithDecryptedKeyById(String utxoAddressId) {
-        try {
-            validateId(utxoAddressId, 'UTXO Address ID');
-            return UTXOAddressSelector.getUTXOAddressWithDecryptedKeyById(utxoAddressId);
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving UTXO address with decrypted key: ' + e.getMessage());
         }
     }
 
