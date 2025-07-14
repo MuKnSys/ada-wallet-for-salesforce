@@ -103,7 +103,6 @@
                         <template for:each={importInputs} for:item="input" for:index="idx">
                             <div key={input.label} class="input-container">
                                 <lightning-input 
-                                    key={input.label}
                                     label={input.label}
                                     value={input.value}
                                     onchange={handleImportInputChange}
@@ -153,7 +152,6 @@
                         <template for:each={verificationInputs} for:item="input" for:index="idx">
                             <div key={input.label} class="input-container">
                                 <lightning-input 
-                                    key={input.label}
                                     label={input.label}
                                     value={input.value}
                                     onchange={handleVerificationChange}

@@ -48,13 +48,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         return this.suggestions.length > 0 && this.activeInputIndex >= 0;
     }
 
-    get wordCountOptions() {
-        return [
-            { label: this.labels?.WORD_COUNT?.Option15 || '15 Words', value: '15' },
-            { label: this.labels?.WORD_COUNT?.Option24 || '24 Words', value: '24' }
-        ];
-    }
-
     connectedCallback() {
         this.walletName = '';
         this.seedPhrase = [];
@@ -178,21 +171,23 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     handleImportInputChange(event) {
         const index = parseInt(event.target.dataset.index);
-        const value = event.target.value.toLowerCase().trim();
+        const value = event.target.value ? event.target.value.toLowerCase().trim() : '';
         
-        this.importInputs[index].value = value;
-        this.importInputs = [...this.importInputs];
-        this.activeInputIndex = index;
-        
-        // Generate suggestions based on input
-        if (value.length > 0 && this.bip39WordList.length > 0) {
-            this.suggestions = this.bip39WordList.filter(word => 
-                word.toLowerCase().startsWith(value)
-            ).slice(0, 5); // Limit to 5 suggestions
-            this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
-        } else {
-            this.suggestions = [];
-            this.importInputs.forEach(input => input.showSuggestions = false);
+        if (index >= 0 && index < this.importInputs.length) {
+            this.importInputs[index].value = value;
+            this.importInputs = [...this.importInputs];
+            this.activeInputIndex = index;
+            
+            // Generate suggestions based on input
+            if (value.length > 0 && this.bip39WordList.length > 0) {
+                this.suggestions = this.bip39WordList.filter(word => 
+                    word.toLowerCase().startsWith(value)
+                ).slice(0, 5); // Limit to 5 suggestions
+                this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
+            } else {
+                this.suggestions = [];
+                this.importInputs.forEach(input => input.showSuggestions = false);
+            }
         }
     }
 
@@ -230,16 +225,18 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         const index = parseInt(event.target.dataset.index);
         this.activeInputIndex = index;
         
-        // Show suggestions if there's a value
-        const value = this.importInputs[index].value.toLowerCase().trim();
-        if (value.length > 0 && this.bip39WordList.length > 0) {
-            this.suggestions = this.bip39WordList.filter(word => 
-                word.toLowerCase().startsWith(value)
-            ).slice(0, 5);
-            this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
-        } else {
-            this.suggestions = [];
-            this.importInputs.forEach(input => input.showSuggestions = false);
+        if (index >= 0 && index < this.importInputs.length) {
+            // Show suggestions if there's a value
+            const value = this.importInputs[index].value ? this.importInputs[index].value.toLowerCase().trim() : '';
+            if (value.length > 0 && this.bip39WordList.length > 0) {
+                this.suggestions = this.bip39WordList.filter(word => 
+                    word.toLowerCase().startsWith(value)
+                ).slice(0, 5);
+                this.importInputs.forEach((input, i) => input.showSuggestions = (i === index));
+            } else {
+                this.suggestions = [];
+                this.importInputs.forEach(input => input.showSuggestions = false);
+            }
         }
     }
 
@@ -331,20 +328,24 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     }
 
     handleVerificationChange(event) {
-        const index = parseInt(event.target.dataset.index);
-        const value = event.target.value.toLowerCase().trim();
-        this.verificationInputs[index].value = value;
-        this.verificationInputs = [...this.verificationInputs];
-        this.activeVerificationInputIndex = index;
-        // Generate suggestions based on input
-        if (value.length > 0 && this.bip39WordList.length > 0) {
-            this.suggestions = this.bip39WordList.filter(word => 
-                word.toLowerCase().startsWith(value)
-            ).slice(0, 5);
-            this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
-        } else {
-            this.suggestions = [];
-            this.verificationInputs.forEach(input => input.showSuggestions = false);
+        const index = parseInt(event.target.dataset.verifIndex);
+        const value = event.target.value ? event.target.value.toLowerCase().trim() : '';
+        
+        if (index >= 0 && index < this.verificationInputs.length) {
+            this.verificationInputs[index].value = value;
+            this.verificationInputs = [...this.verificationInputs];
+            this.activeVerificationInputIndex = index;
+            
+            // Generate suggestions based on input
+            if (value.length > 0 && this.bip39WordList.length > 0) {
+                this.suggestions = this.bip39WordList.filter(word => 
+                    word.toLowerCase().startsWith(value)
+                ).slice(0, 5);
+                this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
+            } else {
+                this.suggestions = [];
+                this.verificationInputs.forEach(input => input.showSuggestions = false);
+            }
         }
     }
 
@@ -375,15 +376,18 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     handleVerificationInputFocus(event) {
         const index = parseInt(event.target.dataset.verifIndex);
         this.activeVerificationInputIndex = index;
-        const value = this.verificationInputs[index].value.toLowerCase().trim();
-        if (value.length > 0 && this.bip39WordList.length > 0) {
-            this.suggestions = this.bip39WordList.filter(word => 
-                word.toLowerCase().startsWith(value)
-            ).slice(0, 5);
-            this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
-        } else {
-            this.suggestions = [];
-            this.verificationInputs.forEach(input => input.showSuggestions = false);
+        
+        if (index >= 0 && index < this.verificationInputs.length) {
+            const value = this.verificationInputs[index].value ? this.verificationInputs[index].value.toLowerCase().trim() : '';
+            if (value.length > 0 && this.bip39WordList.length > 0) {
+                this.suggestions = this.bip39WordList.filter(word => 
+                    word.toLowerCase().startsWith(value)
+                ).slice(0, 5);
+                this.verificationInputs.forEach((input, i) => input.showSuggestions = (i === index));
+            } else {
+                this.suggestions = [];
+                this.verificationInputs.forEach(input => input.showSuggestions = false);
+            }
         }
     }
 

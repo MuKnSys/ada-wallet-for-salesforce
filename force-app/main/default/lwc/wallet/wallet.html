@@ -244,10 +244,8 @@
                                         id="send-address" 
                                         class="form-input form-textarea" 
                                         placeholder="Enter Cardano address" 
-                                        value={sendRecipient} 
                                         onchange={handleAddressChange}
-                                        onblur={validateAddress}>
-                                    </textarea>
+                                        onblur={validateAddress}>{sendRecipient}</textarea>
                                 </div>
                                 <!-- Memo Field -->
                                 <div class="form-field">
@@ -256,10 +254,9 @@
                                         id="send-memo" 
                                         class="form-input form-textarea" 
                                         placeholder="Enter memo" 
-                                        value={sendMemo} 
                                         onchange={handleMemoChange}
                                         maxlength="255"
-                                        rows="3"></textarea>
+                                        rows="3">{sendMemo}</textarea>
                                     <div class="char-count">{memoCharCount}/255</div>
                                 </div>
                                 <template lwc:if={addressError}>
