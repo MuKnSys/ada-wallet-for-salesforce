@@ -182,7 +182,7 @@
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Private Key Button</shortDescription>
-        <value>Generate Private Key</value>
+        <value>Generate Private Key &amp; HMAC Key</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_PrivateKey_Info</fullName>
@@ -190,7 +190,7 @@
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Private Key Info</shortDescription>
-        <value>A private key is your ultimate security ally! It ensures your Seed phrase stays protected by encrypting it. In this step, we&apos;ll retrieve the private key and securely store it, locking in your data&apos;s safety with precision. Let&apos;s get started!</value>
+        <value>A private key and HMAC key are your ultimate security allies! They ensure your Seed phrase stays protected by encrypting it. In this step, we&apos;ll retrieve both the private key and HMAC key and securely store them, locking in your data&apos;s safety with precision. Let&apos;s get started!</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_PrivateKey_Sub_Header</fullName>
@@ -198,7 +198,7 @@
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Private Key Sub Header</shortDescription>
-        <value>Private Key</value>
+        <value>Private Key and HMAC Key</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_Success</fullName>

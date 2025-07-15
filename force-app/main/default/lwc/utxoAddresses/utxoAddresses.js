@@ -19,6 +19,11 @@ import { isAddressActuallyUsed, truncateText, showToast } from 'c/utils';
 import { labels } from './labels';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
+    labels = labels;
+    displayLimit = 5; // Limit to 5 addresses per tab
+    wiredAddressesResult; // To store the wired result for refresh
+    viewLess = true;
+
     @api recordId;
     @track externalAddresses = [];
     @track internalAddresses = [];
@@ -34,9 +39,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @track dummyState = false; // For forcing re-render
     @track filterText = '';
     @track isLibraryLoaded = false;
-    displayLimit = 5; // Limit to 5 addresses per tab
-    wiredAddressesResult; // To store the wired result for refresh
-    viewLess = true;
 
     // Datatable columns
     columns = [
@@ -77,9 +79,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
     get hasInternalAddresses() {
         return this.internalAddresses?.length > 0;
-    }
-
-    labels = labels;
+    }    
 
     renderedCallback() {
         if (!this.isLibraryLoaded) {            

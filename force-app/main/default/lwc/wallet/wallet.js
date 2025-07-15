@@ -16,7 +16,7 @@ import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.sync
 
 export default class Wallet extends LightningElement {
     CHANNEL_NAME = '/event/WalletSyncEvent__e';
-
+    labels = labels;
     _recordId;
     _inboundTransactions = [];
     _outboundTransactions = [];
@@ -50,9 +50,7 @@ export default class Wallet extends LightningElement {
     @track sendMemo = '';
     @track showAllInbound = false;
     @track showAllOutbound = false;
-    @track tokenRowErrors = [];
-
-    labels = labels;
+    @track tokenRowErrors = [];    
 
     @api
     get recordId() {

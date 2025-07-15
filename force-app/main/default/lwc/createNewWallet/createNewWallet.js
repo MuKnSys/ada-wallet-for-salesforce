@@ -16,7 +16,8 @@ import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
-    // Configuration constants
+    labels = labels;
+
     TARGET_CONSECUTIVE_ADDRESSES = 20;
     ADDRESS_TYPES = {
         RECEIVING: 0,
@@ -26,6 +27,25 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         RECEIVING: 0,
         CHANGE: 1
     };
+
+    @track librariesLoaded = false;
+    @track selectedWalletSetId = '';
+    @track walletName = '';
+    @track accountIndex = '0';
+    @track errorMessage = '';
+    @track pickerErrorMessage = '';
+    @track accountIndexErrorMessage = '';
+    @track isLoading = false;
+    @track currentStep = '';
+    @track progressMessage = '';
+    @track showSeedPhraseVerification = false;
+    @track seedPhraseInputs = [];
+    @track seedPhraseErrorMessage = '';
+    @track originalSeedPhrase = [];
+    @track seedPhraseWordCount = 24;    
+    @track bip39WordList = [];
+    @track suggestions = [];
+    @track activeInputIndex = -1;
 
     // Helper: Get Ed25519 raw private key (hex) from Bip32PrivateKey
     getRawEd25519PrivateKeyHex(bip32priv) {
@@ -53,28 +73,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             throw new Error(`Failed to extract Ed25519 private key: ${error.message}`);
         }
     }
-
-    @track librariesLoaded = false;
-    @track selectedWalletSetId = '';
-    @track walletName = '';
-    @track accountIndex = '0';
-    @track errorMessage = '';
-    @track pickerErrorMessage = '';
-    @track accountIndexErrorMessage = '';
-    @track isLoading = false;
-    @track currentStep = '';
-    @track progressMessage = '';
-    @track showSeedPhraseVerification = false;
-    @track seedPhraseInputs = [];
-    @track seedPhraseErrorMessage = '';
-    @track originalSeedPhrase = [];
-    @track seedPhraseWordCount = 24;
-    // New properties for autocomplete functionality
-    @track bip39WordList = [];
-    @track suggestions = [];
-    @track activeInputIndex = -1;
-
-    labels = labels;
 
     get isCreateDisabled() {
         const isSeedPhraseValid = !this.showSeedPhraseVerification ||
