@@ -9,15 +9,15 @@ import TYPE_FIELD from '@salesforce/schema/UTXO_Address__c.Type__c';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 
-import getWallet from '@salesforce/apex/UTXOController.getWallet';
 import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
+import getWallet from '@salesforce/apex/UTXOController.getWallet';
 import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
 import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissions';
 import getNextUTXOIndex from '@salesforce/apex/UTXOController.getNextUTXOIndex';
 import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivingUTXOAddress';
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
-import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
+import syncAssetsAndTransactions from '@salesforce/apex/UTXOController.syncAssetsAndTransactions';
+import setAddressesUsed from '@salesforce/apex/UTXOController.setAddressesUsed';
 import { isAddressActuallyUsed, truncateText, showToast, BIP32_PURPOSE, BIP32_COIN_TYPE, DERIVATION_PATHS, ADDRESS_TYPES } from 'c/utils';
 import { labels } from './labels';
 

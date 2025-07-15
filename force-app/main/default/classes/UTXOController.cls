@@ -263,6 +263,24 @@ public with sharing class UTXOController {
             throw new AuraHandledException('Error updating outbound transaction: ' + e.getMessage());
         }
     }
+    
+    @AuraEnabled
+    public static Map<String, Object> syncAssetsAndTransactions(Id utxoAddressId) {
+        try {
+            return UTXOHelper.syncAssetsAndTransactions(utxoAddressId);
+        } catch (Exception e) {
+            throw new AuraHandledException('Error syncing assets and transactions: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
+    public static void setAddressesUsed(List<Id> utxoAddressIds) {
+        try {
+            UTXOHelper.setAddressesUsed(utxoAddressIds);
+        } catch (Exception e) {
+            throw new AuraHandledException('Error setting addresses as used: ' + e.getMessage());
+        }
+    }
 
     // Helper methods
     private static void validateWalletId(String walletId) {
