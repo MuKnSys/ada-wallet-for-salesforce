@@ -2,15 +2,18 @@ import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { getRecord } from 'lightning/uiRecordApi';
-import CARDANO_SERIALIZATION from '@salesforce/resourceUrl/cardanoSerialization';
-import BLAKE from '@salesforce/resourceUrl/blake';
-import getEpochParameters from '@salesforce/apex/BlockfrostService.getEpochParameters';
-import getTransactionLinesForOutbound from '@salesforce/apex/UTXOController.getTransactionLinesForOutbound';
-import getOutboundTransaction from '@salesforce/apex/UTXOController.getOutboundTransaction';
-import loadWallet from '@salesforce/apex/TransactionController.loadWallet';
-import updateOutboundTransactionWithSignedCbor from '@salesforce/apex/UTXOController.updateOutboundTransactionWithSignedCbor';
+
 import TRANSACTION_STATUS_FIELD from '@salesforce/schema/Outbound_Transaction__c.Transaction_Status__c';
 import TRANSACTION_HASH_FIELD from '@salesforce/schema/Outbound_Transaction__c.Transaction_Hash__c';
+
+import CARDANO_SERIALIZATION from '@salesforce/resourceUrl/cardanoSerialization';
+import BLAKE from '@salesforce/resourceUrl/blake';
+
+import getEpochParameters from '@salesforce/apex/TransactionController.getEpochParameters';
+import getTransactionLinesForOutbound from '@salesforce/apex/TransactionController.getTransactionLinesForOutbound';
+import getOutboundTransaction from '@salesforce/apex/TransactionController.getOutboundTransaction';
+import updateOutboundTransactionWithSignedCbor from '@salesforce/apex/TransactionController.updateOutboundTransactionWithSignedCbor';
+import loadWallet from '@salesforce/apex/TransactionController.loadWallet';
 
 class CardanoTransactionError extends Error {
     constructor(message, code, details = {}) {
@@ -488,7 +491,7 @@ export default class PrepareAndSignTransaction extends LightningElement {
                     if (line.Asset__c && line.Asset__c !== 'lovelace' && line.Asset__c.toLowerCase() !== 'ada') {
                         const asset = walletData.walletSummary.totalBalance.assets.find(
                             a => (a.ticker && a.ticker.toLowerCase() === line.Asset__c.toLowerCase()) ||
-                                 (a.assetName && a.assetName.toLowerCase() === line.Asset__c.toLowerCase())
+                                (a.assetName && a.assetName.toLowerCase() === line.Asset__c.toLowerCase())
                         );
                         if (asset) {
                             tokenUnit = asset.unit;

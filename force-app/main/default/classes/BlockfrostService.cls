@@ -65,8 +65,7 @@ public with sharing class BlockfrostService {
             throw new BlockfrostEndpoint.BlockfrostAPIException('Error checking address usage: ' + e.getMessage());
         }
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static String getAddressUtxos(String address) {
         if (String.isBlank(address)) {
             throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address');
@@ -85,8 +84,7 @@ public with sharing class BlockfrostService {
         }
         throw new BlockfrostEndpoint.BlockfrostAPIException('UTXO call error status '+endpoint.getStatusCode());
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static Map<String, Object> getAssetInfo(String assetId) {
         try {
             if (String.isBlank(assetId)) {
@@ -145,8 +143,7 @@ public with sharing class BlockfrostService {
             };
         }
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static String getEpochParameters() {
         String projectId = AdaWalletsService.getBlockfrostProjectId();
         
@@ -169,8 +166,7 @@ public with sharing class BlockfrostService {
             });
         }
     }
-
-    @AuraEnabled
+    
     public static String submitTransaction(String cborHex) {
         if (String.isBlank(cborHex)) {
             throw new BlockfrostEndpoint.BlockfrostAPIException('CBOR hex is required');
@@ -242,8 +238,7 @@ public with sharing class BlockfrostService {
             });
         }
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static String getAddressTransactions(String address) {
         if (String.isBlank(address)) {
             throw new BlockfrostEndpoint.BlockfrostAPIException('Invalid address provided');
@@ -276,8 +271,7 @@ public with sharing class BlockfrostService {
 
     /**
      * Get all transactions for an address using /addresses/{address}/transactions
-     */
-    @AuraEnabled(cacheable=false)
+     */    
     public static String getAddressTransactionsList(String address) {
         if (String.isBlank(address)) {
             throw new BlockfrostEndpoint.BlockfrostAPIException('Address is required');
@@ -303,8 +297,7 @@ public with sharing class BlockfrostService {
             'error' => 'Blockfrost address transactions API error'
         });
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static String analyzeMultipleTransactionDirections(List<String> txHashes, List<String> walletAddresses) {
         try {
             if (txHashes == null || txHashes.isEmpty()) {
@@ -338,8 +331,7 @@ public with sharing class BlockfrostService {
             });
         }
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static String getTransactionDetails(String txHash) {
         if (String.isBlank(txHash)) {
             throw new BlockfrostEndpoint.BlockfrostAPIException('Transaction hash is required');
@@ -369,8 +361,7 @@ public with sharing class BlockfrostService {
             'error' => 'Blockfrost transaction details API error'
         });
     }
-
-    @AuraEnabled(cacheable=false)
+    
     public static String analyzeTransactionDirection(String txHash, List<String> walletAddresses) {
         try {
             if (String.isBlank(txHash)) {

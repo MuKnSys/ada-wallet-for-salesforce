@@ -1,4 +1,17 @@
 public with sharing class UTXOHelper {    
+    
+    /**
+     * Validates an ID format
+     * @param id The ID to validate
+     * @param idType The type of ID for error message
+     * @throws AuraHandledException if ID is invalid
+     */
+    public static void validateId(String id, String idType) {
+        if (String.isBlank(id) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', id)) {
+            throw new AuraHandledException('Invalid ' + idType);
+        }
+    }
+    
     /**
      * Synchronizes assets and transactions for a UTXO address
      * @param utxoAddressId The UTXO Address ID to sync

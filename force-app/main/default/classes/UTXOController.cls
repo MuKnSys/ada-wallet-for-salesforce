@@ -214,55 +214,6 @@ public with sharing class UTXOController {
         }
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<Outbound_Transaction_Line__c> getTransactionLinesForOutbound(String outboundTransactionId) {
-        try {
-            validateId(outboundTransactionId, 'Outbound Transaction ID');
-            return OutboundTransactionLineSelector.getTransactionLinesByOutboundId(outboundTransactionId);
-        } catch (Exception e) {
-            throw new AuraHandledException('Error fetching transaction lines: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled(cacheable=true)
-    public static Outbound_Transaction__c getOutboundTransaction(String outboundTransactionId) {
-        try {
-            validateId(outboundTransactionId, 'Outbound Transaction ID');
-            List<Outbound_Transaction__c> results = OutboundTransactionSelector.getOutboundTransactionById(outboundTransactionId);
-            
-            if (results.isEmpty()) {
-                throw new AuraHandledException('Outbound Transaction not found');
-            }
-            
-            return results[0];
-        } catch (AuraHandledException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new AuraHandledException('Failed to fetch Outbound Transaction: ' + e.getMessage());
-        }
-    }
-
-    @AuraEnabled
-    public static void updateOutboundTransactionWithSignedCbor(String recordId, String signedCbor) {
-        try {
-            if (String.isBlank(recordId)) {
-                throw new AuraHandledException('Record ID is required');
-            }
-            if (String.isBlank(signedCbor)) {
-                throw new AuraHandledException('Signed CBOR is required');
-            }
-            List<Outbound_Transaction__c> txList = OutboundTransactionSelector.getOutboundTransactionById(recordId);
-            if (txList.isEmpty()) {
-                throw new AuraHandledException('Outbound Transaction not found');
-            }
-            Outbound_Transaction__c tx = txList[0];
-            tx.Signed_Transaction_CBOR__c = signedCbor;
-            tx.Transaction_Status__c = OutboundTransactionHelper.STATUS_READY_TO_SEND;
-            update tx;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error updating outbound transaction: ' + e.getMessage());
-        }
-    }
     
     @AuraEnabled
     public static Map<String, Object> syncAssetsAndTransactions(Id utxoAddressId) {
@@ -289,11 +240,6 @@ public with sharing class UTXOController {
         }
     }
 
-    private static void validateId(String id, String idType) {
-        if (String.isBlank(id) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', id)) {
-            throw new AuraHandledException('Invalid ' + idType);
-        }
-    }
 
     private static void validateAddress(UTXOAddress address, String addressType) {
         if (address == null) {
