@@ -2,11 +2,12 @@ import { LightningElement, track } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 
-import bipLibrary from '@salesforce/resourceUrl/bip39';
-import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
+import { labels } from './labels';
 import { showToast } from 'c/utils';
 
-import { labels } from './labels';
+import bipLibrary from '@salesforce/resourceUrl/bip39';
+
+import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
 
 export default class GenerateSeedPhrase extends NavigationMixin(LightningElement) {
     labels = labels;
@@ -29,8 +30,6 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
     @track suggestions = [];
     @track activeInputIndex = -1;
     @track activeVerificationInputIndex = -1;
-
-    labels = labels;
 
     get isNextDisabled() {
         return !this.walletName.trim();

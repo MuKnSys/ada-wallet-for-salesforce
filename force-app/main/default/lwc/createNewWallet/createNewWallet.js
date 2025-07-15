@@ -1,9 +1,9 @@
 import { LightningElement, track } from 'lwc';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
-import { showToast } from 'c/utils';
 
 import { labels } from './labels';
+import { showToast } from 'c/utils';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -15,19 +15,33 @@ import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAcc
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
 
+const TARGET_CONSECUTIVE_ADDRESSES = 20;
+const DERIVATION_PATHS = {
+    RECEIVING: 0,
+    CHANGE: 1
+};
+const HARDENING_OFFSET = 0x80000000;
+
+// BIP32 derivation path constants for Cardano
+const BIP32_PURPOSE = 1852;  // Cardano purpose
+const BIP32_COIN_TYPE = 1815; // Cardano coin type
+const BIP32_ACCOUNT_PATH = 0; // Account path
+const BIP32_STAKE_PATH = 2;   // Stake path
+
+// UI constants
+const SUGGESTIONS_LIMIT = 5;
+const FOCUS_DELAY = 100;
+const BLUR_DELAY = 200;
+const RETRY_DELAY = 2000;
+
+// Helper function for BIP32 hardening
+const harden = (num) => HARDENING_OFFSET + num;
+
+
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     labels = labels;
 
-    TARGET_CONSECUTIVE_ADDRESSES = 20;
-    ADDRESS_TYPES = {
-        RECEIVING: 0,
-        CHANGE: 1
-    };
-    DERIVATION_PATHS = {
-        RECEIVING: 0,
-        CHANGE: 1
-    };
-
+    cardano;
     @track librariesLoaded = false;
     @track selectedWalletSetId = '';
     @track walletName = '';
@@ -41,38 +55,10 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track showSeedPhraseVerification = false;
     @track seedPhraseInputs = [];
     @track seedPhraseErrorMessage = '';
-    @track originalSeedPhrase = [];
     @track seedPhraseWordCount = 24;    
     @track bip39WordList = [];
     @track suggestions = [];
     @track activeInputIndex = -1;
-
-    // Helper: Get Ed25519 raw private key (hex) from Bip32PrivateKey
-    getRawEd25519PrivateKeyHex(bip32priv) {
-        try {
-            // Check if this is a valid BIP32 private key that can be converted to raw Ed25519
-            if (!bip32priv || typeof bip32priv.to_raw_key !== 'function') {
-                throw new Error(this.labels.ERROR.InvalidBip32Key);
-            }
-            
-            // Get the raw key that was used to generate the address
-            const rawKey = bip32priv.to_raw_key();
-            if (!rawKey || typeof rawKey.as_bytes !== 'function') {
-                throw new Error(this.labels.ERROR.RawKeyExtraction);
-            }
-            
-            const keyBytes = rawKey.as_bytes();
-            if (!keyBytes || keyBytes.length < 32) {
-                throw new Error(this.labels.ERROR.RawKeyInvalid);
-            }
-            
-            // Only use the first 32 bytes (the actual private key)
-            const privateKeyBytes = keyBytes.slice(0, 32);
-            return Buffer.from(privateKeyBytes).toString('hex');
-        } catch (error) {
-            throw new Error(`Failed to extract Ed25519 private key: ${error.message}`);
-        }
-    }
 
     get isCreateDisabled() {
         const isSeedPhraseValid = !this.showSeedPhraseVerification ||
@@ -152,6 +138,9 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
             this.librariesLoaded = true;
             
+            // Initialize Cardano library reference
+            this.cardano = window.cardanoSerialization;
+            
             // Store BIP39 word list for autocomplete
             if (window.bip39 && window.bip39.wordlists && window.bip39.wordlists.english) {
                 this.bip39WordList = window.bip39.wordlists.english;
@@ -160,7 +149,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         } catch (error) {
             this.errorMessage = this.labels.ERROR.LibraryLoading + ': ' + (error.message || error);
             showToast(this, 'Error', this.errorMessage, 'error');
-            setTimeout(() => this.loadLibraries(), 2000);
+            setTimeout(() => this.loadLibraries(), RETRY_DELAY);
         }
     }
 
@@ -175,7 +164,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.accountIndexErrorMessage = '';
             this.showSeedPhraseVerification = false;
             this.seedPhraseInputs = [];
-            this.originalSeedPhrase = [];
             this.seedPhraseErrorMessage = '';
             return;
         }
@@ -200,7 +188,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.accountIndexErrorMessage = '';
             this.showSeedPhraseVerification = false;
             this.seedPhraseInputs = [];
-            this.originalSeedPhrase = [];
             this.seedPhraseErrorMessage = '';
         }
     }
@@ -318,7 +305,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
             this.showSeedPhraseVerification = true;
             this.seedPhraseErrorMessage = '';
-            this.originalSeedPhrase = []; // No original seed phrase stored
             this.suggestions = [];
             this.activeInputIndex = -1;
         } catch (error) {
@@ -358,7 +344,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         if (value.length > 0 && this.bip39WordList.length > 0) {
             this.suggestions = this.bip39WordList.filter(word => 
                 word.toLowerCase().startsWith(value)
-            ).slice(0, 5); // Limit to 5 suggestions
+            ).slice(0, SUGGESTIONS_LIMIT);
             this.seedPhraseInputs.forEach((input, i) => input.showSuggestions = (i === index));
         } else {
             this.suggestions = [];
@@ -392,7 +378,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             if (nextInput) {
                 nextInput.focus();
             }
-        }, 100);
+        }, FOCUS_DELAY);
     }
 
     // Method to handle input focus
@@ -405,7 +391,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         if (value.length > 0 && this.bip39WordList.length > 0) {
             this.suggestions = this.bip39WordList.filter(word => 
                 word.toLowerCase().startsWith(value)
-            ).slice(0, 5);
+            ).slice(0, SUGGESTIONS_LIMIT);
             this.seedPhraseInputs.forEach((input, i) => input.showSuggestions = (i === index));
         } else {
             this.suggestions = [];
@@ -420,27 +406,16 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             this.suggestions = [];
             this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
             this.activeInputIndex = -1;
-        }, 200);
-    }
-
-    isSeedPhraseValid() {
-        if (!this.showSeedPhraseVerification) {
-            return true;
-        }
-
-        // Basic client-side validation: check if all fields are filled
-        const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim()).filter(word => word.length > 0);
-        const wordCount = enteredPhrase.length;
-        return wordCount === this.seedPhraseWordCount && enteredPhrase.every(word => word.length > 0);
+        }, BLUR_DELAY);
     }
 
     // Helper to verify private key matches address payment key hash
-    verifyKeyMatch(CardanoWasm, utxoPrivateKey, addressBech32) {
+    verifyKeyMatch(utxoPrivateKey, addressBech32) {
         const derivedPubKeyHash = utxoPrivateKey.to_public().to_raw_key().hash().to_hex();
-        const addressObj = CardanoWasm.Address.from_bech32(addressBech32);
+        const addressObj = this.cardano.Address.from_bech32(addressBech32);
         const addressKeyHash =
-            CardanoWasm.BaseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex() ||
-            CardanoWasm.EnterpriseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex();
+            this.cardano.BaseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex() ||
+            this.cardano.EnterpriseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex();
         return derivedPubKeyHash === addressKeyHash;
     }
 
@@ -452,8 +427,8 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
      * Phase 3: Sync assets and transactions for each address (callouts + DML per address)
      */
     async generateAddressesUntilUnused(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, walletId) {
-        const targetConsecutive = this.TARGET_CONSECUTIVE_ADDRESSES;
-        const typeLabel = derivationPath === this.DERIVATION_PATHS.RECEIVING ? 'receiving' : 'change';
+        const targetConsecutive = TARGET_CONSECUTIVE_ADDRESSES;
+        const typeLabel = derivationPath === DERIVATION_PATHS.RECEIVING ? 'receiving' : 'change';
 
         this.updateProgress(`Generating ${typeLabel} addresses`, `Finding ${targetConsecutive} consecutive unused addresses...`);
 
@@ -509,9 +484,9 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         const privateKey = accountKey.derive(derivationPath).derive(index);
         const publicKey = privateKey.to_public();
         const keyHash = publicKey.to_raw_key().hash();
-        const cred = window.cardanoSerialization.Credential.from_keyhash(keyHash);
+        const cred = this.cardano.Credential.from_keyhash(keyHash);
 
-        const baseAddress = window.cardanoSerialization.BaseAddress.new(
+        const baseAddress = this.cardano.BaseAddress.new(
             network.network_id(),
             cred,
             stakeCred
@@ -519,12 +494,12 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         const bech32Address = baseAddress.to_address().to_bech32();
 
         // Verify key match
-        const keyMatch = this.verifyKeyMatch(window.cardanoSerialization, privateKey, bech32Address);
+        const keyMatch = this.verifyKeyMatch(privateKey, bech32Address);
         if (!keyMatch) {
             throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${index}`);
         }
 
-        const fullPath = `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${index}`;
+        const fullPath = `m/${BIP32_PURPOSE}'/${BIP32_COIN_TYPE}'/${accountIndexNum}'/${derivationPath}/${index}`;
         
         return {
             index: index,
@@ -606,35 +581,33 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.currentStep = this.labels.PROGRESS.DerivingKeys;
         const entropy = window.bip39.mnemonicToEntropy(mnemonic);
         const seed = Buffer.from(entropy, 'hex');
-        const rootKey = window.cardanoSerialization.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
-
-        const harden = (num) => 0x80000000 + num;
+        const rootKey = this.cardano.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
 
         const accountKey = rootKey
-            .derive(harden(1852))
-            .derive(harden(1815))
+            .derive(harden(BIP32_PURPOSE))
+            .derive(harden(BIP32_COIN_TYPE))
             .derive(harden(accountIndexNum));
 
         const paymentPrivateKey = accountKey
-            .derive(0)
-            .derive(0);
+            .derive(BIP32_ACCOUNT_PATH)
+            .derive(BIP32_ACCOUNT_PATH);
         const paymentPublicKey = paymentPrivateKey.to_public();
 
         const stakePrivateKey = accountKey
-            .derive(2)
-            .derive(0)
+            .derive(BIP32_STAKE_PATH)
+            .derive(BIP32_ACCOUNT_PATH)
             .to_raw_key();
         const stakePublicKey = stakePrivateKey.to_public();
         const stakeKeyHash = stakePublicKey.hash();
-        const stakeCred = window.cardanoSerialization.Credential.from_keyhash(stakeKeyHash);
+        const stakeCred = this.cardano.Credential.from_keyhash(stakeKeyHash);
 
-        const network = window.cardanoSerialization.NetworkInfo.mainnet();
+        const network = this.cardano.NetworkInfo.mainnet();
 
         this.currentStep = this.labels.PROGRESS.CreatingWallet;
         const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
-        const paymentCred = window.cardanoSerialization.Credential.from_keyhash(paymentKeyHash);
+        const paymentCred = this.cardano.Credential.from_keyhash(paymentKeyHash);
 
-        const baseAddress = window.cardanoSerialization.BaseAddress.new(
+        const baseAddress = this.cardano.BaseAddress.new(
             network.network_id(),
             paymentCred,
             stakeCred
@@ -642,7 +615,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         const bech32Address = baseAddress.to_address().to_bech32();
 
         // Derive the bech32 stake address
-        const stakeBaseAddress = window.cardanoSerialization.RewardAddress.new(
+        const stakeBaseAddress = this.cardano.RewardAddress.new(
             network.network_id(),
             stakeCred
         );
@@ -665,7 +638,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         // Generate receiving addresses with full syncing (usage check, creation, and asset/transaction sync)
         const receivingAddresses = await this.generateAddressesUntilUnused(
             accountKey,
-            this.DERIVATION_PATHS.RECEIVING, // derivation path for receiving addresses
+            DERIVATION_PATHS.RECEIVING, // derivation path for receiving addresses
             accountIndexNum,
             stakeCred,
             network,
@@ -676,7 +649,7 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         // Generate change addresses with full syncing (usage check, creation, and asset/transaction sync)
         const changeAddresses = await this.generateAddressesUntilUnused(
             accountKey,
-            this.DERIVATION_PATHS.CHANGE, // derivation path for change addresses
+            DERIVATION_PATHS.CHANGE, // derivation path for change addresses
             accountIndexNum,
             stakeCred,
             network,
@@ -709,7 +682,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.progressMessage = '';
         this.showSeedPhraseVerification = false;
         this.seedPhraseInputs = [];
-        this.originalSeedPhrase = [];
         this.seedPhraseErrorMessage = '';
         this.seedPhraseWordCount = 24;
     }
@@ -721,16 +693,6 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         if (!walletSetId) return { isValid: false, error: this.labels.VALIDATION.PleaseSelectWalletSet };
         if (!/^[a-zA-Z0-9]{15,18}$/.test(walletSetId)) {
             return { isValid: false, error: this.labels.VALIDATION.InvalidWalletSetId };
-        }
-        return { isValid: true, error: '' };
-    }
-
-    validateWalletName(walletName) {
-        if (!walletName || !walletName.trim()) {
-            return { isValid: false, error: this.labels.UI.WalletNameRequired };
-        }
-        if (walletName.length > 255) {
-            return { isValid: false, error: this.labels.UI.WalletNameTooLong };
         }
         return { isValid: true, error: '' };
     }
