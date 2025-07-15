@@ -13,7 +13,7 @@ public class UTXOAssetSyncQueueable implements Queueable, Database.AllowsCallout
         Map<Id, UTXO_Address__c> utxoAddresses = new Map<Id, UTXO_Address__c>(utxoAddressesList);
         
         for (Id utxoAddressId : utxoAddressIds) {
-            Map<String, Object> result = UTXOAssetController.syncAssetsAndTransactions(utxoAddressId);
+            Map<String, Object> result = UTXOHelper.syncAssetsAndTransactions(utxoAddressId);
             
             UTXO_Address__c utxoAddress = utxoAddresses.get(utxoAddressId);
             if (utxoAddress != null && utxoAddress.Wallet__c != null) {

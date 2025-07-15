@@ -1,17 +1,20 @@
 import { LightningElement, track, api } from 'lwc';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { subscribe, unsubscribe } from 'lightning/empApi';
-import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
-import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
-import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
-import createOutboundTransaction from '@salesforce/apex/TransactionController.createOutboundTransaction';
-import getAllUtxoAssetsForWallet from '@salesforce/apex/UTXOController.getAllUtxoAssetsForWallet';
-import createMultiAssetOutboundTransaction from '@salesforce/apex/UTXOController.createMultiAssetOutboundTransaction';
+
 import { showToast } from 'c/utils';
 import { labels } from './labels';
-import fetchWalletTransactions from '@salesforce/apex/UTXOAssetController.fetchWalletTransactions';
-import getAllWalletAddresses from '@salesforce/apex/UTXOController.getAllWalletAddresses';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
+
+import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
+
+import getWalletAssetSummary from '@salesforce/apex/WalletController.getWalletAssetSummary';
+import getFirstUnusedReceivingAddress from '@salesforce/apex/WalletController.getFirstUnusedReceivingAddress';
+import createOutboundTransaction from '@salesforce/apex/WalletController.createOutboundTransaction';
+import getAllUtxoAssetsForWallet from '@salesforce/apex/WalletController.getAllUtxoAssetsForWallet';
+import createMultiAssetOutboundTransaction from '@salesforce/apex/WalletController.createMultiAssetOutboundTransaction';
+import fetchWalletTransactions from '@salesforce/apex/WalletController.fetchWalletTransactions';
+import getAllWalletAddresses from '@salesforce/apex/WalletController.getAllWalletAddresses';
+import syncAssetsAndTransactions from '@salesforce/apex/WalletController.syncAssetsAndTransactions';
 
 
 export default class Wallet extends LightningElement {

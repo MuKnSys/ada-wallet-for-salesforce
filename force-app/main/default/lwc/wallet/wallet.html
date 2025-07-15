@@ -310,7 +310,7 @@
                                             </select>
                                             <input class="token-amount" type="number" min="0" step="1" data-index={index} value={token.amount} oninput={handleTokenAmountChange} placeholder="Amount" />
                                             <button class="send-max-btn" type="button" data-index={index} onclick={handleSendMaxToken} disabled={token.sendMaxDisabled}>Send Max</button>
-                                            <button class="remove-token-btn" type="button" data-index={index} onclick={removeToken} key={token.id}>×</button>
+                                            <button class="remove-token-btn" type="button" data-index={index} onclick={removeToken}>×</button>
                                         </div>
                                     </template>
                                     <template lwc:if={tokenOptions.length}>

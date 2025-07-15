@@ -11,4 +11,18 @@ public with sharing class UTXOAssetController {
             throw new AuraHandledException('Error setting addresses as used: ' + e.getMessage());
         }
     }
+    
+    /**
+     * Synchronizes both assets and transactions for a UTXO address
+     * @param utxoAddressId The UTXO Address ID to sync
+     * @return Map with combined results
+     */
+    @AuraEnabled
+    public static Map<String, Object> syncAssetsAndTransactions(Id utxoAddressId) {
+        try {
+            return UTXOHelper.syncAssetsAndTransactions(utxoAddressId);
+        } catch (Exception e) {
+            throw new AuraHandledException('Error syncing assets and transactions: ' + e.getMessage());
+        }
+    }
 } 
