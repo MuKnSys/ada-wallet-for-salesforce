@@ -3,7 +3,7 @@ import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
 
 import { labels } from './labels';
-import { showToast } from 'c/utils';
+import { showToast, BIP32_PURPOSE, BIP32_COIN_TYPE, DERIVATION_PATHS, harden } from 'c/utils';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
@@ -16,15 +16,8 @@ import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
 import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
 
 const TARGET_CONSECUTIVE_ADDRESSES = 20;
-const DERIVATION_PATHS = {
-    RECEIVING: 0,
-    CHANGE: 1
-};
-const HARDENING_OFFSET = 0x80000000;
 
 // BIP32 derivation path constants for Cardano
-const BIP32_PURPOSE = 1852;  // Cardano purpose
-const BIP32_COIN_TYPE = 1815; // Cardano coin type
 const BIP32_ACCOUNT_PATH = 0; // Account path
 const BIP32_STAKE_PATH = 2;   // Stake path
 
@@ -33,9 +26,6 @@ const SUGGESTIONS_LIMIT = 5;
 const FOCUS_DELAY = 100;
 const BLUR_DELAY = 200;
 const RETRY_DELAY = 2000;
-
-// Helper function for BIP32 hardening
-const harden = (num) => HARDENING_OFFSET + num;
 
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {

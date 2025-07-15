@@ -11,15 +11,15 @@ const ADA_DIVISOR = 1000000;
 const ADA_DECIMAL_PLACES = 6;
 
 export default class GetUTXOAddressAssets extends LightningElement {
+    labels = labels;
+    
     @api recordId;
     @track isLoading = false;
     @track assets = [];
     @track error;
     @track showSuccess = false;
     @track showError = false;
-    @track errorMessage = '';
-
-    labels = labels;
+    @track errorMessage = '';    
 
     async handleSyncAssets() {
         this.isLoading = true;

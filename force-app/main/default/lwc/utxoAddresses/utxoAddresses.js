@@ -2,9 +2,12 @@ import { LightningElement, api, wire, track } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { refreshApex } from '@salesforce/apex';
+import UTXO_ADDRESS_OBJECT from '@salesforce/schema/UTXO_Address__c';
+import IS_USED_FIELD from '@salesforce/schema/UTXO_Address__c.Is_Used__c';
+import PATH_FIELD from '@salesforce/schema/UTXO_Address__c.Path__c';
+import TYPE_FIELD from '@salesforce/schema/UTXO_Address__c.Type__c';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
-import bip39Library from '@salesforce/resourceUrl/bip39';
 
 import getWallet from '@salesforce/apex/UTXOController.getWallet';
 import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
@@ -15,12 +18,28 @@ import addReceivingUTXOAddress from '@salesforce/apex/UTXOController.addReceivin
 import addChangeUTXOAddress from '@salesforce/apex/UTXOController.addChangeUTXOAddress';
 import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
 import setAddressesUsed from '@salesforce/apex/UTXOAssetController.setAddressesUsed';
-import { isAddressActuallyUsed, truncateText, showToast } from 'c/utils';
+import { isAddressActuallyUsed, truncateText, showToast, BIP32_PURPOSE, BIP32_COIN_TYPE, DERIVATION_PATHS, ADDRESS_TYPES } from 'c/utils';
 import { labels } from './labels';
+
+// UI constants
+const DEFAULT_DISPLAY_LIMIT = 5;
+const MAX_DISPLAY_LIMIT = 1000;
+const TAB_TYPES = {
+    EXTERNAL: 'external',
+    INTERNAL: 'internal'
+};
+
+
+// URL constants
+const CARDANOSCAN_URL_PREFIX = 'https://cardanoscan.io/address/';
+
+// Action constants
+const EDIT_ACTION = 'edit';
+const IS_USED_LABEL = 'Is Used';
 
 export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     labels = labels;
-    displayLimit = 5; // Limit to 5 addresses per tab
+    displayLimit = DEFAULT_DISPLAY_LIMIT;
     wiredAddressesResult; // To store the wired result for refresh
     viewLess = true;
 
@@ -36,7 +55,6 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     @track currentTabCount = 0;
     @track currentUnusedCount = 0;
     @track hasSeedPhrasePermission = false;
-    @track dummyState = false; // For forcing re-render
     @track filterText = '';
     @track isLibraryLoaded = false;
 
@@ -53,7 +71,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             sortable: true,
             cellAttributes: { class: 'slds-text-link' }
         },
-        { label: labels.COLUMNS.PATH, fieldName: 'Path__c', type: 'text' },
+        { label: labels.COLUMNS.PATH, fieldName: this.getPathFieldName(), type: 'text' },
         {
             label: labels.COLUMNS.ADDRESS,
             fieldName: 'cardanoScanLink',
@@ -66,8 +84,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             cellAttributes: { class: 'slds-text-link address-link' }
         },
         {
-            label: 'Is Used',
-            fieldName: 'Is_Used__c',
+            label: IS_USED_LABEL,
+            fieldName: this.getIsUsedFieldName(),
             type: 'boolean',
             cellAttributes: { alignment: 'center' }
         }
@@ -79,6 +97,26 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
     get hasInternalAddresses() {
         return this.internalAddresses?.length > 0;
+    }
+
+    get recordUrlPrefix() {
+        return `/lightning/r/${this.getObjectApiName()}/`;
+    }
+
+    getObjectApiName() {
+        return UTXO_ADDRESS_OBJECT.objectApiName;
+    }
+
+    getIsUsedFieldName() {
+        return IS_USED_FIELD.fieldApiName;
+    }
+
+    getPathFieldName() {
+        return PATH_FIELD.fieldApiName;
+    }
+
+    getTypeFieldName() {
+        return TYPE_FIELD.fieldApiName;
     }    
 
     renderedCallback() {
@@ -88,29 +126,10 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     }
 
     async loadLibraries() {
-        const scripts = [
-            { name: 'cardanoSerialization', url: `${cardanoLibrary}/cardanoSerialization/bundle.js` },
-            { name: 'bip39', url: bip39Library }
-        ];
-
         try {
-            const loadResults = await Promise.all(
-                scripts.map(async script => {
-                    const result = await loadScript(this, script.url)
-                        .then(() => {
-                            return { name: script.name, loaded: true, url: script.url };
-                        })
-                        .catch(error => {
-                            return { name: script.name, loaded: false, url: script.url, error };
-                        });
-                    return result;
-                })
-            );
-            const failed = loadResults.filter(r => !r.loaded);
-            if (failed.length) {
-                throw new Error(this.labels.ERROR.LIBRARY_LOAD_FAILED + ': ' + failed.map(f => f.name).join(', '));
-            }
-            if (!window.cardanoSerialization || !window.bip39) {
+            await loadScript(this, `${cardanoLibrary}/cardanoSerialization/bundle.js`);
+            
+            if (!window.cardanoSerialization) {
                 throw new Error(this.labels.ERROR.LIBRARY_INIT_ERROR);
             }
             this.isLibraryLoaded = true;
@@ -125,10 +144,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     wiredPermissions({ error, data }) {
         if (data) {
             this.hasSeedPhrasePermission = data.includes('Ada_Wallet_Seed_Phrase');
-            this.dummyState = !this.dummyState;
         } else if (error) {
             this.hasSeedPhrasePermission = false;
-            this.dummyState = !this.dummyState;
         }
     }
 
@@ -140,12 +157,12 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         if (data) {
             const addresses = data.map(addr => ({
                 ...addr,
-                recordLink: `/lightning/r/UTXO_Address__c/${addr.Id}/view`,
-                cardanoScanLink: `https://cardanoscan.io/address/${addr.Address__c}`,
+                recordLink: `${this.recordUrlPrefix}${addr.Id}/view`,
+                cardanoScanLink: `${CARDANOSCAN_URL_PREFIX}${addr.Address__c}`,
                 truncatedAddress: truncateText(addr.Address__c, 40, 20, 10)
             }));
-            this.externalAddresses = addresses.filter(addr => addr.Type__c === '0');
-            this.internalAddresses = addresses.filter(addr => addr.Type__c === '1');
+            this.externalAddresses = addresses.filter(addr => addr[this.getTypeFieldName()] === ADDRESS_TYPES.RECEIVING);
+            this.internalAddresses = addresses.filter(addr => addr[this.getTypeFieldName()] === ADDRESS_TYPES.CHANGE);
             this.displayedExternalAddresses = this.externalAddresses.slice(0, this.displayLimit);
             this.displayedInternalAddresses = this.internalAddresses.slice(0, this.displayLimit);
             this.updateTabState(this.activeTab);
@@ -164,28 +181,27 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     }
 
     handleExternalTabActive() {
-        this.activeTab = 'external';
-        this.updateTabState('external');
+        this.activeTab = TAB_TYPES.EXTERNAL;
+        this.updateTabState(TAB_TYPES.EXTERNAL);
         this.applyFilter();
     }
 
     handleInternalTabActive() {
-        this.activeTab = 'internal';
-        this.updateTabState('internal');
+        this.activeTab = TAB_TYPES.INTERNAL;
+        this.updateTabState(TAB_TYPES.INTERNAL);
         this.applyFilter();
     }
 
     updateTabState(tab) {
-        if (tab === 'external') {
+        if (tab === TAB_TYPES.EXTERNAL) {
             this.currentTabLabel = this.labels.UI.TAB_EXTERNAL;
             this.currentTabCount = this.externalAddresses.length;
-            this.currentUnusedCount = this.externalAddresses.filter(addr => !addr.Is_Used__c).length;
-        } else if (tab === 'internal') {
+            this.currentUnusedCount = this.externalAddresses.filter(addr => !addr[this.getIsUsedFieldName()]).length;
+        } else if (tab === TAB_TYPES.INTERNAL) {
             this.currentTabLabel = this.labels.UI.TAB_INTERNAL;
             this.currentTabCount = this.internalAddresses.length;
-            this.currentUnusedCount = this.internalAddresses.filter(addr => !addr.Is_Used__c).length;
+            this.currentUnusedCount = this.internalAddresses.filter(addr => !addr[this.getIsUsedFieldName()]).length;
         }
-        this.dummyState = !this.dummyState;
     }
 
     handleFilterChange(event) {
@@ -201,12 +217,12 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         if (filter) {
             filteredExternal = this.externalAddresses.filter(addr =>
                 addr.Name.toLowerCase().includes(filter) ||
-                addr.Path__c.toLowerCase().includes(filter) ||
+                addr[this.getPathFieldName()].toLowerCase().includes(filter) ||
                 addr.Address__c.toLowerCase().includes(filter)
             );
             filteredInternal = this.internalAddresses.filter(addr =>
                 addr.Name.toLowerCase().includes(filter) ||
-                addr.Path__c.toLowerCase().includes(filter) ||
+                addr[this.getPathFieldName()].toLowerCase().includes(filter) ||
                 addr.Address__c.toLowerCase().includes(filter)
             );
         }
@@ -221,26 +237,26 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
     handleRowAction(event) {
         const action = event.detail.action;
         const row = event.detail.row;
-        if (action.name === 'edit') {
+        if (action.name === EDIT_ACTION) {
             this[NavigationMixin.Navigate]({
                 type: 'standard__recordPage',
                 attributes: {
                     recordId: row.Id,
-                    objectApiName: 'UTXO_Address__c',
-                    actionName: 'edit'
+                    objectApiName: this.getObjectApiName(),
+                    actionName: EDIT_ACTION
                 }
             });
         }
     }
 
     handleViewAll() {
-        this.displayLimit = 1000;
+        this.displayLimit = MAX_DISPLAY_LIMIT;
         this.applyFilter();
         this.viewLess = false;
     }
 
     handleViewLess() {
-        this.displayLimit = 5;
+        this.displayLimit = DEFAULT_DISPLAY_LIMIT;
         this.applyFilter();
         this.viewLess = true;
     }
@@ -262,8 +278,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 throw new Error(this.labels.ERROR.LIBRARY_NOT_LOADED);
             }
 
-            const type = this.activeTab === 'external' ? '0' : '1'; // '0' for receiving, '1' for change
-            const typeLabel = type === '0' ? 'receiving' : 'change';
+            const type = this.activeTab === TAB_TYPES.EXTERNAL ? ADDRESS_TYPES.RECEIVING : ADDRESS_TYPES.CHANGE;
+            const typeLabel = type === ADDRESS_TYPES.RECEIVING ? 'receiving' : 'change';
             
             // Get the next index for the specified type
             const nextIndex = await getNextUTXOIndex({ walletId: this.recordId, type: type });
@@ -280,7 +296,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             const accountPrivateKey = CardanoWasm.Bip32PrivateKey.from_bech32(accountPrivateKeyBech32);
             const network = CardanoWasm.NetworkInfo.mainnet();
             const accountIndexNum = wallet.Account_Index__c;
-            const chainType = type === '0' ? 0 : 1; // 0 for external (receiving), 1 for internal (change)
+            const chainType = type === ADDRESS_TYPES.RECEIVING ? DERIVATION_PATHS.RECEIVING : DERIVATION_PATHS.CHANGE;
 
             // Derive payment key
             const utxoPrivateKey = accountPrivateKey
@@ -292,7 +308,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
             // Derive stake key  
             const stakePrivateKey = accountPrivateKey
-                .derive(2)
+                .derive(DERIVATION_PATHS.STAKE)
                 .derive(0)
                 .to_raw_key();
             const stakePublicKey = stakePrivateKey.to_public();
@@ -313,7 +329,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
                 throw new Error(this.labels.ERROR.KEY_MISMATCH.replace('{typeLabel}', typeLabel).replace('{index}', nextIndex));
             }
 
-            const fullPath = `m/1852'/1815'/${accountIndexNum}'/${chainType}/${nextIndex}`;
+            const fullPath = `m/${BIP32_PURPOSE}'/${BIP32_COIN_TYPE}'/${accountIndexNum}'/${chainType}/${nextIndex}`;
 
             // Create address data (using xpub/xpriv like create new wallet LWC)
             const newAddress = {
@@ -327,7 +343,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
             // Save to database
             let newAddressId;
-            if (type === '0') {
+            if (type === ADDRESS_TYPES.RECEIVING) {
                 newAddressId = await addReceivingUTXOAddress({
                     walletId: this.recordId,
                     receivingAddress: newAddress
@@ -411,101 +427,5 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         await setAddressesUsed({ utxoAddressIds: usedAddressesIds });
         
         return { syncedCount, errorCount };
-    }
-
-    /**
-     * Ensure 20 consecutive unused addresses exist, derive new ones if needed
-     */
-    async ensureConsecutiveUnusedAddresses(existingAddresses, derivationPath, accountPrivateKey, stakeCred, network, accountIndexNum, typeLabel) {
-        const targetConsecutive = 20;
-        
-        // Sort existing addresses by index
-        const sortedAddresses = existingAddresses
-            .slice()
-            .sort((a, b) => (a.Index__c ?? 0) - (b.Index__c ?? 0));
-        
-        // Find current consecutive unused count from the end
-        let consecutiveUnused = 0;
-        let lastUsedIndex = -1;
-        
-        // Check existing addresses from highest index down to find consecutive unused
-        for (let i = sortedAddresses.length - 1; i >= 0; i--) {
-            const address = sortedAddresses[i];
-            
-            try {
-                const usageResult = await checkAddressUsageOnly({ address: address.Address__c });
-                const isUsed = usageResult.isUsed || false;
-                
-                if (isUsed) {
-                    lastUsedIndex = address.Index__c;
-                    break; // Stop when we find a used address
-                } else {
-                    consecutiveUnused++;
-                }
-            } catch (error) {
-                // Assume unused if check fails
-                consecutiveUnused++;
-            }
-        }
-        
-        // If we already have enough consecutive unused, return empty array
-        if (consecutiveUnused >= targetConsecutive) {
-            return [];
-        }
-        
-        // Calculate how many more we need and starting index
-        const neededCount = targetConsecutive - consecutiveUnused;
-        const nextIndex = sortedAddresses.length > 0 ? 
-            Math.max(...sortedAddresses.map(a => a.Index__c ?? 0)) + 1 : 0;
-        
-        // Derive new addresses
-        const newAddresses = [];
-        const CardanoWasm = window.cardanoSerialization;
-        
-        for (let i = 0; i < neededCount; i++) {
-            const currentIndex = nextIndex + i;
-            
-            try {
-                // Derive payment key
-                const utxoPrivateKey = accountPrivateKey
-                    .derive(derivationPath)
-                    .derive(currentIndex);
-                const utxoPublicKey = utxoPrivateKey.to_public();
-                const utxoKeyHash = utxoPublicKey.to_raw_key().hash();
-                const utxoCred = CardanoWasm.Credential.from_keyhash(utxoKeyHash);
-
-                // Create base address
-                const baseAddress = CardanoWasm.BaseAddress.new(
-                    network.network_id(),
-                    utxoCred,
-                    stakeCred
-                );
-                const bech32Address = baseAddress.to_address().to_bech32();
-
-                // Key verification
-                const keyMatch = this.verifyKeyMatch(CardanoWasm, utxoPrivateKey, bech32Address);
-                if (!keyMatch) {
-                    throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${currentIndex}`);
-                }
-
-                const fullPath = `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${currentIndex}`;
-                
-                const addressData = {
-                    index: currentIndex,
-                    publicKey: utxoPrivateKey.to_public().to_bech32(), // xpub
-                    privateKey: utxoPrivateKey.to_bech32(),            // xprv
-                    address: bech32Address,
-                    paymentKeyHash: utxoPublicKey.to_raw_key().hash().to_hex(), // Use payment key hash, not stake key hash
-                    path: fullPath
-                };
-                
-                newAddresses.push(addressData);
-                
-            } catch (error) {
-                throw error;
-            }
-        }
-        
-        return newAddresses;
     }
 }
