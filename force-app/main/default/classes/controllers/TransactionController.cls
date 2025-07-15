@@ -39,63 +39,12 @@ public with sharing class TransactionController {
         @AuraEnabled public String fingerprint { get; set; }
     }
 
-    @AuraEnabled
-    public static String createOutboundTransaction(String walletId, String toAddress, String amount, String asset, String memo) {
-        try {
-            validateWalletId(walletId);
-            if (String.isBlank(toAddress)) {
-                throw new AuraHandledException('To Address is required');
-            }
-            if (String.isBlank(amount)) {
-                throw new AuraHandledException('Amount is required');
-            }
-            if (String.isBlank(asset)) {
-                throw new AuraHandledException('Asset is required');
-            }
 
-            Decimal amountDecimal;
-            try {
-                amountDecimal = Decimal.valueOf(amount);
-            } catch (Exception e) {
-                throw new AuraHandledException('Invalid amount format');
-            }
-
-            if (amountDecimal <= 0) {
-                throw new AuraHandledException('Amount must be greater than 0');
-            }
-
-            Outbound_Transaction__c txRecord = new Outbound_Transaction__c(
-                Wallet__c = walletId,
-                To_Address__c = toAddress,
-                Approved__c = 'Not Approved',
-                Transaction_Status__c = 'Ready to Sign',
-                Memo__c = String.isBlank(memo) ? null : memo
-            );
-
-            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
-            insert decision.getRecords();
-            Id outboundId = decision.getRecords()[0].Id;
-
-            Outbound_Transaction_Line__c line = new Outbound_Transaction_Line__c(
-                Outbound_Transaction__c = outboundId,
-                Amount__c = amountDecimal,
-                Asset__c = asset
-            );
-            SObjectAccessDecision lineDecision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction_Line__c>{line});
-            insert lineDecision.getRecords();
-
-            return outboundId;
-        } catch (Exception e) {
-            throw new AuraHandledException('Error creating outbound transaction: ' + e.getMessage());
-        }
-    }
     
     @AuraEnabled
     public static Map<String, Object> loadWallet(String walletId) {
-        validateWalletId(walletId);
-
         try {
-            List<UTXO_Address__c> utxoAddresses = UTXOController.getAllWalletAddresses(walletId);
+            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
 
             List<Map<String, Object>> receivingAddresses = new List<Map<String, Object>>();
             List<Map<String, Object>> changeAddresses = new List<Map<String, Object>>();
@@ -155,7 +104,6 @@ public with sharing class TransactionController {
     @AuraEnabled(cacheable=true)
     public static List<Outbound_Transaction_Line__c> getTransactionLinesForOutbound(String outboundTransactionId) {
         try {
-            UTXOHelper.validateId(outboundTransactionId, 'Outbound Transaction ID');
             return OutboundTransactionLineSelector.getTransactionLinesByOutboundId(outboundTransactionId);
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching transaction lines: ' + e.getMessage());
@@ -165,7 +113,6 @@ public with sharing class TransactionController {
     @AuraEnabled(cacheable=true)
     public static Outbound_Transaction__c getOutboundTransaction(String outboundTransactionId) {
         try {
-            UTXOHelper.validateId(outboundTransactionId, 'Outbound Transaction ID');
             List<Outbound_Transaction__c> results = OutboundTransactionSelector.getOutboundTransactionById(outboundTransactionId);
             
             if (results.isEmpty()) {
@@ -200,12 +147,7 @@ public with sharing class TransactionController {
         }
     }
 
-    // Helper methods
-    private static void validateWalletId(String walletId) {
-        if (String.isBlank(walletId) || !Pattern.matches('^[a-zA-Z0-9]{15,18}$', walletId)) {
-            throw new AuraHandledException('Invalid Wallet ID');
-        }
-    }
+
 
     private static Map<String, Object> processAddress(UTXO_Address__c addr) {
         Decimal addressLovelace = 0;
