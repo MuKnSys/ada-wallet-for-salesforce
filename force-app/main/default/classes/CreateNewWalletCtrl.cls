@@ -238,12 +238,7 @@ public with sharing class CreateNewWalletCtrl {
      */
     @AuraEnabled
     public static Boolean verifySeedPhrase(String walletSetId, String userSeedPhrase) {
-        Wallet_Set__c walletSet = [
-                SELECT Id, Seed_Phrase__c
-                FROM Wallet_Set__c
-                WHERE Id = :walletSetId
-                LIMIT 1
-            ];
+        Wallet_Set__c walletSet = WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
             if (walletSet == null) {
                 throw new AuraHandledException('Wallet Set not found');
             }

@@ -9,11 +9,8 @@ public class UTXOAssetSyncQueueable implements Queueable, Database.AllowsCallout
         Set<Id> processedWalletIds = new Set<Id>();
         List<UTXO_Address__c> addressesToUpdate = new List<UTXO_Address__c>();
         
-        Map<Id, UTXO_Address__c> utxoAddresses = new Map<Id, UTXO_Address__c>([
-            SELECT Id, Wallet__c, Is_Used__c
-            FROM UTXO_Address__c 
-            WHERE Id IN :utxoAddressIds
-        ]);
+        List<UTXO_Address__c> utxoAddressesList = UTXOAddressSelector.getAddressesByIds(utxoAddressIds);
+        Map<Id, UTXO_Address__c> utxoAddresses = new Map<Id, UTXO_Address__c>(utxoAddressesList);
         
         for (Id utxoAddressId : utxoAddressIds) {
             Map<String, Object> result = UTXOAssetController.syncAssetsAndTransactions(utxoAddressId);
