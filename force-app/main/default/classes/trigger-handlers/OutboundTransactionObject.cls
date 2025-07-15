@@ -61,6 +61,7 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
                 }
                 
                 String blockfrostResponse = BlockfrostService.submitTransaction(txRecord.Signed_Transaction_CBOR__c);
+                txRecord.Transaction_Submitted_At__c = System.now();
                 updateTransactionStatus(txRecord, blockfrostResponse);
                 transactionsToUpdate.add(txRecord);
                 

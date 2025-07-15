@@ -46,6 +46,11 @@
         <field>UTXO_Address__c.Private_Key__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Outbound_Transaction__c.Transaction_Submitted_At__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>ADA Wallet Seed Phrase And Wallet Keys</label>
     <objectPermissions>
