@@ -113,8 +113,8 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static String addReceivingUTXOAddress(String walletId, UTXOAddress receivingAddress) {
         try {
-            validateAddress(receivingAddress, Constants.LABEL_RECEIVING_LOWERCASE);
-            return createUTXOAddress(walletId, receivingAddress, Constants.ADDRESS_TYPE_RECEIVING);
+            validateAddress(receivingAddress, ConstantsAda.LABEL_RECEIVING_LOWERCASE);
+            return createUTXOAddress(walletId, receivingAddress, ConstantsAda.ADDRESS_TYPE_RECEIVING);
         } catch (Exception e) {
             throw new AuraHandledException(ERROR_ADDING_RECEIVING + e.getMessage());
         }
@@ -129,8 +129,8 @@ public with sharing class UTXOController {
     @AuraEnabled
     public static String addChangeUTXOAddress(String walletId, UTXOAddress changeAddress) {
         try {
-            validateAddress(changeAddress, Constants.LABEL_CHANGE_LOWERCASE);
-            return createUTXOAddress(walletId, changeAddress, Constants.ADDRESS_TYPE_CHANGE);
+            validateAddress(changeAddress, ConstantsAda.LABEL_CHANGE_LOWERCASE);
+            return createUTXOAddress(walletId, changeAddress, ConstantsAda.ADDRESS_TYPE_CHANGE);
         } catch (Exception e) {
             throw new AuraHandledException(ERROR_ADDING_CHANGE + e.getMessage());
         }
@@ -171,8 +171,8 @@ public with sharing class UTXOController {
      * Validate address type is valid
      */
     private static void validateAddressType(String type) {
-        if (String.isBlank(type) || !(type == Constants.ADDRESS_TYPE_RECEIVING || type == Constants.ADDRESS_TYPE_CHANGE)) {
-            throw new AuraHandledException(Constants.ERROR_INVALID_ADDRESS_TYPE);
+        if (String.isBlank(type) || !(type == ConstantsAda.ADDRESS_TYPE_RECEIVING || type == ConstantsAda.ADDRESS_TYPE_CHANGE)) {
+            throw new AuraHandledException(ConstantsAda.ERROR_INVALID_ADDRESS_TYPE);
         }
     }
     
@@ -181,12 +181,12 @@ public with sharing class UTXOController {
      */
     private static void validateAddress(UTXOAddress address, String addressType) {
         if (address == null) {
-            throw new AuraHandledException(addressType + Constants.ERROR_ADDRESS_NULL);
+            throw new AuraHandledException(addressType + ConstantsAda.ERROR_ADDRESS_NULL);
         }
         if (address.index == null || String.isBlank(address.address) || 
             String.isBlank(address.publicKey) || String.isBlank(address.paymentKeyHash) || 
             String.isBlank(address.path)) {
-            throw new AuraHandledException(Constants.ERROR_INVALID_ADDRESS_DATA + address.index);
+            throw new AuraHandledException(ConstantsAda.ERROR_INVALID_ADDRESS_DATA + address.index);
         }
     }
     

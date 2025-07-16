@@ -1,4 +1,4 @@
-public class Constants {    
+public class ConstantsAda {    
     public static final String ADDRESS_TYPE_RECEIVING = '0';
     public static final String ADDRESS_TYPE_CHANGE = '1';
     public static final String LABEL_RECEIVING_LOWERCASE = 'receiving';

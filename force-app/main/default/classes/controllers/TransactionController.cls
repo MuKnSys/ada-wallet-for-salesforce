@@ -97,7 +97,7 @@ public with sharing class TransactionController {
             List<Outbound_Transaction__c> results = OutboundTransactionSelector.getOutboundTransactionById(outboundTransactionId);
             
             if (results.isEmpty()) {
-                throw new AuraHandledException(Constants.ERROR_OUTBOUND_TX_NOT_FOUND);
+                throw new AuraHandledException(ConstantsAda.ERROR_OUTBOUND_TX_NOT_FOUND);
             }
             
             return results[0];
@@ -118,7 +118,7 @@ public with sharing class TransactionController {
             
             List<Outbound_Transaction__c> txList = OutboundTransactionSelector.getOutboundTransactionById(recordId);
             if (txList.isEmpty()) {
-                throw new AuraHandledException(Constants.ERROR_OUTBOUND_TX_NOT_FOUND);
+                throw new AuraHandledException(ConstantsAda.ERROR_OUTBOUND_TX_NOT_FOUND);
             }
             
             updateTransactionWithCbor(txList[0], signedCbor);
@@ -136,10 +136,10 @@ public with sharing class TransactionController {
      */
     private static void validateUpdateInput(String recordId, String signedCbor) {
         if (String.isBlank(recordId)) {
-            throw new AuraHandledException(Constants.ERROR_RECORD_ID_REQUIRED);
+            throw new AuraHandledException(ConstantsAda.ERROR_RECORD_ID_REQUIRED);
         }
         if (String.isBlank(signedCbor)) {
-            throw new AuraHandledException(Constants.ERROR_SIGNED_CBOR_REQUIRED);
+            throw new AuraHandledException(ConstantsAda.ERROR_SIGNED_CBOR_REQUIRED);
         }
     }
     
@@ -154,7 +154,7 @@ public with sharing class TransactionController {
         }
         
         tx.Signed_Transaction_CBOR__c = signedCbor;
-        tx.Transaction_Status__c = Constants.STATUS_READY_TO_SEND;
+        tx.Transaction_Status__c = ConstantsAda.STATUS_READY_TO_SEND;
         update tx;
     }
     
@@ -172,9 +172,9 @@ public with sharing class TransactionController {
         for (UTXO_Address__c addr : utxoAddresses) {
             Map<String, Object> addressData = processAddress(addr);
             
-            if (Constants.ADDRESS_TYPE_RECEIVING.equals(addr.Type__c)) {
+            if (ConstantsAda.ADDRESS_TYPE_RECEIVING.equals(addr.Type__c)) {
                 receivingAddresses.add(addressData);
-            } else if (Constants.ADDRESS_TYPE_CHANGE.equals(addr.Type__c)) {
+            } else if (ConstantsAda.ADDRESS_TYPE_CHANGE.equals(addr.Type__c)) {
                 changeAddresses.add(addressData);
             }
             
@@ -210,7 +210,7 @@ public with sharing class TransactionController {
         return new Map<String, Object>{
             'totalBalance' => new Map<String, Object>{
                 'lovelace' => String.valueOf(walletData.totalLovelace),
-                'ada' => String.valueOf(walletData.totalLovelace / Constants.LOVELACE_TO_ADA_RATIO),
+                'ada' => String.valueOf(walletData.totalLovelace / ConstantsAda.LOVELACE_TO_ADA_RATIO),
                 'assets' => assetsList
             },
             'totalAddresses' => walletData.totalAddresses,
@@ -267,7 +267,7 @@ public with sharing class TransactionController {
                     String unit = (String) amount.get('unit');
                     String quantity = (String) amount.get('quantity');
                     
-                    if (Constants.ASSET_LOVELACE.equals(unit) && String.isNotBlank(quantity)) {
+                    if (ConstantsAda.ASSET_LOVELACE.equals(unit) && String.isNotBlank(quantity)) {
                         totalLovelace += Decimal.valueOf(quantity);
                     }
                 }
@@ -291,7 +291,7 @@ public with sharing class TransactionController {
                     String unit = (String) amount.get('unit');
                     String quantity = (String) amount.get('quantity');
                     
-                    if (!Constants.ASSET_LOVELACE.equals(unit) && String.isNotBlank(unit) && String.isNotBlank(quantity)) {
+                    if (!ConstantsAda.ASSET_LOVELACE.equals(unit) && String.isNotBlank(unit) && String.isNotBlank(quantity)) {
                         Decimal currentTotal = assetTotals.get(unit);
                         if (currentTotal == null) {
                             currentTotal = 0;

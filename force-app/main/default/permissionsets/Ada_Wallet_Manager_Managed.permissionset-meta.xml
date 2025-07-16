@@ -39,22 +39,22 @@
     <description>Manager access to the ADA Wallet application.</description>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Log__c.Logged_at__c</field>
+        <field>Log_Ada__c.Logged_at__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Log__c.Message__c</field>
+        <field>Log_Ada__c.Message__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Log__c.Running_User__c</field>
+        <field>Log_Ada__c.Running_User__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
-        <field>Log__c.Severity__c</field>
+        <field>Log_Ada__c.Severity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -255,7 +255,7 @@ public with sharing class WalletController {
             String policyId = String.valueOf(ar.get('policyId'));
             String fingerprint = String.valueOf(ar.get('fingerprint'));
             
-                            if (unit == Constants.ASSET_ADA) {
+                            if (unit == ConstantsAda.ASSET_ADA) {
                 adaBalance = totalValue != null ? totalValue : 0;
             } else {
                 tokens.add(createTokenInfo(ar, assetToIcon));
@@ -320,7 +320,7 @@ public with sharing class WalletController {
             'decimals' => decimals,
             'policyId' => policyId != 'null' ? policyId : null,
             'fingerprint' => fingerprint != 'null' ? fingerprint : null,
-                            'icon' => assetToIcon.containsKey(unit) ? assetToIcon.get(unit) : Constants.DEFAULT_ASSET_ICON
+                            'icon' => assetToIcon.containsKey(unit) ? assetToIcon.get(unit) : ConstantsAda.DEFAULT_ASSET_ICON
         };
     }
     
@@ -336,7 +336,7 @@ public with sharing class WalletController {
                 'Transaction_Hash__c' => tx.Transaction_Hash__c,
                 'CreatedDate' => tx.CreatedDate,
                 'UTXO_Address__c' => tx.UTXO_Address__c,
-                'type' => Constants.TRANSACTION_TYPE_INBOUND
+                'type' => ConstantsAda.TRANSACTION_TYPE_INBOUND
             });
         }
         return inbound;
@@ -356,7 +356,7 @@ public with sharing class WalletController {
                 'Transaction_Status__c' => tx.Transaction_Status__c,
                 'Memo__c' => tx.Memo__c,
                 'CreatedDate' => tx.CreatedDate,
-                'type' => Constants.TRANSACTION_TYPE_OUTBOUND,
+                'type' => ConstantsAda.TRANSACTION_TYPE_OUTBOUND,
                 'lines' => lines
             });
         }
@@ -401,8 +401,8 @@ public with sharing class WalletController {
         return new Outbound_Transaction__c(
             Wallet__c = walletId,
             To_Address__c = toAddress,
-                            Approved__c = Constants.STATUS_NOT_APPROVED,
-                Transaction_Status__c = Constants.STATUS_READY_TO_SIGN,
+                            Approved__c = ConstantsAda.STATUS_NOT_APPROVED,
+                Transaction_Status__c = ConstantsAda.STATUS_READY_TO_SIGN,
             Memo__c = String.isBlank(memo) ? null : memo
         );
     }

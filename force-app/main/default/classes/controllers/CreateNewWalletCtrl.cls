@@ -66,7 +66,7 @@ public with sharing class CreateNewWalletCtrl {
             Wallet__c wallet = WalletSelector.getWalletById(walletId);
             
                     if (wallet == null) {
-            throw new AuraHandledException(Constants.ERROR_WALLET_NOT_FOUND + walletId);
+            throw new AuraHandledException(ConstantsAda.ERROR_WALLET_NOT_FOUND + walletId);
         }
             
             return wallet;
@@ -166,8 +166,8 @@ public with sharing class CreateNewWalletCtrl {
             List<Map<String, Object>> receivingResults = new List<Map<String, Object>>();
             List<Map<String, Object>> changeResults = new List<Map<String, Object>>();
 
-            processAddresses(receivingAddresses, Constants.ADDRESS_TYPE_RECEIVING, Constants.LABEL_RECEIVING_TITLE, walletId, allAddresses, receivingResults);
-            processAddresses(changeAddresses, Constants.ADDRESS_TYPE_CHANGE, Constants.LABEL_CHANGE_TITLE, walletId, allAddresses, changeResults);
+            processAddresses(receivingAddresses, ConstantsAda.ADDRESS_TYPE_RECEIVING, ConstantsAda.LABEL_RECEIVING_TITLE, walletId, allAddresses, receivingResults);
+            processAddresses(changeAddresses, ConstantsAda.ADDRESS_TYPE_CHANGE, ConstantsAda.LABEL_CHANGE_TITLE, walletId, allAddresses, changeResults);
 
             insertAddressesAndUpdateResults(allAddresses, receivingResults, changeResults, receivingAddresses.size());
 
@@ -189,11 +189,11 @@ public with sharing class CreateNewWalletCtrl {
             Wallet_Set__c walletSet = WalletSetSelector.getWalletSetWithSeedPhrase(walletSetId);
             
                     if (walletSet == null) {
-            throw new AuraHandledException(Constants.ERROR_WALLET_SET_NOT_FOUND);
+            throw new AuraHandledException(ConstantsAda.ERROR_WALLET_SET_NOT_FOUND);
         }
 
             if (String.isBlank(walletSet.Seed_Phrase__c)) {
-                throw new AuraHandledException(Constants.ERROR_SEED_PHRASE_NOT_FOUND);
+                throw new AuraHandledException(ConstantsAda.ERROR_SEED_PHRASE_NOT_FOUND);
             }
 
             return DataEncryptor.verifyHmac(userSeedPhrase, walletSet.Seed_Phrase__c);
@@ -211,7 +211,7 @@ public with sharing class CreateNewWalletCtrl {
      */
     private static void validateWalletId(String walletId) {
         if (String.isBlank(walletId)) {
-            throw new AuraHandledException(Constants.ERROR_WALLET_ID_REQUIRED);
+            throw new AuraHandledException(ConstantsAda.ERROR_WALLET_ID_REQUIRED);
         }
     }
     

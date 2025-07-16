@@ -4,7 +4,7 @@ public with sharing class OutboundTransactionSelector {
             SELECT Id, Signed_Transaction_CBOR__c, Transaction_Status__c, Transaction_Hash__c
             FROM Outbound_Transaction__c 
             WHERE Id IN :recordIds
-            AND Transaction_Status__c = :Constants.STATUS_READY_TO_SEND
+            AND Transaction_Status__c = :ConstantsAda.STATUS_READY_TO_SEND
             WITH SECURITY_ENFORCED
         ];
     }
