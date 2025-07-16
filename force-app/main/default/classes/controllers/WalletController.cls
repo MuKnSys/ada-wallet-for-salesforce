@@ -105,20 +105,6 @@ public with sharing class WalletController {
     }
     
     /**
-     * Get all UTXO assets for a wallet
-     * @param walletId The wallet ID to get assets for
-     * @return List of UTXO assets
-     */
-    @AuraEnabled(cacheable=true)
-    public static List<UTXO_Asset__c> getAllUtxoAssetsForWallet(String walletId) {
-        try {
-            return UTXOAssetSelector.getAssetsByWalletId(walletId);
-        } catch (Exception e) {
-            throw new AuraHandledException('Error retrieving UTXO assets: ' + e.getMessage());
-        }
-    }
-    
-    /**
      * Create a multi-asset outbound transaction
      * @param walletId The wallet ID
      * @param toAddress The recipient address

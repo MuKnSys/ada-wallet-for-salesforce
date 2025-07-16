@@ -10,7 +10,6 @@ import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
 import getWalletAssetSummary from '@salesforce/apex/WalletController.getWalletAssetSummary';
 import getFirstUnusedReceivingAddress from '@salesforce/apex/WalletController.getFirstUnusedReceivingAddress';
 import createOutboundTransaction from '@salesforce/apex/WalletController.createOutboundTransaction';
-import getAllUtxoAssetsForWallet from '@salesforce/apex/WalletController.getAllUtxoAssetsForWallet';
 import createMultiAssetOutboundTransaction from '@salesforce/apex/WalletController.createMultiAssetOutboundTransaction';
 import fetchWalletTransactions from '@salesforce/apex/WalletController.fetchWalletTransactions';
 import getAllWalletAddresses from '@salesforce/apex/WalletController.getAllWalletAddresses';
@@ -302,7 +301,6 @@ export default class Wallet extends LightningElement {
     async fetchUtxoCounts() {
         try {
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
-            const allAssets = await getAllUtxoAssetsForWallet({ walletId: this.recordId });
             
             if (summary.success) {
                 const tokens = summary.tokens || [];
