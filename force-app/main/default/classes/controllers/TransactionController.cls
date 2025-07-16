@@ -1,6 +1,7 @@
-// Import BlockfrostService for transaction submission
-// Note: BlockfrostService is already available in the same namespace
-
+/**
+ * Controller for transaction-related operations
+ * Provides methods for wallet loading, transaction management, and UTXO processing
+ */
 public with sharing class TransactionController {
     
     // Inner classes for data structures
@@ -38,57 +39,23 @@ public with sharing class TransactionController {
         @AuraEnabled public String policyId { get; set; }
         @AuraEnabled public String fingerprint { get; set; }
     }
-
-
     
+    /**
+     * Load wallet data with all addresses and assets
+     * @param walletId The wallet ID to load
+     * @return Map containing receiving addresses, change addresses, and wallet summary
+     */
     @AuraEnabled
     public static Map<String, Object> loadWallet(String walletId) {
         try {
             List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
-
-            List<Map<String, Object>> receivingAddresses = new List<Map<String, Object>>();
-            List<Map<String, Object>> changeAddresses = new List<Map<String, Object>>();
             
-            Decimal totalLovelace = 0;
-            Integer addressesWithFunds = 0;
-            Map<String, Decimal> assetTotals = new Map<String, Decimal>();
-            
-            for (UTXO_Address__c addr : utxoAddresses) {
-                Map<String, Object> addressData = processAddress(addr);
-                
-                if ('0'.equals(addr.Type__c)) {
-                    receivingAddresses.add(addressData);
-                } else if ('1'.equals(addr.Type__c)) {
-                    changeAddresses.add(addressData);
-                }
-                
-                String balanceStr = (String) ((Map<String, Object>) addressData.get('balance')).get('lovelace');
-                Decimal addressBalance = Decimal.valueOf(balanceStr);
-                if (addressBalance > 0) {
-                    totalLovelace += addressBalance;
-                    addressesWithFunds++;
-                }
-                
-                List<Object> utxos = (List<Object>) addressData.get('utxos');
-                collectAssetTotals(utxos, assetTotals);
-            }
-            
-            List<Map<String, Object>> assetsList = buildAssetsList(assetTotals);
-            
-            Map<String, Object> walletSummary = new Map<String, Object>{
-                'totalBalance' => new Map<String, Object>{
-                    'lovelace' => String.valueOf(totalLovelace),
-                    'ada' => String.valueOf(totalLovelace / 1000000),
-                    'assets' => assetsList
-                },
-                'totalAddresses' => utxoAddresses.size(),
-                'addressesWithFunds' => addressesWithFunds
-            };
+            WalletData walletData = processWalletAddresses(utxoAddresses);
             
             return new Map<String, Object>{
-                'receivingAddresses' => receivingAddresses,
-                'changeAddresses' => changeAddresses,
-                'walletSummary' => walletSummary
+                'receivingAddresses' => walletData.receivingAddresses,
+                'changeAddresses' => walletData.changeAddresses,
+                'walletSummary' => buildWalletSummary(walletData)
             };
             
         } catch (Exception e) {
@@ -96,11 +63,20 @@ public with sharing class TransactionController {
         }
     }
     
+    /**
+     * Get epoch parameters from Blockfrost
+     * @return String JSON response with epoch parameters
+     */
     @AuraEnabled(cacheable=false)
     public static String getEpochParameters() {
         return BlockfrostService.getEpochParameters();
     }
 
+    /**
+     * Get transaction lines for an outbound transaction
+     * @param outboundTransactionId The outbound transaction ID
+     * @return List of transaction lines
+     */
     @AuraEnabled(cacheable=true)
     public static List<Outbound_Transaction_Line__c> getTransactionLinesForOutbound(String outboundTransactionId) {
         try {
@@ -110,13 +86,18 @@ public with sharing class TransactionController {
         }
     }
 
+    /**
+     * Get outbound transaction by ID
+     * @param outboundTransactionId The outbound transaction ID
+     * @return Outbound transaction record
+     */
     @AuraEnabled(cacheable=true)
     public static Outbound_Transaction__c getOutboundTransaction(String outboundTransactionId) {
         try {
             List<Outbound_Transaction__c> results = OutboundTransactionSelector.getOutboundTransactionById(outboundTransactionId);
             
             if (results.isEmpty()) {
-                throw new AuraHandledException('Outbound Transaction not found');
+                throw new AuraHandledException(Constants.ERROR_OUTBOUND_TX_NOT_FOUND);
             }
             
             return results[0];
@@ -125,30 +106,115 @@ public with sharing class TransactionController {
         }
     }
 
+    /**
+     * Update outbound transaction with signed CBOR
+     * @param recordId The transaction record ID
+     * @param signedCbor The signed CBOR transaction
+     */
     @AuraEnabled
     public static void updateOutboundTransactionWithSignedCbor(String recordId, String signedCbor) {
         try {
-            if (String.isBlank(recordId)) {
-                throw new AuraHandledException('Record ID is required');
-            }
-            if (String.isBlank(signedCbor)) {
-                throw new AuraHandledException('Signed CBOR is required');
-            }
+            validateUpdateInput(recordId, signedCbor);
+            
             List<Outbound_Transaction__c> txList = OutboundTransactionSelector.getOutboundTransactionById(recordId);
             if (txList.isEmpty()) {
-                throw new AuraHandledException('Outbound Transaction not found');
+                throw new AuraHandledException(Constants.ERROR_OUTBOUND_TX_NOT_FOUND);
             }
-            Outbound_Transaction__c tx = txList[0];
-            tx.Signed_Transaction_CBOR__c = signedCbor;
-            tx.Transaction_Status__c = OutboundTransactionHelper.STATUS_READY_TO_SEND;
-            update tx;
+            
+            updateTransactionWithCbor(txList[0], signedCbor);
         } catch (Exception e) {
             throw new AuraHandledException('Error updating outbound transaction: ' + e.getMessage());
         }
     }
-
-
-
+    
+    // =============================================================================
+    // PRIVATE HELPER METHODS
+    // =============================================================================
+    
+    /**
+     * Validate input parameters for transaction update
+     */
+    private static void validateUpdateInput(String recordId, String signedCbor) {
+        if (String.isBlank(recordId)) {
+            throw new AuraHandledException(Constants.ERROR_RECORD_ID_REQUIRED);
+        }
+        if (String.isBlank(signedCbor)) {
+            throw new AuraHandledException(Constants.ERROR_SIGNED_CBOR_REQUIRED);
+        }
+    }
+    
+    /**
+     * Update transaction with signed CBOR
+     */
+    private static void updateTransactionWithCbor(Outbound_Transaction__c tx, String signedCbor) {
+        tx.Signed_Transaction_CBOR__c = signedCbor;
+        tx.Transaction_Status__c = Constants.STATUS_READY_TO_SEND;
+        update tx;
+    }
+    
+    /**
+     * Process wallet addresses and collect data
+     */
+    private static WalletData processWalletAddresses(List<UTXO_Address__c> utxoAddresses) {
+        List<Map<String, Object>> receivingAddresses = new List<Map<String, Object>>();
+        List<Map<String, Object>> changeAddresses = new List<Map<String, Object>>();
+        
+        Decimal totalLovelace = 0;
+        Integer addressesWithFunds = 0;
+        Map<String, Decimal> assetTotals = new Map<String, Decimal>();
+        
+        for (UTXO_Address__c addr : utxoAddresses) {
+            Map<String, Object> addressData = processAddress(addr);
+            
+            if (Constants.ADDRESS_TYPE_RECEIVING.equals(addr.Type__c)) {
+                receivingAddresses.add(addressData);
+            } else if (Constants.ADDRESS_TYPE_CHANGE.equals(addr.Type__c)) {
+                changeAddresses.add(addressData);
+            }
+            
+            updateWalletTotals(addressData, assetTotals, totalLovelace, addressesWithFunds);
+        }
+        
+        return new WalletData(receivingAddresses, changeAddresses, assetTotals, totalLovelace, addressesWithFunds, utxoAddresses.size());
+    }
+    
+    /**
+     * Update wallet totals from address data
+     */
+    private static void updateWalletTotals(Map<String, Object> addressData, Map<String, Decimal> assetTotals, 
+                                        Decimal totalLovelace, Integer addressesWithFunds) {
+        String balanceStr = (String) ((Map<String, Object>) addressData.get('balance')).get('lovelace');
+        Decimal addressBalance = Decimal.valueOf(balanceStr);
+        
+        if (addressBalance > 0) {
+            totalLovelace += addressBalance;
+            addressesWithFunds++;
+        }
+        
+        List<Object> utxos = (List<Object>) addressData.get('utxos');
+        collectAssetTotals(utxos, assetTotals);
+    }
+    
+    /**
+     * Build wallet summary from processed data
+     */
+    private static Map<String, Object> buildWalletSummary(WalletData walletData) {
+        List<Map<String, Object>> assetsList = buildAssetsList(walletData.assetTotals);
+        
+        return new Map<String, Object>{
+            'totalBalance' => new Map<String, Object>{
+                'lovelace' => String.valueOf(walletData.totalLovelace),
+                'ada' => String.valueOf(walletData.totalLovelace / Constants.LOVELACE_TO_ADA_RATIO),
+                'assets' => assetsList
+            },
+            'totalAddresses' => walletData.totalAddresses,
+            'addressesWithFunds' => walletData.addressesWithFunds
+        };
+    }
+    
+    /**
+     * Process individual address and get UTXO data
+     */
     private static Map<String, Object> processAddress(UTXO_Address__c addr) {
         Decimal addressLovelace = 0;
         List<Object> addressUtxos = new List<Object>();
@@ -179,6 +245,9 @@ public with sharing class TransactionController {
         };
     }
     
+    /**
+     * Calculate total lovelace from UTXOs
+     */
     private static Decimal calculateLovelaceFromUtxos(List<Object> utxos) {
         Decimal totalLovelace = 0;
         
@@ -192,7 +261,7 @@ public with sharing class TransactionController {
                     String unit = (String) amount.get('unit');
                     String quantity = (String) amount.get('quantity');
                     
-                    if ('lovelace'.equals(unit) && String.isNotBlank(quantity)) {
+                    if (Constants.ASSET_LOVELACE.equals(unit) && String.isNotBlank(quantity)) {
                         totalLovelace += Decimal.valueOf(quantity);
                     }
                 }
@@ -202,6 +271,9 @@ public with sharing class TransactionController {
         return totalLovelace;
     }
     
+    /**
+     * Collect asset totals from UTXOs
+     */
     private static void collectAssetTotals(List<Object> utxos, Map<String, Decimal> assetTotals) {
         for (Object utxoObj : utxos) {
             Map<String, Object> utxo = (Map<String, Object>) utxoObj;
@@ -213,7 +285,7 @@ public with sharing class TransactionController {
                     String unit = (String) amount.get('unit');
                     String quantity = (String) amount.get('quantity');
                     
-                    if (!'lovelace'.equals(unit) && String.isNotBlank(unit) && String.isNotBlank(quantity)) {
+                    if (!Constants.ASSET_LOVELACE.equals(unit) && String.isNotBlank(unit) && String.isNotBlank(quantity)) {
                         Decimal currentTotal = assetTotals.get(unit);
                         if (currentTotal == null) {
                             currentTotal = 0;
@@ -226,27 +298,42 @@ public with sharing class TransactionController {
         }
     }
     
+    /**
+     * Build assets list with metadata
+     */
     private static List<Map<String, Object>> buildAssetsList(Map<String, Decimal> assetTotals) {
         List<Map<String, Object>> assetsList = new List<Map<String, Object>>();
         
         for (String unit : assetTotals.keySet()) {
-            Map<String, Object> assetObj = new Map<String, Object>();
-            assetObj.put('unit', unit);
-            assetObj.put('quantity', String.valueOf(assetTotals.get(unit)));
-            
-            try {
-                Map<String, Object> assetInfo = BlockfrostService.getAssetInfo(unit);
-                populateAssetMetadata(assetObj, assetInfo);
-            } catch (Exception e) {
-                populateFallbackAssetMetadata(assetObj, unit);
-            }
-            
+            Map<String, Object> assetObj = createAssetObject(unit, assetTotals.get(unit));
             assetsList.add(assetObj);
         }
         
         return assetsList;
     }
     
+    /**
+     * Create asset object with metadata
+     */
+    private static Map<String, Object> createAssetObject(String unit, Decimal quantity) {
+        Map<String, Object> assetObj = new Map<String, Object>{
+            'unit' => unit,
+            'quantity' => String.valueOf(quantity)
+        };
+        
+        try {
+            Map<String, Object> assetInfo = BlockfrostService.getAssetInfo(unit);
+            populateAssetMetadata(assetObj, assetInfo);
+        } catch (Exception e) {
+            populateFallbackAssetMetadata(assetObj, unit);
+        }
+        
+        return assetObj;
+    }
+    
+    /**
+     * Populate asset metadata from Blockfrost response
+     */
     private static void populateAssetMetadata(Map<String, Object> assetObj, Map<String, Object> assetInfo) {
         if (assetInfo == null) {
             return;
@@ -259,24 +346,40 @@ public with sharing class TransactionController {
         Object metadataObj = assetInfo.get('metadata');
         if (metadataObj instanceof Map<String, Object>) {
             Map<String, Object> metadata = (Map<String, Object>) metadataObj;
-            
-            Object decimalsObj = metadata.get('decimals');
-            if (decimalsObj != null) {
-                assetObj.put('decimals', Integer.valueOf(String.valueOf(decimalsObj)));
-            } else {
-                assetObj.put('decimals', 0);
-            }
-            
-            String assetName = (String) assetObj.get('assetName');
-            assetObj.put('ticker', getStringValue(metadata, 'ticker', assetName));
-            assetObj.put('description', getStringValue(metadata, 'description', ''));
+            populateMetadataFields(assetObj, metadata);
         } else {
-            assetObj.put('decimals', 0);
-            assetObj.put('ticker', (String) assetObj.get('assetName'));
-            assetObj.put('description', '');
+            populateDefaultMetadata(assetObj);
         }
     }
     
+    /**
+     * Populate metadata fields from metadata object
+     */
+    private static void populateMetadataFields(Map<String, Object> assetObj, Map<String, Object> metadata) {
+        Object decimalsObj = metadata.get('decimals');
+        if (decimalsObj != null) {
+            assetObj.put('decimals', Integer.valueOf(String.valueOf(decimalsObj)));
+        } else {
+            assetObj.put('decimals', 0);
+        }
+        
+        String assetName = (String) assetObj.get('assetName');
+        assetObj.put('ticker', getStringValue(metadata, 'ticker', assetName));
+        assetObj.put('description', getStringValue(metadata, 'description', ''));
+    }
+    
+    /**
+     * Populate default metadata when metadata is not available
+     */
+    private static void populateDefaultMetadata(Map<String, Object> assetObj) {
+        assetObj.put('decimals', 0);
+        assetObj.put('ticker', (String) assetObj.get('assetName'));
+        assetObj.put('description', '');
+    }
+    
+    /**
+     * Populate fallback asset metadata when API call fails
+     */
     private static void populateFallbackAssetMetadata(Map<String, Object> assetObj, String unit) {
         assetObj.put('policyId', unit.length() >= 56 ? unit.substring(0, 56) : '');
         assetObj.put('assetName', unit.length() > 56 ? unit.substring(56) : unit);
@@ -286,8 +389,33 @@ public with sharing class TransactionController {
         assetObj.put('description', '');
     }
     
+    /**
+     * Get string value from map with default
+     */
     private static String getStringValue(Map<String, Object> dataMap, String fieldKey, String defaultVal) {
         Object fieldValue = dataMap.get(fieldKey);
         return fieldValue != null ? String.valueOf(fieldValue) : defaultVal;
+    }
+    
+    /**
+     * Helper class to hold wallet processing data
+     */
+    private class WalletData {
+        public List<Map<String, Object>> receivingAddresses;
+        public List<Map<String, Object>> changeAddresses;
+        public Map<String, Decimal> assetTotals;
+        public Decimal totalLovelace;
+        public Integer addressesWithFunds;
+        public Integer totalAddresses;
+        
+        public WalletData(List<Map<String, Object>> receivingAddresses, List<Map<String, Object>> changeAddresses,
+                        Map<String, Decimal> assetTotals, Decimal totalLovelace, Integer addressesWithFunds, Integer totalAddresses) {
+            this.receivingAddresses = receivingAddresses;
+            this.changeAddresses = changeAddresses;
+            this.assetTotals = assetTotals;
+            this.totalLovelace = totalLovelace;
+            this.addressesWithFunds = addressesWithFunds;
+            this.totalAddresses = totalAddresses;
+        }
     }
 } 

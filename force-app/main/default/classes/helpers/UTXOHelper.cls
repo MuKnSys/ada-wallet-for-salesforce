@@ -1,7 +1,4 @@
-public with sharing class UTXOHelper {    
-    
-
-    
+public with sharing class UTXOHelper {
     /**
      * Synchronizes assets and transactions for a UTXO address
      * @param utxoAddressId The UTXO Address ID to sync
