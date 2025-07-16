@@ -210,6 +210,18 @@ public with sharing class UTXOController {
      * Create UTXO address record
      */
     private static String createUTXOAddress(String walletId, UTXOAddress address, String type) {
+        if (!Schema.sObjectType.UTXO_Address__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Wallet__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Address__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Index__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Public_Key__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Payment_Key_Hash__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Path__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Private_Key__c.isCreateable() ||
+            !Schema.sObjectType.UTXO_Address__c.fields.Type__c.isCreateable()) {
+            throw new AuraHandledException('Insufficient permissions to create UTXO address');
+        }
+        
         UTXO_Address__c utxoRecord = new UTXO_Address__c(
             Wallet__c = walletId,
             Address__c = address.address,
@@ -221,9 +233,8 @@ public with sharing class UTXOController {
             Type__c = type
         );
 
-        SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<UTXO_Address__c>{utxoRecord});
-        insert decision.getRecords();
+        insert utxoRecord;
         
-        return decision.getRecords()[0].Id;
+        return utxoRecord.Id;
     }
 }

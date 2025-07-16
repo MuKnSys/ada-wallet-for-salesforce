@@ -237,10 +237,31 @@ public with sharing class UTXOHelper {
                 }
             }
             if (!assetsToInsert.isEmpty()) {
+                if (!Schema.sObjectType.UTXO_Asset__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.UTXO_Address__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Amount__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Asset__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Name__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Icon__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Decimals__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Policy_ID__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Fingerprint__c.isCreateable()) {
+                    throw new AuraHandledException('Insufficient permissions to create UTXO assets');
+                }
                 insert assetsToInsert;
                 insertedCount = assetsToInsert.size();
             }
             if (!assetsToUpdate.isEmpty()) {
+                if (!Schema.sObjectType.UTXO_Asset__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Amount__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Asset__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Name__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Icon__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Decimals__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Policy_ID__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Asset__c.fields.Fingerprint__c.isUpdateable()) {
+                    throw new AuraHandledException('Insufficient permissions to update UTXO assets');
+                }
                 update assetsToUpdate;
                 updatedCount = assetsToUpdate.size();
             }
@@ -254,6 +275,9 @@ public with sharing class UTXOHelper {
             }
             Integer deletedCount = 0;
             if (!assetsToDelete.isEmpty()) {
+                if (!Schema.sObjectType.UTXO_Asset__c.isDeletable()) {
+                    throw new AuraHandledException('Insufficient permissions to delete UTXO assets');
+                }
                 delete assetsToDelete;
                 deletedCount = assetsToDelete.size();
             }
@@ -307,8 +331,26 @@ public with sharing class UTXOHelper {
                 }
             }
 
-            if (!toInsert.isEmpty()) insert toInsert;
-            if (!toUpdate.isEmpty()) update toUpdate;
+            if (!toInsert.isEmpty()) {
+                if (!Schema.sObjectType.Inbound_Transaction__c.isCreateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.UTXO_Address__c.isCreateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Transaction_Hash__c.isCreateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Block_Height__c.isCreateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Block_Time__c.isCreateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Transaction_Index__c.isCreateable()) {
+                    throw new AuraHandledException('Insufficient permissions to create inbound transactions');
+                }
+                insert toInsert;
+            }
+            if (!toUpdate.isEmpty()) {
+                if (!Schema.sObjectType.Inbound_Transaction__c.isUpdateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Block_Height__c.isUpdateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Block_Time__c.isUpdateable() ||
+                    !Schema.sObjectType.Inbound_Transaction__c.fields.Transaction_Index__c.isUpdateable()) {
+                    throw new AuraHandledException('Insufficient permissions to update inbound transactions');
+                }
+                update toUpdate;
+            }
             
             Long processingTime = System.now().getTime() - totalStartTime;
             
@@ -316,6 +358,13 @@ public with sharing class UTXOHelper {
             Boolean hasTransactions = transactionList.size() > 0;
             utxoAddress.Is_Used__c = hasTransactions;
             try {
+                if (!Schema.sObjectType.UTXO_Address__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Address__c.fields.Is_Used__c.isCreateable() ||
+                    !Schema.sObjectType.UTXO_Address__c.isUpdateable() ||
+                    !Schema.sObjectType.UTXO_Address__c.fields.Is_Used__c.isUpdateable()
+                    ) {
+                    throw new AuraHandledException('Insufficient permissions to update UTXO address');
+                }
                 upsert utxoAddress;
             } catch (Exception e) {
                 throw e;
@@ -368,6 +417,10 @@ public with sharing class UTXOHelper {
         }
         
         if (!addressesToUpdate.isEmpty()) {
+            if (!Schema.sObjectType.UTXO_Address__c.isUpdateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Is_Used__c.isUpdateable()) {
+                throw new AuraHandledException('Insufficient permissions to update UTXO addresses');
+            }
             update addressesToUpdate;
         }
     }

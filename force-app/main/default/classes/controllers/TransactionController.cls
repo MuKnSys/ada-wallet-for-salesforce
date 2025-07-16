@@ -147,6 +147,12 @@ public with sharing class TransactionController {
      * Update transaction with signed CBOR
      */
     private static void updateTransactionWithCbor(Outbound_Transaction__c tx, String signedCbor) {
+        if (!Schema.sObjectType.Outbound_Transaction__c.isUpdateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.Signed_Transaction_CBOR__c.isUpdateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.Transaction_Status__c.isUpdateable()) {
+            throw new AuraHandledException('Insufficient permissions to update transaction');
+        }
+        
         tx.Signed_Transaction_CBOR__c = signedCbor;
         tx.Transaction_Status__c = Constants.STATUS_READY_TO_SEND;
         update tx;

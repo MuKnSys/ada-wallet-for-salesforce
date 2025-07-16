@@ -57,7 +57,13 @@ public with sharing class AdaWalletsService {
         }
         
         adaSettings.Private_Key__c = key;
-        upsert adaSettings;
+
+        if (Schema.sObjectType.AdaSettings__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.isUpdateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.Private_Key__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.Private_Key__c.isUpdateable()) {
+            upsert adaSettings;
+        }        
     }
 
     public static void setHmacKey(String key) {
@@ -84,13 +90,25 @@ public with sharing class AdaWalletsService {
         }
         
         adaSettings.Hmac_Key__c = key;
-        upsert adaSettings;
+
+        if (Schema.sObjectType.AdaSettings__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.isUpdateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.Hmac_Key__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.Hmac_Key__c.isUpdateable()) {
+            upsert adaSettings;
+        }        
     }
 
     public static void setBlockfrostProjectId(String blockfrostProjectId) {
         AdaSettings__c adaSettings = getSettings();
         adaSettings.BlockfrostProjectId__c = blockfrostProjectId;
-        upsert adaSettings;
+
+        if (Schema.sObjectType.AdaSettings__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.isUpdateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.BlockfrostProjectId__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.BlockfrostProjectId__c.isUpdateable()) {
+            upsert adaSettings;
+        }        
     }
 
     public static void validateEncryptionKey() {
@@ -112,12 +130,34 @@ public with sharing class AdaWalletsService {
         return String.isNotBlank(adaSettings.Hmac_Key__c);
     }
     
+    public static Boolean isTransactionApprovalsEnabled() {
+        AdaSettings__c adaSettings = getSettings();
+        return adaSettings.Transaction_approvals_enabled__c != null ? adaSettings.Transaction_approvals_enabled__c : false;
+    }
+    
+    public static void setTransactionApprovalsEnabled(Boolean isEnabled) {
+        AdaSettings__c adaSettings = getSettings();
+        adaSettings.Transaction_approvals_enabled__c = isEnabled;
+
+        if (Schema.sObjectType.AdaSettings__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.isUpdateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.Transaction_approvals_enabled__c.isCreateable() &&
+            Schema.sObjectType.AdaSettings__c.fields.Transaction_approvals_enabled__c.isUpdateable()) {
+            upsert adaSettings;
+        }
+    }
+    
     private static Boolean hasRequiredPermissions() {
         return hasPermissionSet('Ada_Wallet_Seed_Phrase');
     }
     
     private static Boolean hasPermissionSet(String permissionSetName) {
         try {
+            if (!Schema.sObjectType.PermissionSetAssignment.isAccessible() || 
+                !Schema.sObjectType.PermissionSet.isAccessible()) {
+                return false;
+            }
+            
             Set<Id> userPermissionSets = new Set<Id>();
             for (PermissionSetAssignment psa : [SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()]) {
                 userPermissionSets.add(psa.PermissionSetId);

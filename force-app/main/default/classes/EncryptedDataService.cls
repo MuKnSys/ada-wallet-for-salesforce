@@ -11,6 +11,11 @@ public with sharing class EncryptedDataService {
 
     public static Boolean hasAccessToDecrypt() {        
         try {
+            if (!Schema.sObjectType.PermissionSetAssignment.isAccessible() || 
+                !Schema.sObjectType.PermissionSet.isAccessible()) {
+                return false;
+            }
+            
             Set<Id> psIds = new Set<Id>();
             for (PermissionSetAssignment psa : [SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId()]) {
                 psIds.add(psa.PermissionSetId);

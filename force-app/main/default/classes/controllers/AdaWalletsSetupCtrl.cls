@@ -5,7 +5,7 @@ public with sharing class AdaWalletsSetupCtrl {
             return new SetupData()                
                 .withPrivateKey(AdaWalletsService.getPrivateKey())
                 .withBlockfrostProjectId(AdaWalletsService.getBlockfrostProjectId())
-                .withTransactionApprovalsEnabled(getTransactionApprovalsEnabled())
+                .withTransactionApprovalsEnabled(AdaWalletsService.isTransactionApprovalsEnabled())
                 .withIsEncryptionKeySet(AdaWalletsService.isEncryptionKeySet())
                 .withIsHmacKeySet(AdaWalletsService.isHmacKeySet());
         } catch (Exception e) {
@@ -118,19 +118,9 @@ public with sharing class AdaWalletsSetupCtrl {
     @AuraEnabled
     public static void updateTransactionApprovals(Boolean isEnabled) {
         try {
-            AdaSettings__c adaSettings = AdaSettings__c.getOrgDefaults();
-            if (adaSettings == null) {
-                adaSettings = new AdaSettings__c();
-            }
-            adaSettings.Transaction_approvals_enabled__c = isEnabled;
-            upsert adaSettings;
+            AdaWalletsService.setTransactionApprovalsEnabled(isEnabled);
         } catch (Exception e) {
             throw new AuraHandledException('Failed to update transaction approvals setting: ' + e.getMessage());
         }
-    }
-
-    private static Boolean getTransactionApprovalsEnabled() {
-        AdaSettings__c adaSettings = AdaSettings__c.getOrgDefaults();
-        return adaSettings.Transaction_approvals_enabled__c != null ? adaSettings.Transaction_approvals_enabled__c : false;
     }
 }

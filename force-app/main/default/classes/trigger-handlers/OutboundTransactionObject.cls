@@ -61,6 +61,13 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
         }
         
         if (!transactionsToUpdate.isEmpty()) {
+            if (!Schema.sObjectType.Outbound_Transaction__c.isUpdateable() ||
+                !Schema.sObjectType.Outbound_Transaction__c.fields.Transaction_Status__c.isUpdateable() ||
+                !Schema.sObjectType.Outbound_Transaction__c.fields.Transaction_Submitted_At__c.isUpdateable() ||
+                !Schema.sObjectType.Outbound_Transaction__c.fields.Transaction_Hash__c.isUpdateable()) {
+                throw new AuraHandledException('Insufficient permissions to update transactions');
+            }
+            
             update transactionsToUpdate;
         }
     }

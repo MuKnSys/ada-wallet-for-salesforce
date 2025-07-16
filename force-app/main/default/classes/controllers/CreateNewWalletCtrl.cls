@@ -20,6 +20,16 @@ public with sharing class CreateNewWalletCtrl {
     @AuraEnabled
     public static Id createWallet(String walletSetId, String walletName, String address, String accountPrivateKey, String accountPublicKey, Integer accountIndex, String stakeAddress) {
         try {
+            if (!Schema.sObjectType.Wallet__c.isCreateable() ||
+                !Schema.sObjectType.Wallet__c.fields.Wallet_Set__c.isCreateable() ||
+                !Schema.sObjectType.Wallet__c.fields.Name.isCreateable() ||
+                !Schema.sObjectType.Wallet__c.fields.Account_Private_Key__c.isCreateable() ||
+                !Schema.sObjectType.Wallet__c.fields.Account_Public_Key__c.isCreateable() ||
+                !Schema.sObjectType.Wallet__c.fields.Account_Index__c.isCreateable() ||
+                !Schema.sObjectType.Wallet__c.fields.Stake_Address__c.isCreateable()) {
+                throw new AuraHandledException('Insufficient permissions to create wallet');
+            }
+            
             Wallet__c newWallet = createWalletRecord(walletSetId, walletName, address, accountPrivateKey, accountPublicKey, accountIndex, stakeAddress);
             insert newWallet;
             
@@ -327,10 +337,22 @@ public with sharing class CreateNewWalletCtrl {
     private static void insertAddressesAndUpdateResults(List<UTXO_Address__c> allAddresses, List<Map<String, Object>> receivingResults, 
                                                     List<Map<String, Object>> changeResults, Integer receivingCount) {
         if (!allAddresses.isEmpty()) {
-            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, allAddresses);
-            insert decision.getRecords();
+            if (!Schema.sObjectType.UTXO_Address__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Wallet__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Address__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Index__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Is_Used__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Public_Key__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Payment_Key_Hash__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Path__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Private_Key__c.isCreateable() ||
+                !Schema.sObjectType.UTXO_Address__c.fields.Type__c.isCreateable()) {
+                throw new AuraHandledException('Insufficient permissions to create UTXO addresses');
+            }
             
-            updateResultsWithIds(receivingResults, changeResults, decision.getRecords(), receivingCount);
+            insert allAddresses;
+            
+            updateResultsWithIds(receivingResults, changeResults, allAddresses, receivingCount);
         }
     }
     

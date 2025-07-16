@@ -411,9 +411,17 @@ public with sharing class WalletController {
      * Insert transaction record with security
      */
     private static Id insertTransactionRecord(Outbound_Transaction__c txRecord) {
-        SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<Outbound_Transaction__c>{txRecord});
-        insert decision.getRecords();
-        return decision.getRecords()[0].Id;
+        if (!Schema.sObjectType.Outbound_Transaction__c.isCreateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.Wallet__c.isCreateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.To_Address__c.isCreateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.Approved__c.isCreateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.Transaction_Status__c.isCreateable() ||
+            !Schema.sObjectType.Outbound_Transaction__c.fields.Memo__c.isCreateable()) {
+            throw new AuraHandledException('Insufficient permissions to create outbound transaction');
+        }
+        
+        insert txRecord;
+        return txRecord.Id;
     }
     
     /**
@@ -463,8 +471,14 @@ public with sharing class WalletController {
      */
     private static void insertTransactionLines(List<Outbound_Transaction_Line__c> lines) {
         if (!lines.isEmpty()) {
-            SObjectAccessDecision lineDecision = Security.stripInaccessible(AccessType.CREATABLE, lines);
-            insert lineDecision.getRecords();
+            if (!Schema.sObjectType.Outbound_Transaction_Line__c.isCreateable() ||
+                !Schema.sObjectType.Outbound_Transaction_Line__c.fields.Outbound_Transaction__c.isCreateable() ||
+                !Schema.sObjectType.Outbound_Transaction_Line__c.fields.Amount__c.isCreateable() ||
+                !Schema.sObjectType.Outbound_Transaction_Line__c.fields.Asset__c.isCreateable()) {
+                throw new AuraHandledException('Insufficient permissions to create transaction lines');
+            }
+            
+            insert lines;
         }
     }
 } 
