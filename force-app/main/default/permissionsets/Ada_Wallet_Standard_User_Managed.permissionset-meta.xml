@@ -133,16 +133,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Inbound_Transaction__c.Data_Hash__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Inbound_Transaction__c.Reference_Script_Hash__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Inbound_Transaction__c.Inline_Datum__c</field>
         <readable>true</readable>
     </fieldPermissions>
