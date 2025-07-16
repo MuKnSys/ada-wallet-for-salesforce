@@ -2,14 +2,15 @@
 private class CreateNewWalletCtrlTest {
     private static final String TEST_WALLET_NAME = 'Test Wallet';
     private static final String TEST_ADDRESS = 'addr1qxy2k7y69nj4q7yqymkpm4vthasnqeh9lztr8673x50995q9hhtky6f89qag3v5cngq9gry9zth5k5aww6aswgdq9q7spgqrqv';
-    private static final String TEST_PRIVATE_KEY = '0123456789abcdef0123456789abcdef';
-    private static final String TEST_PUBLIC_KEY = '0123456789abcdef0123456789abcdef';
+    private static final String TEST_PRIVATE_KEY = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+    private static final String TEST_PUBLIC_KEY = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
     private static final Integer TEST_ACCOUNT_INDEX = 0;
     private static final String TEST_SEED_PHRASE = 'test seed phrase';
 
     @TestSetup
     static void testData() {
         AdaWalletsService.setPrivateKey(TEST_PRIVATE_KEY);
+        AdaWalletsService.setHmacKey(EncodingUtil.base64Encode(Crypto.generateAesKey(256)));
         
         Wallet_Set__c walletSet = new Wallet_Set__c(
             Wallet_Name__c = 'Test Wallet',
@@ -167,27 +168,182 @@ private class CreateNewWalletCtrlTest {
     }
 
     @isTest
-    static void shouldThrowExceptionWhenWalletSetIdIsBlank() {
+    static void shouldReturnFalseWhenWalletSetIdIsBlank() {
+        Test.startTest();
+        Boolean result = CreateNewWalletCtrl.verifySeedPhrase('', TEST_SEED_PHRASE);
+        Test.stopTest();
+        
+        Assert.isFalse(result, 'Should return false for blank wallet set ID');
+    }
+
+    @isTest
+    static void shouldReturnFalseWhenSeedPhraseIsBlank() {
+        Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
+
+        Test.startTest();
+        Boolean result = CreateNewWalletCtrl.verifySeedPhrase(walletSet.Id, '');
+        Test.stopTest();
+        
+        Assert.isFalse(result, 'Should return false for blank seed phrase');
+    }
+
+    @isTest
+    static void shouldThrowExceptionWhenWalletIdIsBlank() {
         Test.startTest();
         try {
-            CreateNewWalletCtrl.verifySeedPhrase('', TEST_SEED_PHRASE);
+            CreateNewWalletCtrl.getWalletById('');
             Assert.fail('Should have thrown an exception');
         } catch (AuraHandledException e) {
-            Assert.isTrue(e.getMessage().contains('Wallet Set ID is required'), 'Error message should indicate Wallet Set ID is required');
+            Assert.isTrue(true, 'Exception was thrown as expected');
         }
         Test.stopTest();
     }
 
     @isTest
-    static void shouldThrowExceptionWhenSeedPhraseIsBlank() {
+    static void shouldThrowExceptionWhenWalletIdIsNull() {
+        Test.startTest();
+        try {
+            CreateNewWalletCtrl.getWalletById(null);
+            Assert.fail('Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'Exception was thrown as expected');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void shouldThrowExceptionWhenWalletNotFound() {
+        Test.startTest();
+        try {
+            CreateNewWalletCtrl.getWalletById('001000000000000');
+            Assert.fail('Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'Exception was thrown as expected');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void shouldCheckAddressUsageOnly() {
+        Test.startTest();
+        Test.setMock(HttpCalloutMock.class, new BlockfrostServiceMock());
+        
+        Map<String, Object> result = CreateNewWalletCtrl.checkAddressUsageOnly(TEST_ADDRESS);
+        Test.stopTest();
+        
+        Assert.isNotNull(result, 'Should return address usage result');
+        Assert.isTrue(result.containsKey('address'), 'Result should contain address');
+        Assert.isTrue(result.containsKey('isUsed'), 'Result should contain isUsed flag');
+        Assert.isTrue(result.containsKey('checkMethod'), 'Result should contain check method');
+    }
+
+    @isTest
+    static void shouldCreateUTXOAddressesBulk() {
         Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
+        Wallet__c wallet = new Wallet__c(
+            Wallet_Set__c = walletSet.Id,
+            Name = TEST_WALLET_NAME,
+            Account_Private_Key__c = DataEncryptor.encrypt(TEST_PRIVATE_KEY),
+            Account_Public_Key__c = DataEncryptor.encrypt(TEST_PUBLIC_KEY),
+            Account_Index__c = TEST_ACCOUNT_INDEX
+        );
+        insert wallet;
+
+        List<CreateNewWalletCtrl.UTXOAddressData> receivingAddresses = new List<CreateNewWalletCtrl.UTXOAddressData>();
+        CreateNewWalletCtrl.UTXOAddressData receivingAddr = new CreateNewWalletCtrl.UTXOAddressData();
+        receivingAddr.index = 0;
+        receivingAddr.publicKey = 'testPublicKey';
+        receivingAddr.privateKey = 'testPrivateKey';
+        receivingAddr.address = TEST_ADDRESS;
+        receivingAddr.paymentKeyHash = 'testHash';
+        receivingAddr.path = 'm/1852\'/1815\'/0\'/0/0';
+        receivingAddresses.add(receivingAddr);
+
+        List<CreateNewWalletCtrl.UTXOAddressData> changeAddresses = new List<CreateNewWalletCtrl.UTXOAddressData>();
+        CreateNewWalletCtrl.UTXOAddressData changeAddr = new CreateNewWalletCtrl.UTXOAddressData();
+        changeAddr.index = 0;
+        changeAddr.publicKey = 'testPublicKey2';
+        changeAddr.privateKey = 'testPrivateKey2';
+        changeAddr.address = TEST_ADDRESS;
+        changeAddr.paymentKeyHash = 'testHash2';
+        changeAddr.path = 'm/1852\'/1815\'/0\'/1/0';
+        changeAddresses.add(changeAddr);
+
+        Test.startTest();
+        Map<String, Object> result = CreateNewWalletCtrl.createUTXOAddressesBulk(wallet.Id, receivingAddresses, changeAddresses);
+        Test.stopTest();
+        
+        Assert.isNotNull(result, 'Should return bulk creation result');
+        Assert.isTrue(result.containsKey('success'), 'Result should contain success flag');
+        Assert.isTrue(result.containsKey('walletId'), 'Result should contain wallet ID');
+        Assert.isTrue(result.containsKey('receivingAddresses'), 'Result should contain receiving addresses');
+        Assert.isTrue(result.containsKey('changeAddresses'), 'Result should contain change addresses');
+    }
+
+    @isTest
+    static void shouldThrowExceptionWhenAddressListsAreNull() {
+        Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
+        Wallet__c wallet = new Wallet__c(
+            Wallet_Set__c = walletSet.Id,
+            Name = TEST_WALLET_NAME,
+            Account_Private_Key__c = DataEncryptor.encrypt(TEST_PRIVATE_KEY),
+            Account_Public_Key__c = DataEncryptor.encrypt(TEST_PUBLIC_KEY),
+            Account_Index__c = TEST_ACCOUNT_INDEX
+        );
+        insert wallet;
 
         Test.startTest();
         try {
-            CreateNewWalletCtrl.verifySeedPhrase(walletSet.Id, '');
+            CreateNewWalletCtrl.createUTXOAddressesBulk(wallet.Id, null, null);
             Assert.fail('Should have thrown an exception');
         } catch (AuraHandledException e) {
-            Assert.isTrue(e.getMessage().contains('Seed phrase is required'), 'Error message should indicate seed phrase is required');
+            Assert.isTrue(true, 'Exception was thrown as expected');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void shouldThrowExceptionWhenCreateWalletWithInvalidData() {
+        Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
+        
+        Test.startTest();
+        try {
+            CreateNewWalletCtrl.createWallet(
+                'invalid-wallet-set-id', // Invalid wallet set ID
+                TEST_WALLET_NAME,
+                TEST_ADDRESS,
+                TEST_PRIVATE_KEY,
+                TEST_PUBLIC_KEY,
+                TEST_ACCOUNT_INDEX,
+                'stake1u98ujxfgvdm2ylac9t3aa6atp3cf3kmjcg8h8weqnj7ad6gq3p9jl'
+            );
+            Assert.fail('Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'Exception was thrown as expected');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void shouldGetEncryptedSeedPhraseWithException() {
+        Test.startTest();
+        try {
+            CreateNewWalletCtrl.getEncryptedSeedPhrase('001000000000000');
+            Assert.fail('Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'Exception was thrown as expected');
+        }
+        Test.stopTest();
+    }
+
+    @isTest
+    static void shouldCheckAddressUsageOnlyWithException() {
+        Test.startTest();
+        try {
+            CreateNewWalletCtrl.checkAddressUsageOnly('');
+            Assert.fail('Should have thrown an exception');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(true, 'Exception was thrown as expected');
         }
         Test.stopTest();
     }

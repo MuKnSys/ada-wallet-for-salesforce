@@ -4,41 +4,7 @@
  */
 public with sharing class TransactionController {
     
-    // Inner classes for data structures
-    public class UTXOAddress {
-        @AuraEnabled public String id { get; set; }
-        @AuraEnabled public String address { get; set; }
-        @AuraEnabled public Integer addressIndex { get; set; }
-        @AuraEnabled public String addressType { get; set; }
-        @AuraEnabled public String path { get; set; }
-        @AuraEnabled public String privateKey { get; set; }
-        @AuraEnabled public String publicKey { get; set; }
-        @AuraEnabled public String paymentKeyHash { get; set; }
-        @AuraEnabled public String xprv { get; set; }
-        @AuraEnabled public String xpub { get; set; }
-        @AuraEnabled public List<UTXOAsset> assets { get; set; }
-        @AuraEnabled public Map<String, Object> balance { get; set; }
-        @AuraEnabled public Map<String, Object> walletSummary { get; set; }
-        @AuraEnabled public List<Object> utxos { get; set; }
-        
-        public UTXOAddress() {
-            this.assets = new List<UTXOAsset>();
-            this.balance = new Map<String, Object>();
-            this.walletSummary = new Map<String, Object>();
-            this.utxos = new List<Object>();
-        }
-    }
-    
-    public class UTXOAsset {
-        @AuraEnabled public String id { get; set; }
-        @AuraEnabled public String unit { get; set; }
-        @AuraEnabled public Decimal amount { get; set; }
-        @AuraEnabled public String assetName { get; set; }
-        @AuraEnabled public String displayName { get; set; }
-        @AuraEnabled public Integer decimals { get; set; }
-        @AuraEnabled public String policyId { get; set; }
-        @AuraEnabled public String fingerprint { get; set; }
-    }
+
     
     /**
      * Load wallet data with all addresses and assets
@@ -254,6 +220,7 @@ public with sharing class TransactionController {
     /**
      * Calculate total lovelace from UTXOs
      */
+    @TestVisible
     private static Decimal calculateLovelaceFromUtxos(List<Object> utxos) {
         Decimal totalLovelace = 0;
         
@@ -280,6 +247,7 @@ public with sharing class TransactionController {
     /**
      * Collect asset totals from UTXOs
      */
+    @TestVisible
     private static void collectAssetTotals(List<Object> utxos, Map<String, Decimal> assetTotals) {
         for (Object utxoObj : utxos) {
             Map<String, Object> utxo = (Map<String, Object>) utxoObj;
@@ -307,6 +275,7 @@ public with sharing class TransactionController {
     /**
      * Build assets list with metadata
      */
+    @TestVisible
     private static List<Map<String, Object>> buildAssetsList(Map<String, Decimal> assetTotals) {
         List<Map<String, Object>> assetsList = new List<Map<String, Object>>();
         
@@ -321,6 +290,7 @@ public with sharing class TransactionController {
     /**
      * Create asset object with metadata
      */
+    @TestVisible
     private static Map<String, Object> createAssetObject(String unit, Decimal quantity) {
         Map<String, Object> assetObj = new Map<String, Object>{
             'unit' => unit,
@@ -340,6 +310,7 @@ public with sharing class TransactionController {
     /**
      * Populate asset metadata from Blockfrost response
      */
+    @TestVisible
     private static void populateAssetMetadata(Map<String, Object> assetObj, Map<String, Object> assetInfo) {
         if (assetInfo == null) {
             return;
@@ -361,6 +332,7 @@ public with sharing class TransactionController {
     /**
      * Populate metadata fields from metadata object
      */
+    @TestVisible
     private static void populateMetadataFields(Map<String, Object> assetObj, Map<String, Object> metadata) {
         Object decimalsObj = metadata.get('decimals');
         if (decimalsObj != null) {
@@ -377,6 +349,7 @@ public with sharing class TransactionController {
     /**
      * Populate default metadata when metadata is not available
      */
+    @TestVisible
     private static void populateDefaultMetadata(Map<String, Object> assetObj) {
         assetObj.put('decimals', 0);
         assetObj.put('ticker', (String) assetObj.get('assetName'));
@@ -386,6 +359,7 @@ public with sharing class TransactionController {
     /**
      * Populate fallback asset metadata when API call fails
      */
+    @TestVisible
     private static void populateFallbackAssetMetadata(Map<String, Object> assetObj, String unit) {
         assetObj.put('policyId', unit.length() >= 56 ? unit.substring(0, 56) : '');
         assetObj.put('assetName', unit.length() > 56 ? unit.substring(56) : unit);
@@ -398,6 +372,7 @@ public with sharing class TransactionController {
     /**
      * Get string value from map with default
      */
+    @TestVisible
     private static String getStringValue(Map<String, Object> dataMap, String fieldKey, String defaultVal) {
         Object fieldValue = dataMap.get(fieldKey);
         return fieldValue != null ? String.valueOf(fieldValue) : defaultVal;

@@ -3,8 +3,10 @@ public class DataEncryptorTest {
     @isTest
     static void testEncryptDecrypt() {        
         String originalText = 'This is a test string for encryption.';
-        String privateKeyHex = '0123456789abcdef0123456789abcdef';
-        AdaWalletsService.setPrivateKey(privateKeyHex);
+        String privateKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+        String hmacKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+        AdaWalletsService.setPrivateKey(privateKey);
+        AdaWalletsService.setHmacKey(hmacKey);
         
         String encryptedText = DataEncryptor.encrypt(originalText);
         String decryptedText = DataEncryptor.decrypt(encryptedText);
@@ -15,8 +17,10 @@ public class DataEncryptorTest {
 
     @isTest
     static void testEncryptWithNull() {        
-        String privateKeyHex = '0123456789abcdef0123456789abcdef';
-        AdaWalletsService.setPrivateKey(privateKeyHex);
+        String privateKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+        String hmacKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+        AdaWalletsService.setPrivateKey(privateKey);
+        AdaWalletsService.setHmacKey(hmacKey);
         Boolean exceptionThrown = false;
 
         try {
@@ -29,8 +33,10 @@ public class DataEncryptorTest {
 
     @isTest
     static void testDecryptWithInvalidData() {        
-        String privateKeyHex = '0123456789abcdef0123456789abcdef';
-        AdaWalletsService.setPrivateKey(privateKeyHex);
+        String privateKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+        String hmacKey = EncodingUtil.base64Encode(Crypto.generateAesKey(256));
+        AdaWalletsService.setPrivateKey(privateKey);
+        AdaWalletsService.setHmacKey(hmacKey);
         Boolean exceptionThrown = false;
         
         try {
