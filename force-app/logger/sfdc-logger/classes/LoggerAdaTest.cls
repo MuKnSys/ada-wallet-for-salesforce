@@ -1,5 +1,5 @@
 @IsTest
-private class LoggerTest {
+private class LoggerAdaTest {
     private static final String ADMIN_PROFILE_ID = [
         SELECT Id
         FROM Profile
@@ -50,8 +50,8 @@ private class LoggerTest {
         insert usersToInsert;
 
         System.runAs(adminUser) {
-            List<Logger_Config__c> configs = new List<Logger_Config__c>();
-            Logger_Config__c defaultConfig = new Logger_Config__c();
+            List<Logger_Config_Ada__c> configs = new List<Logger_Config_Ada__c>();
+            Logger_Config_Ada__c defaultConfig = new Logger_Config_Ada__c();
             defaultConfig.SetupOwnerId = UserInfo.getOrganizationId();
             defaultConfig.Is_Logger_Enabled__c = false;
             defaultConfig.Is_Debug_Enabled__c = false;
@@ -60,7 +60,7 @@ private class LoggerTest {
             defaultConfig.Is_Error_Enabled__c = false;
             configs.add(defaultConfig);
 
-            Logger_Config__c standardUserConfig = new Logger_Config__c();
+            Logger_Config_Ada__c standardUserConfig = new Logger_Config_Ada__c();
             standardUserConfig.SetupOwnerId = standardUser.Id;
             standardUserConfig.Is_Logger_Enabled__c = true;
             standardUserConfig.Is_Debug_Enabled__c = true;
@@ -84,17 +84,17 @@ private class LoggerTest {
 
         Test.startTest();
         System.runAs(adminUser) {
-            Logger.logDebug('Test Debug message');
-            Logger.logInfo('Test Debug message');
-            Logger.logSuccess('Test Debug message');
-            Logger.logError('Test Debug message');
-            Logger.commitLogs();
+            LoggerAda.logDebug('Test Debug message');
+            LoggerAda.logInfo('Test Debug message');
+            LoggerAda.logSuccess('Test Debug message');
+            LoggerAda.logError('Test Debug message');
+            LoggerAda.commitLogs();
         }
         Test.stopTest();
 
         Integer logsCount = [
             SELECT COUNT()
-            FROM Log__c
+            FROM Log_Ada__c
             WHERE Running_User__c = :adminUser.Id
         ];
 
@@ -113,33 +113,33 @@ private class LoggerTest {
 
         Test.startTest();
         System.runAs(standardUser) {
-            Logger.logDebug('Test Debug message');
-            Logger.logInfo('Test Debug message');
-            Logger.logSuccess('Test Debug message');
-            Logger.logError('Test Debug message');
-            Logger.commitLogs();
+            LoggerAda.logDebug('Test Debug message');
+            LoggerAda.logInfo('Test Debug message');
+            LoggerAda.logSuccess('Test Debug message');
+            LoggerAda.logError('Test Debug message');
+            LoggerAda.commitLogs();
         }
         Test.stopTest();
 
         Integer debugLogsCount = [
             SELECT COUNT()
-            FROM Log__c
-            WHERE Running_User__c = :standardUser.Id AND Severity__c = :Logger.LogSeverity.DEBUG.name()
+            FROM Log_Ada__c
+            WHERE Running_User__c = :standardUser.Id AND Severity__c = :LoggerAda.LogSeverity.DEBUG.name()
         ];
         Integer infoLogsCount = [
             SELECT COUNT()
-            FROM Log__c
-            WHERE Running_User__c = :standardUser.Id AND Severity__c = :Logger.LogSeverity.INFO.name()
+            FROM Log_Ada__c
+            WHERE Running_User__c = :standardUser.Id AND Severity__c = :LoggerAda.LogSeverity.INFO.name()
         ];
         Integer successLogsCount = [
             SELECT COUNT()
-            FROM Log__c
-            WHERE Running_User__c = :standardUser.Id AND Severity__c = :Logger.LogSeverity.SUCCESS.name()
+            FROM Log_Ada__c
+            WHERE Running_User__c = :standardUser.Id AND Severity__c = :LoggerAda.LogSeverity.SUCCESS.name()
         ];
         Integer errorLogsCount = [
             SELECT COUNT()
-            FROM Log__c
-            WHERE Running_User__c = :standardUser.Id AND Severity__c = :Logger.LogSeverity.ERROR.name()
+            FROM Log_Ada__c
+            WHERE Running_User__c = :standardUser.Id AND Severity__c = :LoggerAda.LogSeverity.ERROR.name()
         ];
 
         System.assertEquals(1, debugLogsCount);

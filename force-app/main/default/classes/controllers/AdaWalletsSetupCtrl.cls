@@ -100,7 +100,7 @@ public with sharing class AdaWalletsSetupCtrl {
     @AuraEnabled
     public static void enableLogging() {
         try {
-            new LoggerService().updateLoggerService(true);
+            new LoggerServiceADA().updateLoggerService(true);
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
@@ -109,7 +109,7 @@ public with sharing class AdaWalletsSetupCtrl {
     @AuraEnabled
     public static void disableLogging() {
         try {
-            new LoggerService().updateLoggerService(false);
+            new LoggerServiceADA().updateLoggerService(false);
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

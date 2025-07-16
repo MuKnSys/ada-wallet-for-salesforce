@@ -1,10 +1,10 @@
-public with sharing class Logger {
-    private static final Logger_Config__c LOGGER_CONFIG = Logger_Config__c.getInstance();
-    private static List<Log__c> logs = new List<Log__c>();
+public with sharing class LoggerAda {
+    private static final Logger_Config_Ada__c LOGGER_CONFIG = Logger_Config_Ada__c.getInstance();
+    private static List<Log_Ada__c> logs = new List<Log_Ada__c>();
 
-    public static void log(Logger.LogSeverity severity, String message) {
+    public static void log(LoggerAda.LogSeverity severity, String message) {
         if (severity != null && isEnabled(severity)) {
-            Log__c log = new Log__c();
+            Log_Ada__c log = new Log_Ada__c();
             log.Severity__c = severity.name();
             log.Message__c = message;
             log.Running_User__c = UserInfo.getUserId();
@@ -14,23 +14,23 @@ public with sharing class Logger {
     }
 
     public static void logDebug(String message) {
-        log(Logger.LogSeverity.DEBUG, message);
+        log(LoggerAda.LogSeverity.DEBUG, message);
     }
 
     public static void logInfo(String message) {
-        log(Logger.LogSeverity.INFO, message);
+        log(LoggerAda.LogSeverity.INFO, message);
     }
 
     public static void logSuccess(String message) {
-        log(Logger.LogSeverity.SUCCESS, message);
+        log(LoggerAda.LogSeverity.SUCCESS, message);
     }
 
     public static void logError(String message) {
-        log(Logger.LogSeverity.ERROR, message);
+        log(LoggerAda.LogSeverity.ERROR, message);
     }
 
     public static void logError(Exception e) {
-        log(Logger.LogSeverity.ERROR, e.getTypeName() + ': ' + e.getMessage() + '\n\n' + e.getStackTraceString());
+        log(LoggerAda.LogSeverity.ERROR, e.getTypeName() + ': ' + e.getMessage() + '\n\n' + e.getStackTraceString());
     }
 
     public static void commitLogs() {
@@ -41,7 +41,7 @@ public with sharing class Logger {
         }
     }
 
-    private static Boolean isEnabled(Logger.LogSeverity severity) {
+    private static Boolean isEnabled(LoggerAda.LogSeverity severity) {
         Boolean isEnabled = false;
         if (LOGGER_CONFIG.Is_Logger_Enabled__c) {
             switch on severity {

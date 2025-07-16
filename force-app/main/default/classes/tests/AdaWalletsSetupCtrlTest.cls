@@ -50,13 +50,13 @@ public class AdaWalletsSetupCtrlTest {
     static void testEnableLogging() {        
         AdaWalletsSetupCtrl.enableLogging();
         
-        Assert.isTrue(new LoggerService().isLoggingEnabled(), 'Logging should be enabled.');
+        Assert.isTrue(new LoggerServiceADA().isLoggingEnabled(), 'Logging should be enabled.');
     }
 
     @isTest
     static void testDisableLogging() {        
         AdaWalletsSetupCtrl.disableLogging();
         
-        Assert.isTrue(!new LoggerService().isLoggingEnabled(), 'Logging should be disabled.');
+        Assert.isTrue(!new LoggerServiceADA().isLoggingEnabled(), 'Logging should be disabled.');
     }
 }

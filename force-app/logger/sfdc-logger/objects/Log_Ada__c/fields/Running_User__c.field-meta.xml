@@ -6,7 +6,7 @@
     <externalId>false</externalId>
     <label>Running User</label>
     <referenceTo>User</referenceTo>
-    <relationshipName>Logs</relationshipName>
+    <relationshipName>AdaLogs</relationshipName>
     <required>false</required>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>

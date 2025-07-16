@@ -1,11 +1,11 @@
-public without sharing class LoggerService {
-    private Logger_Config__c loggerSettings;
+public without sharing class LoggerServiceADA {
+    private Logger_Config_Ada__c loggerSettings;
 
-    public LoggerService() {
-        loggerSettings = Logger_Config__c.getOrgDefaults();
+    public LoggerServiceADA() {
+        loggerSettings = Logger_Config_Ada__c.getOrgDefaults();
     }
 
-    public Logger_Config__c getConfig() {
+    public Logger_Config_Ada__c getConfig() {
         return loggerSettings;
     }
 

@@ -12,12 +12,12 @@ public with sharing class WalletSetCtrl {
             walletSet.Wallet_Name__c = walletName;
             walletSet.Seed_Phrase__c = DataEncryptor.encryptHmac(seedPhrase);
             insert walletSet;
-            Logger.logInfo('Wallet Set was created by ' + UserInfo.getName() + ' (Id: ' + UserInfo.getUserId() + ') with ID: ' + walletSet.Id);
+            LoggerAda.logInfo('Wallet Set was created by ' + UserInfo.getName() + ' (Id: ' + UserInfo.getUserId() + ') with ID: ' + walletSet.Id);
             return walletSet.Id;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating Wallet Set: ' + e.getMessage());
         } finally {
-            Logger.commitLogs();
+            LoggerAda.commitLogs();
         }
     }
 }

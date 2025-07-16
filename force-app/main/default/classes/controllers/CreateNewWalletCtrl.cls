@@ -38,7 +38,7 @@ public with sharing class CreateNewWalletCtrl {
         } catch (Exception e) {
             throw new AuraHandledException('Error creating Wallet: ' + e.getMessage());
         } finally {
-            Logger.commitLogs();
+            LoggerAda.commitLogs();
         }
     }
 
@@ -73,7 +73,7 @@ public with sharing class CreateNewWalletCtrl {
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving wallet: ' + e.getMessage());
         } finally {
-            Logger.commitLogs();
+            LoggerAda.commitLogs();
         }
     }
 
@@ -90,7 +90,7 @@ public with sharing class CreateNewWalletCtrl {
         } catch (Exception e) {            
             throw new AuraHandledException('Error getting next account index: ' + e.getMessage());
         } finally {
-            Logger.commitLogs();
+            LoggerAda.commitLogs();
         }
     }
 
@@ -242,7 +242,7 @@ public with sharing class CreateNewWalletCtrl {
      * Log wallet creation event
      */
     private static void logWalletCreation(Wallet__c wallet, String walletSetId, Integer accountIndex) {
-        Logger.logInfo('Wallet created: ' + wallet.Name + ' for Wallet Set: ' + walletSetId + ' with Account Index: ' + accountIndex + ' by User: ' + UserInfo.getName());
+        LoggerAda.logInfo('Wallet created: ' + wallet.Name + ' for Wallet Set: ' + walletSetId + ' with Account Index: ' + accountIndex + ' by User: ' + UserInfo.getName());
     }
     
     /**
@@ -349,7 +349,7 @@ public with sharing class CreateNewWalletCtrl {
                 !Schema.sObjectType.UTXO_Address__c.fields.Type__c.isCreateable()) {
                 throw new AuraHandledException('Insufficient permissions to create UTXO addresses');
             }
-            
+
             insert allAddresses;
             
             updateResultsWithIds(receivingResults, changeResults, allAddresses, receivingCount);
