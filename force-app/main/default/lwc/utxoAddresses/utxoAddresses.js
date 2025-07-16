@@ -359,7 +359,8 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
             // Refresh data and notify other components
             await refreshApex(this.wiredAddressesResult);
 
-            showToast(this, this.labels.SUCCESS.GENERATE_SUCCESS, this.labels.SUCCESS.GENERATE_SUCCESS.replace('{typeLabel}', typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)), 'success');
+            const successMessage = this.labels.SUCCESS.GENERATE_SUCCESS.replace('{typeLabel}', typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1));
+            showToast(this, successMessage, successMessage, 'success');
 
         } catch (error) {
             showToast(this, this.labels.UI.ERROR_TITLE, this.labels.ERROR.GENERATE_ERROR.replace('{error}', error.message), 'error');

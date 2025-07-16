@@ -30,7 +30,7 @@ public with sharing class UTXOHelper {
             List<Object> utxoList = (List<Object>) JSON.deserializeUntyped(utxoJson);
 
             // Step 2: Get ALL transactions from Blockfrost (for usage and inbound/outbound analysis)
-            String transactionsJson = BlockfrostService.getAddressTransactionsList(utxoAddress.Address__c);
+            String transactionsJson = BlockfrostService.getAddressTransactions(utxoAddress.Address__c);
             List<Object> transactionList = (List<Object>) JSON.deserializeUntyped(transactionsJson);
             
             // Step 3: Get all wallet addresses for transaction direction analysis
