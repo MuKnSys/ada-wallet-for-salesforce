@@ -11,7 +11,7 @@ public with sharing class UTXOAddressSelector {
 
     public static List<UTXO_Address__c> getAddressesByIds(List<Id> addressIds) {
         return [
-            SELECT Id, Wallet__c, Is_Used__c
+            SELECT Id, Wallet__c, Is_Used__c, Address__c
             FROM UTXO_Address__c
             WHERE Id IN :addressIds
             WITH SECURITY_ENFORCED

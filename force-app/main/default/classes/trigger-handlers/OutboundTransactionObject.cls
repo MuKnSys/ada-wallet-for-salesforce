@@ -30,10 +30,6 @@ public with sharing class OutboundTransactionObject extends TriggerHandlerADA {
                 oldRecord.Approved__c != ConstantsAda.APPROVAL_STATUS_APPROVED);
     }
     
-
-    
-
-    
     @future(callout=true)
     public static void submitTransactionsAsync(List<Id> recordIds) {
         List<Outbound_Transaction__c> transactionsToSubmit = OutboundTransactionSelector.getTransactionsReadyToSendByIds(new Set<Id>(recordIds));
