@@ -1,6 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
-    <!-- Slack action removed due to missing action type -->
+    <actionCalls>
+        <name>Send_outbound_transaction_sent</name>
+        <label>Send outbound transaction sent</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>slackPostMessage</actionName>
+        <actionType>slackPostMessage</actionType>
+        <connector>
+            <targetReference>Get_Accounting_email</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>slackAppIdForToken</name>
+            <value>
+                <elementReference>Get_Slack_settings.Slack_app_Id__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>slackWorkspaceIdForToken</name>
+            <value>
+                <elementReference>Get_Slack_settings.Slack_workspace_Id__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>slackConversationId</name>
+            <value>
+                <elementReference>Get_Slack_settings.Slack_channel_Id__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>slackMessage</name>
+            <value>
+                <elementReference>SendingTransactionNotification</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>slackPostMessage</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
     <actionCalls>
         <name>SendEmailActionToAccounting</name>
         <label>SendEmailActionToAccounting</label>
@@ -159,7 +197,9 @@
         <locationX>0</locationX>
         <locationY>0</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <!-- Connector removed due to missing action -->
+        <connector>
+            <targetReference>Send_outbound_transaction_sent</targetReference>
+        </connector>
         <getFirstRecordOnly>true</getFirstRecordOnly>
         <object>Slacksettings__c</object>
         <storeOutputAutomatically>true</storeOutputAutomatically>
