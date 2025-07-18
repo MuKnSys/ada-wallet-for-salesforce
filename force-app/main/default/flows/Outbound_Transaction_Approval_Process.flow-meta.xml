@@ -2,9 +2,84 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>64.0</apiVersion>
     <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <decisions>
+        <name>Approvals_enabled</name>
+        <label>Approvals enabled?</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Stage_3</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Enabled</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Get_Settings.Outputs.approvalsEnabled</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Stage_1</targetReference>
+            </connector>
+            <label>Enabled</label>
+        </rules>
+    </decisions>
     <environments>Default</environments>
     <interviewLabel>Outbound Transaction Approval Process {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Outbound Transaction Approval Process</label>
+    <orchestratedStages>
+        <name>Stage_0</name>
+        <label>Stage 0</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Approvals_enabled</targetReference>
+        </connector>
+        <exitConditionLogic>and</exitConditionLogic>
+        <stageSteps>
+            <name>Set_Approval_Requested</name>
+            <actionName>OTX_SetApprovalRequested</actionName>
+            <actionType>stepBackground</actionType>
+            <canAssigneeEdit>false</canAssigneeEdit>
+            <entryConditionLogic>and</entryConditionLogic>
+            <exitConditionLogic>and</exitConditionLogic>
+            <inputParameters>
+                <name>recordId</name>
+                <value>
+                    <elementReference>$Record.Id</elementReference>
+                </value>
+            </inputParameters>
+            <label>Set Approval Requested</label>
+            <requiresAsyncProcessing>false</requiresAsyncProcessing>
+            <runAsUser>false</runAsUser>
+            <shouldLock>false</shouldLock>
+            <stepSubtype>BackgroundStep</stepSubtype>
+        </stageSteps>
+        <stageSteps>
+            <name>Get_Settings</name>
+            <actionName>OTX_GetApprovalsToggle</actionName>
+            <actionType>stepBackground</actionType>
+            <canAssigneeEdit>false</canAssigneeEdit>
+            <entryConditionLogic>and</entryConditionLogic>
+            <entryConditions>
+                <conditionType>EntryCondition</conditionType>
+                <leftValueReference>Set_Approval_Requested.Status</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Completed</stringValue>
+                </rightValue>
+            </entryConditions>
+            <exitConditionLogic>and</exitConditionLogic>
+            <label>Get Settings</label>
+            <requiresAsyncProcessing>false</requiresAsyncProcessing>
+            <runAsUser>false</runAsUser>
+            <shouldLock>false</shouldLock>
+            <stepSubtype>BackgroundStep</stepSubtype>
+        </stageSteps>
+    </orchestratedStages>
     <orchestratedStages>
         <name>Stage_1</name>
         <label>Stage 1 – Manager Review</label>
@@ -70,6 +145,32 @@
             <stepSubtype>BackgroundStep</stepSubtype>
         </stageSteps>
     </orchestratedStages>
+    <orchestratedStages>
+        <name>Stage_3</name>
+        <label>Stage 3</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <exitConditionLogic>and</exitConditionLogic>
+        <stageSteps>
+            <name>Skip_approval</name>
+            <actionName>OTX_AutoApprove</actionName>
+            <actionType>stepBackground</actionType>
+            <canAssigneeEdit>false</canAssigneeEdit>
+            <entryConditionLogic>and</entryConditionLogic>
+            <exitConditionLogic>and</exitConditionLogic>
+            <inputParameters>
+                <name>recordId</name>
+                <value>
+                    <elementReference>$Record.Id</elementReference>
+                </value>
+            </inputParameters>
+            <label>Skip approval</label>
+            <requiresAsyncProcessing>false</requiresAsyncProcessing>
+            <runAsUser>false</runAsUser>
+            <shouldLock>false</shouldLock>
+            <stepSubtype>BackgroundStep</stepSubtype>
+        </stageSteps>
+    </orchestratedStages>
     <processMetadataValues>
         <name>BuilderType</name>
         <value>
@@ -94,7 +195,7 @@
         <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Stage_1</targetReference>
+            <targetReference>Stage_0</targetReference>
         </connector>
         <doesRequireRecordChangedToMeetCriteria>true</doesRequireRecordChangedToMeetCriteria>
         <filterLogic>and</filterLogic>
