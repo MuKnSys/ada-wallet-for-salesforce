@@ -1,12 +1,26 @@
 {
     "packageDirectories": [
-        {
-            "path": "force-app",
-            "default": true
-        }
+    {
+        "versionName": "ver 0.1",
+        "versionNumber": "0.1.0.NEXT",
+        "path": "force-app",
+        "default": true,
+        "package": "Ada Wallet for Salesforce",
+        "apexTestAccess": {
+            "permissionSets": [
+            "Ada_Wallet_Admin_Managed",
+            "Ada_Wallet_Seed_Phrase"
+            ]
+        },
+        "versionDescription": ""
+    }
     ],
-    "name": "Ada Wallet For Salesforce",
-    "namespace": "",
+    "name": "Ada Wallet for Salesforce",
+    "namespace": "mukn_web3enable",
     "sfdcLoginUrl": "https://login.salesforce.com",
-    "sourceApiVersion": "63.0"
+    "sourceApiVersion": "63.0",
+    "packageAliases": {
+        "Ada Wallet for Salesforce": "0HoTO00000028az0AA",
+        "Ada Wallet for Salesforce@0.1.0-1": "04tTO0000006TCDYA2"
+    }
 }
