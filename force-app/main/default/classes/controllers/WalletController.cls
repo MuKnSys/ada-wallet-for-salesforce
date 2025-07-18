@@ -19,23 +19,18 @@ public with sharing class WalletController {
      */
     @AuraEnabled(cacheable=true)
     public static Map<String, Object> getWalletAssetSummary(Id walletId) {
-        try {
-            validateWalletId(walletId);
+        validateWalletId(walletId);
             
-            List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
+        List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
             
-            if (utxoAddresses.isEmpty()) {
-                return createEmptyAssetSummary();
-            }
-            
-            Set<Id> utxoAddressIds = extractAddressIds(utxoAddresses);
-            AggregateResult[] assetAggregates = UTXOAssetSelector.getAssetAggregatesByUtxoAddressIds(utxoAddressIds);
-            
-            return buildAssetSummary(assetAggregates, utxoAddressIds);
-            
-        } catch (Exception e) {
-            throw new AuraHandledException('Failed to get wallet asset summary: ' + e.getMessage());
+        if (utxoAddresses.isEmpty()) {
+            return createEmptyAssetSummary();
         }
+            
+        Set<Id> utxoAddressIds = extractAddressIds(utxoAddresses);
+        AggregateResult[] assetAggregates = UTXOAssetSelector.getAssetAggregatesByUtxoAddressIds(utxoAddressIds);
+            
+        return buildAssetSummary(assetAggregates, utxoAddressIds);
     }
     
     /**
@@ -240,35 +235,52 @@ public with sharing class WalletController {
      * Build asset summary from aggregates
      */
     private static Map<String, Object> buildAssetSummary(AggregateResult[] assetAggregates, Set<Id> utxoAddressIds) {
-        Set<String> assetUnits = extractAssetUnits(assetAggregates);
-        Map<String, String> assetToIcon = buildAssetIconMap(utxoAddressIds, assetUnits);
-        
-        Decimal adaBalance = 0;
-        List<Map<String, Object>> tokens = new List<Map<String, Object>>();
-        
-        for (AggregateResult ar : assetAggregates) {
-            String unit = String.valueOf(ar.get('Asset__c'));
-            Decimal totalAmount = (Decimal) ar.get('totalAmount');
-            Decimal totalValue = (Decimal) ar.get('totalValue');
-            String assetName = String.valueOf(ar.get('assetName'));
-            Integer decimals = ar.get('decimals') != null ? Integer.valueOf(ar.get('decimals')) : 0;
-            String policyId = String.valueOf(ar.get('policyId'));
-            String fingerprint = String.valueOf(ar.get('fingerprint'));
+        try {
+            Set<String> assetUnits = extractAssetUnits(assetAggregates);
+            Map<String, String> assetToIcon = buildAssetIconMap(utxoAddressIds, assetUnits);
             
-                            if (unit == ConstantsAda.ASSET_ADA) {
-                adaBalance = totalValue != null ? totalValue : 0;
-            } else {
-                tokens.add(createTokenInfo(ar, assetToIcon));
+            Decimal adaBalance = 0;
+            List<Map<String, Object>> tokens = new List<Map<String, Object>>();
+            
+            for (AggregateResult ar : assetAggregates) {
+                if (ar == null) continue;
+                
+                String unit = String.valueOf(getAggField(ar, 'Asset__c'));
+                if (String.isBlank(unit)) continue;
+                
+                Decimal totalAmount = (Decimal) ar.get('totalAmount');
+                Decimal totalValue = (Decimal) ar.get('totalValue');
+                Object assetNameObj = getAggField(ar, 'assetName');
+                String assetName = assetNameObj != null ? String.valueOf(assetNameObj) : unit;
+                Integer decimals = ar.get('decimals') != null ? Integer.valueOf(ar.get('decimals')) : 0;
+                Object policyIdObj = getAggField(ar, 'policyId');
+                String policyId = policyIdObj != null ? String.valueOf(policyIdObj) : null;
+                Object fingerprintObj = getAggField(ar, 'fingerprint');
+                String fingerprint = fingerprintObj != null ? String.valueOf(fingerprintObj) : null;
+                
+                if (unit == ConstantsAda.ASSET_ADA) {
+                    adaBalance = totalValue != null ? totalValue : 0;
+                } else {
+                    tokens.add(createTokenInfo(ar, assetToIcon));
+                }
             }
+            
+            return new Map<String, Object>{
+                'success' => true,
+                'adaBalance' => adaBalance,
+                'tokens' => tokens,
+                'totalAssets' => assetAggregates.size(),
+                'message' => 'Asset summary retrieved successfully'
+            };
+        } catch (Exception e) {
+            return new Map<String, Object>{
+                'success' => false,
+                'adaBalance' => 0,
+                'tokens' => new List<Object>(),
+                'totalAssets' => 0,
+                'message' => 'Error building asset summary: ' + e.getMessage()
+            };
         }
-        
-        return new Map<String, Object>{
-            'success' => true,
-            'adaBalance' => adaBalance,
-            'tokens' => tokens,
-            'totalAssets' => assetAggregates.size(),
-            'message' => 'Asset summary retrieved successfully'
-        };
     }
     
     /**
@@ -277,7 +289,10 @@ public with sharing class WalletController {
     private static Set<String> extractAssetUnits(AggregateResult[] assetAggregates) {
         Set<String> assetUnits = new Set<String>();
         for (AggregateResult ar : assetAggregates) {
-            assetUnits.add(String.valueOf(ar.get('Asset__c')));
+            Object val = getAggField(ar, 'Asset__c');
+            if (val != null) {
+                assetUnits.add(String.valueOf(val));
+            }
         }
         return assetUnits;
     }
@@ -301,13 +316,16 @@ public with sharing class WalletController {
      * Create token info map
      */
     private static Map<String, Object> createTokenInfo(AggregateResult ar, Map<String, String> assetToIcon) {
-        String unit = String.valueOf(ar.get('Asset__c'));
+        String unit = String.valueOf(getAggField(ar, 'Asset__c'));
         Decimal totalAmount = (Decimal) ar.get('totalAmount');
         Decimal totalValue = (Decimal) ar.get('totalValue');
-        String assetName = String.valueOf(ar.get('assetName'));
+        Object assetNameObj = getAggField(ar, 'assetName');
+        String assetName = assetNameObj != null ? String.valueOf(assetNameObj) : unit;
         Integer decimals = ar.get('decimals') != null ? Integer.valueOf(ar.get('decimals')) : 0;
-        String policyId = String.valueOf(ar.get('policyId'));
-        String fingerprint = String.valueOf(ar.get('fingerprint'));
+        Object policyIdObj = getAggField(ar, 'policyId');
+        String policyId = policyIdObj != null ? String.valueOf(policyIdObj) : null;
+        Object fingerprintObj = getAggField(ar, 'fingerprint');
+        String fingerprint = fingerprintObj != null ? String.valueOf(fingerprintObj) : null;
         
         Decimal displayAmount = (totalValue != null && totalValue > 0) ? totalValue : totalAmount;
         
@@ -480,5 +498,36 @@ public with sharing class WalletController {
             
             insert lines;
         }
+    }
+
+    /**
+     * Helper to get namespace prefix for this package
+     */
+    private static String getNamespacePrefix() {
+        // The describe name includes namespace if present (e.g. ns__UTXO_Asset__c)
+        String qualifiedName = UTXO_Asset__c.SObjectType.getDescribe().getName();
+        Integer idx = qualifiedName.indexOf('__');
+        if (idx > 0) {
+            return qualifiedName.substring(0, idx);
+        }
+        return '';
+    }
+
+    /**
+     * Retrieve a value from AggregateResult, aware of potential namespace prefixes.
+     */
+    private static Object getAggField(AggregateResult ar, String fieldApiName) {
+        Map<String, Object> values = (Map<String, Object>) ar.getPopulatedFieldsAsMap();
+        if (values.containsKey(fieldApiName)) {
+            return values.get(fieldApiName);
+        }
+        String ns = getNamespacePrefix();
+        if (!String.isBlank(ns)) {
+            String namespacedField = ns + '__' + fieldApiName;
+            if (values.containsKey(namespacedField)) {
+                return values.get(namespacedField);
+            }
+        }
+        return null;
     }
 } 
