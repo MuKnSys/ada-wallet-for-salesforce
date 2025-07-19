@@ -396,18 +396,6 @@ export default class Wallet extends LightningElement {
         }
     }
 
-    async updateWalletBalance() {
-        const summary = await getWalletAssetSummary({ walletId: this.recordId });
-        
-        if (summary.success) {
-            this.balance = this.formatNumber(summary.adaBalance || 0, 6);
-            this.assets = this.buildAssetRows(summary.tokens || []);
-            this.hasAssets = this.assets.length > 0;
-        } else {
-            this.resetWalletData();
-        }
-    }
-
     buildAssetRows(tokens) {
         return tokens.map(token => ({
             id: token.unit || token.symbol,

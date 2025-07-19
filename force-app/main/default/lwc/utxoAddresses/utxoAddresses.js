@@ -7,6 +7,8 @@ import UTXO_ADDRESS_OBJECT from '@salesforce/schema/UTXO_Address__c';
 import IS_USED_FIELD from '@salesforce/schema/UTXO_Address__c.Is_Used__c';
 import PATH_FIELD from '@salesforce/schema/UTXO_Address__c.Path__c';
 import TYPE_FIELD from '@salesforce/schema/UTXO_Address__c.Type__c';
+import ACCOUNT_PRIVATE_KEY_FIELD from '@salesforce/schema/Wallet__c.Account_Private_Key__c';
+import ACCOUNT_INDEX_FIELD from '@salesforce/schema/Wallet__c.Account_Index__c';
 
 import { isAddressActuallyUsed, truncateText, showToast, BIP32_PURPOSE, BIP32_COIN_TYPE, DERIVATION_PATHS, ADDRESS_TYPES } from 'c/utils';
 import { labels } from './labels';
@@ -288,16 +290,17 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
 
             // Fetch wallet data
             const wallet = await getWallet({ walletId: this.recordId });
-            if (!wallet || !wallet.Account_Private_Key__c) {
+            const accountPrivateKeyField = wallet[ACCOUNT_PRIVATE_KEY_FIELD.fieldApiName];
+            if (!wallet || !accountPrivateKeyField) {
                 throw new Error(this.labels.ERROR.WALLET_NOT_FOUND);
             }
 
             // Setup cryptographic components
-            const accountPrivateKeyBech32 = await decrypt({ encryptedText: wallet.Account_Private_Key__c });
+            const accountPrivateKeyBech32 = await decrypt({ encryptedText: accountPrivateKeyField });
             const CardanoWasm = window.cardanoSerialization;
             const accountPrivateKey = CardanoWasm.Bip32PrivateKey.from_bech32(accountPrivateKeyBech32);
             const network = CardanoWasm.NetworkInfo.mainnet();
-            const accountIndexNum = wallet.Account_Index__c;
+            const accountIndexNum = wallet[ACCOUNT_INDEX_FIELD.fieldApiName];
             const chainType = type === ADDRESS_TYPES.RECEIVING ? DERIVATION_PATHS.RECEIVING : DERIVATION_PATHS.CHANGE;
 
             // Derive payment key
@@ -423,7 +426,7 @@ export default class UtxoAddresses extends NavigationMixin(LightningElement) {
         const usedAddressesIds = [];
         for (const address of allAddresses) {
             if (address.isUsed) {
-                usedAddressesIds.push(address.utxoAddressId);
+                usedAddressesIds.push(address.Id);
             }
         }        
 
