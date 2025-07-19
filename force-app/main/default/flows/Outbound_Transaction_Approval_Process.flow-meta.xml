@@ -144,6 +144,31 @@
             <shouldLock>false</shouldLock>
             <stepSubtype>BackgroundStep</stepSubtype>
         </stageSteps>
+        <stageSteps>
+            <name>Send_Slack_DM</name>
+            <actionName>Slack_DM_Approver</actionName>
+            <actionType>stepBackground</actionType>
+            <canAssigneeEdit>false</canAssigneeEdit>
+            <entryConditionLogic>and</entryConditionLogic>
+            <exitConditionLogic>and</exitConditionLogic>
+            <inputParameters>
+                <name>approverId</name>
+                <value>
+                    <elementReference>$Record.Wallet__r.Wallet_Set__r.Owner:User.Id</elementReference>
+                </value>
+            </inputParameters>
+            <inputParameters>
+                <name>recordId</name>
+                <value>
+                    <elementReference>$Record.Id</elementReference>
+                </value>
+            </inputParameters>
+            <label>Send Slack DM</label>
+            <requiresAsyncProcessing>false</requiresAsyncProcessing>
+            <runAsUser>false</runAsUser>
+            <shouldLock>false</shouldLock>
+            <stepSubtype>BackgroundStep</stepSubtype>
+        </stageSteps>
     </orchestratedStages>
     <orchestratedStages>
         <name>Stage_3</name>
