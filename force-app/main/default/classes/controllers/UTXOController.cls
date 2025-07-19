@@ -14,18 +14,6 @@ public with sharing class UTXOController {
     private static final String ERROR_ADDING_CHANGE = 'Error adding change UTXO address: ';
     private static final String ERROR_SYNCING_ASSETS = 'Error syncing assets and transactions: ';
     private static final String ERROR_SETTING_USED = 'Error setting addresses as used: ';
-    
-    // Inner classes for data structures
-    public class UTXOAddress {
-        @AuraEnabled public Integer index { get; set; }
-        @AuraEnabled public String publicKey { get; set; }
-        @AuraEnabled public String address { get; set; }
-        @AuraEnabled public String paymentKeyHash { get; set; }
-        @AuraEnabled public String path { get; set; }
-        @AuraEnabled public String stakePath { get; set; }
-        @AuraEnabled public String privateKey { get; set; }
-    }
-
     /**
      * Get encrypted seed phrase for a wallet set
      * @param walletSetId The wallet set ID
@@ -111,7 +99,7 @@ public with sharing class UTXOController {
      * @return The created UTXO address ID
      */
     @AuraEnabled
-    public static String addReceivingUTXOAddress(String walletId, UTXOAddress receivingAddress) {
+    public static String addReceivingUTXOAddress(String walletId, Map<String, Object> receivingAddress) {
         try {
             validateAddress(receivingAddress, ConstantsAda.LABEL_RECEIVING_LOWERCASE);
             return createUTXOAddress(walletId, receivingAddress, ConstantsAda.ADDRESS_TYPE_RECEIVING);
@@ -127,7 +115,7 @@ public with sharing class UTXOController {
      * @return The created UTXO address ID
      */
     @AuraEnabled
-    public static String addChangeUTXOAddress(String walletId, UTXOAddress changeAddress) {
+    public static String addChangeUTXOAddress(String walletId, Map<String, Object> changeAddress) {
         try {
             validateAddress(changeAddress, ConstantsAda.LABEL_CHANGE_LOWERCASE);
             return createUTXOAddress(walletId, changeAddress, ConstantsAda.ADDRESS_TYPE_CHANGE);
@@ -179,14 +167,16 @@ public with sharing class UTXOController {
     /**
      * Validate address data is complete
      */
-    private static void validateAddress(UTXOAddress address, String addressType) {
-        if (address == null) {
+    private static void validateAddress(Map<String, Object> address, String addressType) {
+        if (address == null || address.isEmpty()) {
             throw new AuraHandledException(addressType + ConstantsAda.ERROR_ADDRESS_NULL);
         }
-        if (address.index == null || String.isBlank(address.address) || 
-            String.isBlank(address.publicKey) || String.isBlank(address.paymentKeyHash) || 
-            String.isBlank(address.path)) {
-            throw new AuraHandledException(ConstantsAda.ERROR_INVALID_ADDRESS_DATA + address.index);
+        if (   address.get('index') == null
+            || String.isBlank(String.valueOf(address.get('address')))
+            || String.isBlank(String.valueOf(address.get('publicKey')))
+            || String.isBlank(String.valueOf(address.get('paymentKeyHash')))
+            || String.isBlank(String.valueOf(address.get('path')))) {
+            throw new AuraHandledException(ConstantsAda.ERROR_INVALID_ADDRESS_DATA + address.get('index'));
         }
     }
     
@@ -209,29 +199,41 @@ public with sharing class UTXOController {
     /**
      * Create UTXO address record
      */
-    private static String createUTXOAddress(String walletId, UTXOAddress address, String type) {
+    private static String createUTXOAddress(String walletId, Map<String, Object> address, String type) {
+        // Essential fields must be create-able
         if (!Schema.sObjectType.UTXO_Address__c.isCreateable() ||
             !Schema.sObjectType.UTXO_Address__c.fields.Wallet__c.isCreateable() ||
             !Schema.sObjectType.UTXO_Address__c.fields.Address__c.isCreateable() ||
             !Schema.sObjectType.UTXO_Address__c.fields.Index__c.isCreateable() ||
-            !Schema.sObjectType.UTXO_Address__c.fields.Public_Key__c.isCreateable() ||
             !Schema.sObjectType.UTXO_Address__c.fields.Payment_Key_Hash__c.isCreateable() ||
             !Schema.sObjectType.UTXO_Address__c.fields.Path__c.isCreateable() ||
-            !Schema.sObjectType.UTXO_Address__c.fields.Private_Key__c.isCreateable() ||
             !Schema.sObjectType.UTXO_Address__c.fields.Type__c.isCreateable()) {
             throw new AuraHandledException('Insufficient permissions to create UTXO address');
         }
         
+        Integer idx = Integer.valueOf(String.valueOf(address.get('index')));
+        String addrStr = String.valueOf(address.get('address'));
+        String paymentHash = String.valueOf(address.get('paymentKeyHash'));
+        String path = String.valueOf(address.get('path'));
+        String pubKey = String.valueOf(address.get('publicKey'));
+        String privKey = address.containsKey('privateKey') ? String.valueOf(address.get('privateKey')) : null;
+
         UTXO_Address__c utxoRecord = new UTXO_Address__c(
             Wallet__c = walletId,
-            Address__c = address.address,
-            Index__c = address.index,
-            Public_Key__c = address.publicKey,
-            Payment_Key_Hash__c = address.paymentKeyHash,
-            Path__c = address.path,
-            Private_Key__c = String.isNotBlank(address.privateKey) ? address.privateKey : null,
+            Address__c = addrStr,
+            Index__c = idx,
+            Payment_Key_Hash__c = paymentHash,
+            Path__c = path,
             Type__c = type
         );
+
+        // Optionally set public/private keys if user has access
+        if (Schema.sObjectType.UTXO_Address__c.fields.Public_Key__c.isCreateable()) {
+            utxoRecord.Public_Key__c = pubKey;
+        }
+        if (Schema.sObjectType.UTXO_Address__c.fields.Private_Key__c.isCreateable() && String.isNotBlank(privKey)) {
+            utxoRecord.Private_Key__c = privKey;
+        }
 
         insert utxoRecord;
         

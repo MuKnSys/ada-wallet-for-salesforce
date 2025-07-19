@@ -110,13 +110,14 @@ private class UTXOControllerTest {
     private static void testAddReceivingAddress() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
 
-        UTXOController.UTXOAddress receivingAddress = new UTXOController.UTXOAddress();
-        receivingAddress.index = 0;
-        receivingAddress.address = 'receivingAddress';
-        receivingAddress.publicKey = 'publicKey';
-        receivingAddress.paymentKeyHash = 'paymentKeyHash';
-        receivingAddress.path = 'path';
-        receivingAddress.privateKey = 'privateKey';
+        Map<String,Object> receivingAddress = new Map<String,Object>{
+            'index' => 0,
+            'address' => 'receivingAddress',
+            'publicKey' => 'publicKey',
+            'paymentKeyHash' => 'paymentKeyHash',
+            'path' => 'path',
+            'privateKey' => 'privateKey'
+        };
         
         Test.startTest();
             String receivingId = UTXOController.addReceivingUTXOAddress(wallet.Id, receivingAddress);
@@ -138,13 +139,14 @@ private class UTXOControllerTest {
     private static void testAddChangeAddress() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
 
-        UTXOController.UTXOAddress changeAddress = new UTXOController.UTXOAddress();
-        changeAddress.index = 0;
-        changeAddress.address = 'changeAddress';
-        changeAddress.publicKey = 'publicKey2';
-        changeAddress.paymentKeyHash = 'paymentKeyHash2';
-        changeAddress.path = 'path2';
-        changeAddress.privateKey = 'privateKey2';
+        Map<String,Object> changeAddress = new Map<String,Object>{
+            'index' => 0,
+            'address' => 'changeAddress',
+            'publicKey' => 'publicKey2',
+            'paymentKeyHash' => 'paymentKeyHash2',
+            'path' => 'path2',
+            'privateKey' => 'privateKey2'
+        };
         
         Test.startTest();
             String changeId = UTXOController.addChangeUTXOAddress(wallet.Id, changeAddress);
@@ -301,16 +303,9 @@ private class UTXOControllerTest {
     private static void testAddReceivingAddressInvalidData() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
         
-        UTXOController.UTXOAddress invalidAddress = new UTXOController.UTXOAddress();
-        invalidAddress.index = null;
-        invalidAddress.address = '';
-        invalidAddress.publicKey = '';
-        invalidAddress.paymentKeyHash = '';
-        invalidAddress.path = '';
-        
         Test.startTest();
             try {
-                UTXOController.addReceivingUTXOAddress(wallet.Id, invalidAddress);
+                UTXOController.addReceivingUTXOAddress(wallet.Id, null);
                 Assert.fail('Should throw exception for invalid address data');
             } catch (AuraHandledException e) {
                 Assert.isNotNull(e.getMessage(), 'Should throw exception with message');
@@ -336,16 +331,9 @@ private class UTXOControllerTest {
     private static void testAddChangeAddressInvalidData() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
         
-        UTXOController.UTXOAddress invalidAddress = new UTXOController.UTXOAddress();
-        invalidAddress.index = null;
-        invalidAddress.address = '';
-        invalidAddress.publicKey = '';
-        invalidAddress.paymentKeyHash = '';
-        invalidAddress.path = '';
-        
         Test.startTest();
             try {
-                UTXOController.addChangeUTXOAddress(wallet.Id, invalidAddress);
+                UTXOController.addChangeUTXOAddress(wallet.Id, null);
                 Assert.fail('Should throw exception for invalid address data');
             } catch (AuraHandledException e) {
                 Assert.isNotNull(e.getMessage(), 'Should throw exception with message');
@@ -357,13 +345,14 @@ private class UTXOControllerTest {
     private static void testAddReceivingAddressWithNullPrivateKey() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
 
-        UTXOController.UTXOAddress receivingAddress = new UTXOController.UTXOAddress();
-        receivingAddress.index = 0;
-        receivingAddress.address = 'receivingAddress';
-        receivingAddress.publicKey = 'publicKey';
-        receivingAddress.paymentKeyHash = 'paymentKeyHash';
-        receivingAddress.path = 'path';
-        receivingAddress.privateKey = null;
+        Map<String,Object> receivingAddress = new Map<String,Object>{
+            'index' => 0,
+            'address' => 'receivingAddress',
+            'publicKey' => 'publicKey',
+            'paymentKeyHash' => 'paymentKeyHash',
+            'path' => 'path',
+            'privateKey' => null
+        };
         
         Test.startTest();
             String receivingId = UTXOController.addReceivingUTXOAddress(wallet.Id, receivingAddress);
@@ -377,13 +366,14 @@ private class UTXOControllerTest {
     private static void testAddChangeAddressWithNullPrivateKey() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
 
-        UTXOController.UTXOAddress changeAddress = new UTXOController.UTXOAddress();
-        changeAddress.index = 0;
-        changeAddress.address = 'changeAddress';
-        changeAddress.publicKey = 'publicKey2';
-        changeAddress.paymentKeyHash = 'paymentKeyHash2';
-        changeAddress.path = 'path2';
-        changeAddress.privateKey = null;
+        Map<String,Object> changeAddress = new Map<String,Object>{
+            'index' => 0,
+            'address' => 'changeAddress',
+            'publicKey' => 'publicKey2',
+            'paymentKeyHash' => 'paymentKeyHash2',
+            'path' => 'path2',
+            'privateKey' => null
+        };
         
         Test.startTest();
             String changeId = UTXOController.addChangeUTXOAddress(wallet.Id, changeAddress);
