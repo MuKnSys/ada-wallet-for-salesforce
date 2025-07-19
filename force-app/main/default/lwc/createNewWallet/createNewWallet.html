@@ -5,7 +5,7 @@
             <lightning-record-picker
                 label={labels.UI.WalletSetLabel}
                 placeholder={labels.UI.SelectWalletSetPlaceholder}
-                object-api-name="Wallet_Set__c"
+                object-api-name={walletSetObjectApiName}
                 value={selectedWalletSetId}
                 onchange={handleWalletSetChange}
                 required

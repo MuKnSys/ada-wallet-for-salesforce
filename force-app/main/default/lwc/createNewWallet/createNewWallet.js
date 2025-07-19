@@ -1,6 +1,7 @@
 import { LightningElement, track } from 'lwc';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
+import WALLET_SET_OBJECT from '@salesforce/schema/Wallet_Set__c';
 
 import { labels } from './labels';
 import { showToast, BIP32_PURPOSE, BIP32_COIN_TYPE, DERIVATION_PATHS, harden } from 'c/utils';
@@ -30,6 +31,9 @@ const RETRY_DELAY = 2000;
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     labels = labels;
+    walletSetObjectApiName = (typeof WALLET_SET_OBJECT === 'object' && WALLET_SET_OBJECT.objectApiName)
+        ? WALLET_SET_OBJECT.objectApiName
+        : WALLET_SET_OBJECT;
 
     cardano;
     @track librariesLoaded = false;

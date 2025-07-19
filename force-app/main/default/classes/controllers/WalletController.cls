@@ -12,6 +12,8 @@ public with sharing class WalletController {
     private static final String ERROR_INVALID_AMOUNT = 'Invalid amount format';
     private static final String ERROR_AMOUNT_MUST_BE_POSITIVE = 'Amount must be greater than 0';
     
+    private static final String FIELD_ASSET_API_NAME = Schema.SObjectType.UTXO_Asset__c.fields.Asset__c.getName();
+    
     /**
      * Get asset summary for a wallet (all assets across all UTXO addresses)
      * @param walletId The wallet ID to get assets for
@@ -245,7 +247,7 @@ public with sharing class WalletController {
             for (AggregateResult ar : assetAggregates) {
                 if (ar == null) continue;
                 
-                String unit = String.valueOf(getAggField(ar, 'Asset__c'));
+                String unit = String.valueOf(getAggField(ar, FIELD_ASSET_API_NAME));
                 if (String.isBlank(unit)) continue;
                 
                 Decimal totalAmount = (Decimal) ar.get('totalAmount');
@@ -289,7 +291,7 @@ public with sharing class WalletController {
     private static Set<String> extractAssetUnits(AggregateResult[] assetAggregates) {
         Set<String> assetUnits = new Set<String>();
         for (AggregateResult ar : assetAggregates) {
-            Object val = getAggField(ar, 'Asset__c');
+            Object val = getAggField(ar, FIELD_ASSET_API_NAME);
             if (val != null) {
                 assetUnits.add(String.valueOf(val));
             }
@@ -316,7 +318,7 @@ public with sharing class WalletController {
      * Create token info map
      */
     private static Map<String, Object> createTokenInfo(AggregateResult ar, Map<String, String> assetToIcon) {
-        String unit = String.valueOf(getAggField(ar, 'Asset__c'));
+        String unit = String.valueOf(getAggField(ar, FIELD_ASSET_API_NAME));
         Decimal totalAmount = (Decimal) ar.get('totalAmount');
         Decimal totalValue = (Decimal) ar.get('totalValue');
         Object assetNameObj = getAggField(ar, 'assetName');
