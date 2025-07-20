@@ -23,7 +23,7 @@ public with sharing class WalletController {
     public static Map<String, Object> getWalletAssetSummary(Id walletId) {
         validateWalletId(walletId);
             
-        List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesByWalletId(walletId);
+        List<UTXO_Address__c> utxoAddresses = UTXOAddressSelector.getAddressesWithIdsByWalletId(walletId);
             
         if (utxoAddresses.isEmpty()) {
             return createEmptyAssetSummary();
