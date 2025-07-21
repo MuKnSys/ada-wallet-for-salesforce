@@ -24,7 +24,7 @@ public with sharing class TransactionControllerTest {
             Index__c = 0,
             Path__c = 'm/44\'/1815\'/0\'/0/0',
             Type__c = '0',
-            Private_Key__c = 'addr_xvk_test_private_key_1',
+            Private_Key__c = DataEncryptor.encrypt('addr_xvk_test_private_key_1'),
             Public_Key__c = 'addr_xvk_test_public_key_1',
             Payment_Key_Hash__c = 'test_payment_key_hash_1'
         ));
@@ -34,7 +34,7 @@ public with sharing class TransactionControllerTest {
             Index__c = 1,
             Path__c = 'm/44\'/1815\'/0\'/0/1',
             Type__c = '0',
-            Private_Key__c = 'addr_xvk_test_private_key_2',
+            Private_Key__c = DataEncryptor.encrypt('addr_xvk_test_private_key_2'),
             Public_Key__c = 'addr_xvk_test_public_key_2',
             Payment_Key_Hash__c = 'test_payment_key_hash_2'
         ));
@@ -44,7 +44,7 @@ public with sharing class TransactionControllerTest {
             Index__c = 0,
             Path__c = 'm/44\'/1815\'/0\'/1/0',
             Type__c = '1',
-            Private_Key__c = 'addr_xvk_test_change_private_key_1',
+            Private_Key__c = DataEncryptor.encrypt('addr_xvk_test_change_private_key_1'),
             Public_Key__c = 'addr_xvk_test_change_public_key_1',
             Payment_Key_Hash__c = 'test_change_payment_key_hash_1'
         ));
@@ -54,7 +54,7 @@ public with sharing class TransactionControllerTest {
             Index__c = 1,
             Path__c = 'm/44\'/1815\'/0\'/1/1',
             Type__c = '1',
-            Private_Key__c = 'addr_xvk_test_change_private_key_2',
+            Private_Key__c = DataEncryptor.encrypt('addr_xvk_test_change_private_key_2'),
             Public_Key__c = 'addr_xvk_test_change_public_key_2',
             Payment_Key_Hash__c = 'test_change_payment_key_hash_2'
         ));

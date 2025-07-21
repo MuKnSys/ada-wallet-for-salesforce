@@ -118,20 +118,20 @@ private class UTXOControllerTest {
             'path' => 'path',
             'privateKey' => 'privateKey'
         };
-        
+
         Test.startTest();
             String receivingId = UTXOController.addReceivingUTXOAddress(wallet.Id, receivingAddress);
         Test.stopTest();
-        
+
         UTXO_Address__c createdReceiving = [SELECT Id, Address__c, Index__c, Public_Key__c, Payment_Key_Hash__c, Path__c, Private_Key__c, Type__c 
-                                          FROM UTXO_Address__c WHERE Id = :receivingId];
-        
+                                            FROM UTXO_Address__c WHERE Id = :receivingId];
+
         Assert.areEqual('receivingAddress', createdReceiving.Address__c, 'Address should match');
         Assert.areEqual(0, createdReceiving.Index__c, 'Index should match');
-        Assert.areEqual('publicKey', createdReceiving.Public_Key__c, 'Public key should match');
+        Assert.areEqual('publicKey', DataEncryptor.decrypt(createdReceiving.Public_Key__c), 'Public key should match');
         Assert.areEqual('paymentKeyHash', createdReceiving.Payment_Key_Hash__c, 'Payment key hash should match');
         Assert.areEqual('path', createdReceiving.Path__c, 'Path should match');
-        Assert.areEqual('privateKey', createdReceiving.Private_Key__c, 'Private key should match');
+        Assert.areEqual('privateKey', DataEncryptor.decrypt(createdReceiving.Private_Key__c), 'Private key should match');
         Assert.areEqual('0', createdReceiving.Type__c, 'Type should match');
     }
 
@@ -147,27 +147,27 @@ private class UTXOControllerTest {
             'path' => 'path2',
             'privateKey' => 'privateKey2'
         };
-        
+
         Test.startTest();
             String changeId = UTXOController.addChangeUTXOAddress(wallet.Id, changeAddress);
         Test.stopTest();
-        
+
         UTXO_Address__c createdChange = [SELECT Id, Address__c, Index__c, Public_Key__c, Payment_Key_Hash__c, Path__c, Private_Key__c, Type__c 
-                                       FROM UTXO_Address__c WHERE Id = :changeId];
-        
+                                        FROM UTXO_Address__c WHERE Id = :changeId];
+
         Assert.areEqual('changeAddress', createdChange.Address__c, 'Address should match');
         Assert.areEqual(0, createdChange.Index__c, 'Index should match');
-        Assert.areEqual('publicKey2', createdChange.Public_Key__c, 'Public key should match');
+        Assert.areEqual('publicKey2', DataEncryptor.decrypt(createdChange.Public_Key__c), 'Public key should match');
         Assert.areEqual('paymentKeyHash2', createdChange.Payment_Key_Hash__c, 'Payment key hash should match');
         Assert.areEqual('path2', createdChange.Path__c, 'Path should match');
-        Assert.areEqual('privateKey2', createdChange.Private_Key__c, 'Private key should match');
+        Assert.areEqual('privateKey2', DataEncryptor.decrypt(createdChange.Private_Key__c), 'Private key should match');
         Assert.areEqual('1', createdChange.Type__c, 'Type should match');
     }
 
     @isTest
     private static void testSyncAssetsAndTransactions() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        
+
         UTXO_Address__c utxoAddress = new UTXO_Address__c(
             Wallet__c = wallet.Id,
             Address__c = 'testAddress',

@@ -5,6 +5,11 @@ import { getRecord } from 'lightning/uiRecordApi';
 
 import TRANSACTION_STATUS_FIELD from '@salesforce/schema/Outbound_Transaction__c.Transaction_Status__c';
 import TRANSACTION_HASH_FIELD from '@salesforce/schema/Outbound_Transaction__c.Transaction_Hash__c';
+import TO_ADDRESS_FIELD from '@salesforce/schema/Outbound_Transaction__c.To_Address__c';
+import MEMO_FIELD from '@salesforce/schema/Outbound_Transaction__c.Memo__c';
+import WALLET_FIELD from '@salesforce/schema/Outbound_Transaction__c.Wallet__c';
+import OTL_ASSET_FIELD from '@salesforce/schema/Outbound_Transaction_Line__c.Asset__c';
+import OTL_AMOUNT_FIELD from '@salesforce/schema/Outbound_Transaction_Line__c.Amount__c';
 
 import CARDANO_SERIALIZATION from '@salesforce/resourceUrl/cardanoSerialization';
 import BLAKE from '@salesforce/resourceUrl/blake';
@@ -37,12 +42,21 @@ export default class PrepareAndSignTransaction extends LightningElement {
 
     @wire(getRecord, { recordId: '$recordId', fields: [TRANSACTION_STATUS_FIELD, TRANSACTION_HASH_FIELD] })
     wiredRecord({ error, data }) {
-        if (data) {
-            if (!this.outboundTransaction) this.outboundTransaction = {};
+        if (data && data.fields) {
+            if (!this.outboundTransaction) {
+                this.outboundTransaction = {};
+            }
+
+            const statusApi = TRANSACTION_STATUS_FIELD.fieldApiName;
+            const hashApi   = TRANSACTION_HASH_FIELD.fieldApiName;
+
+            const statusVal = data.fields[statusApi] ? data.fields[statusApi].value : null;
+            const hashVal   = data.fields[hashApi]   ? data.fields[hashApi].value   : null;
+
             this.outboundTransaction = {
                 ...this.outboundTransaction,
-                Transaction_Status__c: data.fields.Transaction_Status__c.value,
-                Transaction_Hash__c: data.fields.Transaction_Hash__c.value
+                Transaction_Status__c: statusVal,
+                Transaction_Hash__c: hashVal
             };
         }
     }
@@ -413,7 +427,10 @@ export default class PrepareAndSignTransaction extends LightningElement {
             let toAddress = null;
             try {
                 outboundTransactionRecord = await getOutboundTransaction({ outboundTransactionId: this.recordId });
-                toAddress = outboundTransactionRecord && outboundTransactionRecord.To_Address__c ? outboundTransactionRecord.To_Address__c : null;
+                const TO_ADDRESS_API = TO_ADDRESS_FIELD.fieldApiName;
+                toAddress = outboundTransactionRecord && outboundTransactionRecord[TO_ADDRESS_API]
+                    ? outboundTransactionRecord[TO_ADDRESS_API]
+                    : null;
             } catch (e) {
                 this.showToast('Error', 'Failed to fetch transaction details', 'error');
                 return;
@@ -436,9 +453,10 @@ export default class PrepareAndSignTransaction extends LightningElement {
             }
 
             try {
-                const walletData = await this.loadWalletData(outboundTransactionRecord.Wallet__c);
+                const WALLET_API = WALLET_FIELD.fieldApiName;
+                const walletData = await this.loadWalletData(outboundTransactionRecord[WALLET_API]);
                 const protocolParams = await this.fetchEpochParameters();
-                
+
                 const linearFee = this.cardanoLib.LinearFee.new(
                     this.cardanoLib.BigNum.from_str(protocolParams.min_fee_a.toString()),
                     this.cardanoLib.BigNum.from_str(protocolParams.min_fee_b.toString())
@@ -448,7 +466,7 @@ export default class PrepareAndSignTransaction extends LightningElement {
                 const maxValueSize = protocolParams.max_val_size;
                 const maxTxSize = protocolParams.max_tx_size;
                 const coinsPerUtxoByte = this.cardanoLib.BigNum.from_str(protocolParams.coins_per_utxo_word.toString());
-                
+
                 const txBuilderCfg = this.cardanoLib.TransactionBuilderConfigBuilder.new()
                     .fee_algo(linearFee)
                     .pool_deposit(poolDeposit)
@@ -460,10 +478,11 @@ export default class PrepareAndSignTransaction extends LightningElement {
                 const txBuilder = this.cardanoLib.TransactionBuilder.new(txBuilderCfg);
 
                 let auxData = null;
-                
-                if (outboundTransactionRecord.Memo__c && outboundTransactionRecord.Memo__c.trim() !== '') {
+
+                const MEMO_API = MEMO_FIELD.fieldApiName;
+                if (outboundTransactionRecord[MEMO_API] && outboundTransactionRecord[MEMO_API].trim() !== '') {
                     try {
-                        const memo = outboundTransactionRecord.Memo__c.trim();
+                        const memo = outboundTransactionRecord[MEMO_API].trim();
                         const generalMetadata = this.cardanoLib.GeneralTransactionMetadata.new();
                         const metadataKey = this.cardanoLib.BigNum.from_str("674");
                         const metadataValue = this.cardanoLib.encode_json_str_to_metadatum(
@@ -500,7 +519,7 @@ export default class PrepareAndSignTransaction extends LightningElement {
                     return {
                         unit: tokenUnit,
                         amount: parseFloat(line.Amount__c || 0),
-                        ticker: line.Ticker__c || line.Asset__c
+                        ticker: line.Asset__c
                     };
                 });
                 
@@ -549,8 +568,6 @@ export default class PrepareAndSignTransaction extends LightningElement {
                 }
 
                 const { outputValue } = this.convertAssetsToOutputs(outputs, walletData);
-
-                const actualRequiredLovelace = parseInt(outputValue.coin().to_str());
 
                 this.validateAddress(toAddress);
                 const recipientAddress = this.cardanoLib.Address.from_bech32(toAddress);
@@ -699,8 +716,7 @@ export default class PrepareAndSignTransaction extends LightningElement {
                 if (!txHash || typeof txHash.to_bytes !== 'function') {
                     throw new Error(`Failed to create valid transaction hash object. Type: ${typeof txHash}, Constructor: ${txHash ? txHash.constructor.name : 'N/A'}`);
                 }
-                
-                const txHashHex = this.bytesToHex(txHash.to_bytes());
+
                 const witnessSet = this.createWitnesses(actualInputs, inputUtxosDetails, walletData, txHash);
 
                 let finalAuxData = null;
@@ -791,7 +807,15 @@ export default class PrepareAndSignTransaction extends LightningElement {
     async fetchTransactionLines() {
         try {
             const lines = await getTransactionLinesForOutbound({ outboundTransactionId: this.recordId });
-            this.transactionLines = lines;
+
+            // Normalize field names to work with/without namespace
+            const ASSET_API  = OTL_ASSET_FIELD.fieldApiName;
+            const AMOUNT_API = OTL_AMOUNT_FIELD.fieldApiName;
+
+            this.transactionLines = (lines || []).map(rec => ({
+                Asset__c  : rec[ASSET_API],
+                Amount__c : rec[AMOUNT_API]
+            }));
             
             if (!this.transactionLines || this.transactionLines.length === 0) {
                 throw new Error('No transaction lines found. Please add at least one asset to send.');

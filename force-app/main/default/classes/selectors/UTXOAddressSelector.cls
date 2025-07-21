@@ -1,4 +1,4 @@
-public with sharing class UTXOAddressSelector {    
+public with sharing class UTXOAddressSelector {
     public static List<UTXO_Address__c> getAddressesByWalletId(String walletId) {
         return [
             SELECT Id, Name, Address__c, Is_Used__c, Public_Key__c, Path__c, Index__c, Type__c, Private_Key__c, Payment_Key_Hash__c
@@ -14,7 +14,7 @@ public with sharing class UTXOAddressSelector {
             SELECT Id, Name
             FROM UTXO_Address__c
             WHERE Wallet__c = :walletId
-            WITH SECURITY_ENFORCED            
+            WITH SECURITY_ENFORCED
         ];
     }
 
@@ -51,4 +51,4 @@ public with sharing class UTXOAddressSelector {
             LIMIT 1
         ];
     }
-} 
+}

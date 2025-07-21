@@ -210,7 +210,7 @@ public with sharing class UTXOController {
             !Schema.sObjectType.UTXO_Address__c.fields.Type__c.isCreateable()) {
             throw new AuraHandledException('Insufficient permissions to create UTXO address');
         }
-        
+
         Integer idx = Integer.valueOf(String.valueOf(address.get('index')));
         String addrStr = String.valueOf(address.get('address'));
         String paymentHash = String.valueOf(address.get('paymentKeyHash'));
@@ -227,16 +227,15 @@ public with sharing class UTXOController {
             Type__c = type
         );
 
-        // Optionally set public/private keys if user has access
-        if (Schema.sObjectType.UTXO_Address__c.fields.Public_Key__c.isCreateable()) {
-            utxoRecord.Public_Key__c = pubKey;
+        if (Schema.sObjectType.UTXO_Address__c.fields.Public_Key__c.isCreateable() && String.isNotBlank(pubKey)) {
+            utxoRecord.Public_Key__c = DataEncryptor.encrypt(pubKey);
         }
         if (Schema.sObjectType.UTXO_Address__c.fields.Private_Key__c.isCreateable() && String.isNotBlank(privKey)) {
-            utxoRecord.Private_Key__c = privKey;
+            utxoRecord.Private_Key__c = DataEncryptor.encrypt(privKey);
         }
 
         insert utxoRecord;
-        
+
         return utxoRecord.Id;
     }
 }

@@ -326,7 +326,7 @@ public with sharing class CreateNewWalletCtrl {
             Public_Key__c = addr.publicKey,
             Payment_Key_Hash__c = addr.paymentKeyHash,
             Path__c = addr.path,
-            Private_Key__c = String.isNotBlank(addr.privateKey) ? addr.privateKey : null,
+            Private_Key__c = String.isNotBlank(addr.privateKey) ?  DataEncryptor.encrypt(addr.privateKey) : null,
             Type__c = type
         );
     }

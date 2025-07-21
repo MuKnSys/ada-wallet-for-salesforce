@@ -190,11 +190,11 @@ public with sharing class TransactionController {
     private static Map<String, Object> processAddress(UTXO_Address__c addr) {
         Decimal addressLovelace = 0;
         List<Object> addressUtxos = new List<Object>();
-        
+
         try {
             String utxosJson = BlockfrostService.getAddressUtxos(addr.Address__c);
             List<Object> utxos = (List<Object>) JSON.deserializeUntyped(utxosJson);
-            
+
             if (utxos != null && !utxos.isEmpty()) {
                 addressUtxos = utxos;
                 addressLovelace = calculateLovelaceFromUtxos(utxos);
@@ -202,12 +202,12 @@ public with sharing class TransactionController {
         } catch (Exception e) {
             // UTXOs will remain empty if API call fails
         }
-        
+
         return new Map<String, Object>{
             'index' => Integer.valueOf(addr.Index__c),
             'address' => addr.Address__c,
             'paymentKeyHash' => addr.Payment_Key_Hash__c != null ? addr.Payment_Key_Hash__c : '',
-            'privateKey' => addr.Private_Key__c != null ? addr.Private_Key__c : '',
+            'privateKey' => String.isNotBlank(addr.Private_Key__c) ? DataEncryptor.decrypt(addr.Private_Key__c) : '',
             'keyMatch' => true,
             'utxos' => addressUtxos,
             'balance' => new Map<String, Object>{
