@@ -490,17 +490,7 @@ export default class Wallet extends LightningElement {
                 showToast(this, 'Error', labels.ERROR.FAILED_TO_COPY_ADDRESS_TO_CLIPBOARD, 'error');
             });
         } else {
-            const textArea = document.createElement('textarea');
-            textArea.value = this.paymentAddress;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showToast(this, 'Success', labels.SUCCESS.ADDRESS_COPIED_TO_CLIPBOARD, 'success');
-            } catch (err) {
-                showToast(this, 'Error', labels.ERROR.FAILED_TO_COPY_ADDRESS_TO_CLIPBOARD, 'error');
-            }
-            document.body.removeChild(textArea);
+            showToast(this, 'Error', labels.ERROR.FAILED_TO_COPY_ADDRESS_TO_CLIPBOARD, 'error');
         }
     }
 

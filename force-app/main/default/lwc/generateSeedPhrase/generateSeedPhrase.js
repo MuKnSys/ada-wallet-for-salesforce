@@ -289,11 +289,11 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         const phraseText = this.seedPhrase.map(item => item.word).join(' ');
         const element = document.createElement('a');
         const file = new Blob([phraseText], { type: 'text/plain' });
-        element.href = URL.createObjectURL(file);
+        const url = URL.createObjectURL(file);
+        element.href = url;
         element.download = `${this.walletName}_seed.txt`;
-        document.body.appendChild(element);
         element.click();
-        document.body.removeChild(element);
+        URL.revokeObjectURL(url);
     }    
 
     handleNextFromStep2() {
