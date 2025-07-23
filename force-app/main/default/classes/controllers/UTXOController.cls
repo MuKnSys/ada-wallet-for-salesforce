@@ -29,10 +29,10 @@ public with sharing class UTXOController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static String decrypt(String decryptedString) {
+    public static String decrypt(String encryptedText) {
         try {
             if(EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Seed_Phrase')) {
-                return DataEncryptor.decrypt(decryptedString);
+                return DataEncryptor.decrypt(encryptedText);
             } else {
                 throw new AuraHandledException('Access denied to decrypt data');
             }
