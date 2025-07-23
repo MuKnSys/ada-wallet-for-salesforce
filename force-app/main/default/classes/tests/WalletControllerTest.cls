@@ -51,7 +51,7 @@ public with sharing class WalletControllerTest {
             Is_Used__c = true
         ));
         insert utxoAddresses;
-        
+
         List<UTXO_Asset__c> utxoAssets = new List<UTXO_Asset__c>();
         utxoAssets.add(new UTXO_Asset__c(
             UTXO_Address__c = utxoAddresses[0].Id,
@@ -212,30 +212,52 @@ public with sharing class WalletControllerTest {
     
     @IsTest
     static void getAllWalletAddressesShouldReturnAddressesWhenWalletHasAddresses() {
+        PermissionSet paymentPs = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Payment' LIMIT 1];
+        User currentUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        System.runAs(currentUser) {
+            insert new PermissionSetAssignment(
+                AssigneeId = currentUser.Id,
+                PermissionSetId = paymentPs.Id
+            );
+        }
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        
+        List<UTXO_Address__c> result = new List<UTXO_Address__c> ();
+
         Test.startTest();
-            List<UTXO_Address__c> result = WalletController.getAllWalletAddresses(wallet.Id);
+            System.runAs(currentUser) {
+                result = WalletController.getAllWalletAddresses(wallet.Id);
+            }
         Test.stopTest();
-        
+
         Assert.isNotNull(result, 'Should return wallet addresses');
         Assert.areEqual(2, result.size(), 'Should return correct number of addresses');
     }
-    
+
     @IsTest
     static void getAllWalletAddressesShouldReturnEmptyListWhenWalletHasNoAddresses() {
+        PermissionSet paymentPs = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Payment' LIMIT 1];
+        User currentUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        System.runAs(currentUser) {
+            insert new PermissionSetAssignment(
+                AssigneeId = currentUser.Id,
+                PermissionSetId = paymentPs.Id
+            );
+        }
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        
+
         delete [SELECT Id FROM UTXO_Address__c WHERE Wallet__c = :wallet.Id];
-        
+        List<UTXO_Address__c> result = new List<UTXO_Address__c> ();
+
         Test.startTest();
-            List<UTXO_Address__c> result = WalletController.getAllWalletAddresses(wallet.Id);
+            System.runAs(currentUser) {
+                result = WalletController.getAllWalletAddresses(wallet.Id);
+            }
         Test.stopTest();
-        
+
         Assert.isNotNull(result, 'Should return empty list');
         Assert.areEqual(0, result.size(), 'Should return empty list when no addresses exist');
     }
-    
+
     @IsTest
     static void getFirstUnusedReceivingAddressShouldReturnAddressWhenUnusedAddressExists() {
         Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];

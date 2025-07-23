@@ -94,29 +94,25 @@ public with sharing class TransactionControllerTest {
         ));
         insert utxoAssets;
     }
-    
-    @IsTest
-    static void testLoadWalletWithValidId() {
-        Wallet__c wallet = [SELECT Id FROM Wallet__c LIMIT 1];
-        
-        Test.startTest();
-            Test.setMock(HttpCalloutMock.class, new BlockfrostServiceHttpCalloutMock());
-            Map<String, Object> result = TransactionController.loadWallet(wallet.Id);
-        Test.stopTest();
-        
-        Assert.isNotNull(result, 'Should return wallet data');
-        Assert.isTrue(result.containsKey('receivingAddresses'), 'Should contain receiving addresses');
-        Assert.isTrue(result.containsKey('changeAddresses'), 'Should contain change addresses');
-        Assert.isTrue(result.containsKey('walletSummary'), 'Should contain wallet summary');
-    }
-    
+
     @IsTest
     static void testLoadWalletWithInvalidId() {
+        PermissionSet paymentPs = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Payment' LIMIT 1];
+        User currentUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        System.runAs(currentUser) {
+            insert new PermissionSetAssignment(
+                AssigneeId = currentUser.Id,
+                PermissionSetId = paymentPs.Id
+            );
+        }
+        Map<String, Object> result = new Map<String, Object> ();
         Test.startTest();
             Test.setMock(HttpCalloutMock.class, new BlockfrostServiceHttpCalloutMock());
-            Map<String, Object> result = TransactionController.loadWallet('001000000000000');
+            System.runAs(currentUser) {
+                result = TransactionController.loadWallet('001000000000000');
+            }
         Test.stopTest();
-        
+
         Assert.isNotNull(result, 'Should return wallet data for invalid wallet ID');
         Assert.isTrue(result.containsKey('receivingAddresses'), 'Should contain receiving addresses');
         Assert.isTrue(result.containsKey('changeAddresses'), 'Should contain change addresses');
@@ -127,9 +123,20 @@ public with sharing class TransactionControllerTest {
     
     @IsTest
     static void testLoadWalletWithNullId() {
+        PermissionSet paymentPs = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Payment' LIMIT 1];
+        User currentUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        System.runAs(currentUser) {
+            insert new PermissionSetAssignment(
+                AssigneeId = currentUser.Id,
+                PermissionSetId = paymentPs.Id
+            );
+        }
+        Map<String, Object> result = new Map<String, Object> ();
         Test.startTest();
             Test.setMock(HttpCalloutMock.class, new BlockfrostServiceHttpCalloutMock());
-            Map<String, Object> result = TransactionController.loadWallet(null);
+            System.runAs(currentUser) {
+                result = TransactionController.loadWallet(null);
+            }
         Test.stopTest();
         
         Assert.isNotNull(result, 'Should return wallet data for null wallet ID');

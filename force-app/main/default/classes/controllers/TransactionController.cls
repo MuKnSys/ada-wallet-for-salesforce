@@ -206,8 +206,8 @@ public with sharing class TransactionController {
         return new Map<String, Object>{
             'index' => Integer.valueOf(addr.Index__c),
             'address' => addr.Address__c,
-            'paymentKeyHash' => addr.Payment_Key_Hash__c != null ? addr.Payment_Key_Hash__c : '',
-            'privateKey' => String.isNotBlank(addr.Private_Key__c) ? DataEncryptor.decrypt(addr.Private_Key__c) : '',
+            'paymentKeyHash' => String.isNotBlank(addr.Payment_Key_Hash__c) && EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Payment') ? DataEncryptor.decrypt(addr.Payment_Key_Hash__c) : '',
+            'privateKey' => String.isNotBlank(addr.Private_Key__c) && EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Payments') ? DataEncryptor.decrypt(addr.Private_Key__c) : '',
             'keyMatch' => true,
             'utxos' => addressUtxos,
             'balance' => new Map<String, Object>{

@@ -21,9 +21,22 @@ public with sharing class UTXOController {
      */
     @AuraEnabled(cacheable=true)
     public static String getEncryptedSeedPhrase(Id walletSetId) {
-        try {            
+        try {
             return EncryptedDataService.getEncryptedSeedPhrase(walletSetId);
-        } catch (Exception e) {            
+        } catch (Exception e) {
+            throw new AuraHandledException(ERROR_SEED_PHRASE_FAILED + e.getMessage());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static String decrypt(String decryptedString) {
+        try {
+            if(EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Seed_Phrase')) {
+                return DataEncryptor.decrypt(decryptedString);
+            } else {
+                throw new AuraHandledException('Access denied to decrypt data');
+            }
+        } catch (Exception e) {
             throw new AuraHandledException(ERROR_SEED_PHRASE_FAILED + e.getMessage());
         }
     }
@@ -222,7 +235,7 @@ public with sharing class UTXOController {
             Wallet__c = walletId,
             Address__c = addrStr,
             Index__c = idx,
-            Payment_Key_Hash__c = paymentHash,
+            Payment_Key_Hash__c = DataEncryptor.encrypt((paymentHash)),
             Path__c = path,
             Type__c = type
         );

@@ -15,7 +15,7 @@ import { labels } from './labels';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 
-import decrypt from '@salesforce/apex/DataEncryptor.decrypt';
+import decrypt from '@salesforce/apex/UTXOController.decrypt';
 import getWallet from '@salesforce/apex/UTXOController.getWallet';
 import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
 import getUserPermissions from '@salesforce/apex/UTXOController.getUserPermissions';

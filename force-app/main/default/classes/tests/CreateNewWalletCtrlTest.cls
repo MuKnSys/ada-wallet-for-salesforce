@@ -239,6 +239,14 @@ private class CreateNewWalletCtrlTest {
 
     @isTest
     static void shouldCreateUTXOAddressesBulk() {
+        PermissionSet paymentPs = [SELECT Id FROM PermissionSet WHERE Name = 'Ada_Wallet_Payment' LIMIT 1];
+        User currentUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        System.runAs(currentUser) {
+            insert new PermissionSetAssignment(
+                AssigneeId = currentUser.Id,
+                PermissionSetId = paymentPs.Id
+            );
+        }
         Wallet_Set__c walletSet = [SELECT Id FROM Wallet_Set__c LIMIT 1];
         Wallet__c wallet = new Wallet__c(
             Wallet_Set__c = walletSet.Id,
@@ -269,10 +277,14 @@ private class CreateNewWalletCtrlTest {
         changeAddr.path = 'm/1852\'/1815\'/0\'/1/0';
         changeAddresses.add(changeAddr);
 
+        Map<String, Object> result = new Map<String, Object> ();
+
         Test.startTest();
-        Map<String, Object> result = CreateNewWalletCtrl.createUTXOAddressesBulk(wallet.Id, receivingAddresses, changeAddresses);
+        System.runAs(currentUser) { 
+            result = CreateNewWalletCtrl.createUTXOAddressesBulk(wallet.Id, receivingAddresses, changeAddresses);
+        }
         Test.stopTest();
-        
+
         Assert.isNotNull(result, 'Should return bulk creation result');
         Assert.isTrue(result.containsKey('success'), 'Result should contain success flag');
         Assert.isTrue(result.containsKey('walletId'), 'Result should contain wallet ID');
