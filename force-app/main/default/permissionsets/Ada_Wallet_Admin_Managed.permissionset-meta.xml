@@ -260,7 +260,7 @@
     <tabSettings>
         <tab>Ada_Wallet_Setup</tab>
         <visibility>Visible</visibility>
-    </tabSettings>    
+    </tabSettings>
     <tabSettings>
         <tab>Inbound_Transaction__c</tab>
         <visibility>Visible</visibility>

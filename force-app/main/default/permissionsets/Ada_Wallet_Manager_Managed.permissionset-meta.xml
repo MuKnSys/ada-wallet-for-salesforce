@@ -4,10 +4,6 @@
         <application>Ada_Wallet</application>
         <visible>true</visible>
     </applicationVisibilities>
-    <applicationVisibilities>
-        <application>Ada_Wallet_Setup</application>
-        <visible>true</visible>
-    </applicationVisibilities>
     <classAccesses>
         <apexClass>AdaWalletsSetupCtrl</apexClass>
         <enabled>true</enabled>

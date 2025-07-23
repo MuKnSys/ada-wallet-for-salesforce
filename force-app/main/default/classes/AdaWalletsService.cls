@@ -55,7 +55,7 @@ public with sharing class AdaWalletsService {
         if (keyBlob.size() != 32) {
             throw new IllegalArgumentException('Private key must be exactly 32 bytes (256 bits)');
         }
-        
+
         adaSettings.Private_Key__c = key;
 
         if (Schema.sObjectType.AdaSettings__c.isCreateable() &&
@@ -63,12 +63,12 @@ public with sharing class AdaWalletsService {
             Schema.sObjectType.AdaSettings__c.fields.Private_Key__c.isCreateable() &&
             Schema.sObjectType.AdaSettings__c.fields.Private_Key__c.isUpdateable()) {
             upsert adaSettings;
-        }        
+        }
     }
 
     public static void setHmacKey(String key) {
         AdaSettings__c adaSettings = getSettings();
-        
+
         // Immutable check: prevent key changes if already set
         if (String.isNotBlank(adaSettings.Hmac_Key__c)) {
             throw new SecurityException(HMAC_KEY_ALREADY_SET_ERROR);
@@ -88,7 +88,7 @@ public with sharing class AdaWalletsService {
         if (keyBlob.size() != 32) {
             throw new IllegalArgumentException('Hmac key must be exactly 32 bytes (256 bits)');
         }
-        
+
         adaSettings.Hmac_Key__c = key;
 
         if (Schema.sObjectType.AdaSettings__c.isCreateable() &&
@@ -96,7 +96,7 @@ public with sharing class AdaWalletsService {
             Schema.sObjectType.AdaSettings__c.fields.Hmac_Key__c.isCreateable() &&
             Schema.sObjectType.AdaSettings__c.fields.Hmac_Key__c.isUpdateable()) {
             upsert adaSettings;
-        }        
+        }
     }
 
     public static void setBlockfrostProjectId(String blockfrostProjectId) {
@@ -108,7 +108,7 @@ public with sharing class AdaWalletsService {
             Schema.sObjectType.AdaSettings__c.fields.BlockfrostProjectId__c.isCreateable() &&
             Schema.sObjectType.AdaSettings__c.fields.BlockfrostProjectId__c.isUpdateable()) {
             upsert adaSettings;
-        }        
+        }
     }
 
     public static void validateEncryptionKey() {

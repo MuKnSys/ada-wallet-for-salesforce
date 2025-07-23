@@ -281,7 +281,7 @@ public with sharing class UTXOHelper {
                 delete assetsToDelete;
                 deletedCount = assetsToDelete.size();
             }
-            
+
             // Step 2.5: Upsert Inbound_Transaction__c records for all transactions
             Map<String, Inbound_Transaction__c> existingInbound = new Map<String, Inbound_Transaction__c>();
             for (Inbound_Transaction__c itx : InboundTransactionSelector.getInboundTransactionsByUtxoAddressId(utxoAddress.Id)) {
@@ -369,7 +369,7 @@ public with sharing class UTXOHelper {
             } catch (Exception e) {
                 throw e;
             }
-            
+
             return new Map<String, Object>{
                 'success' => true,
                 'assets' => utxoList,

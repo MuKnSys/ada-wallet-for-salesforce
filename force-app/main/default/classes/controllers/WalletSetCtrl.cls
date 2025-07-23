@@ -7,7 +7,7 @@ public with sharing class WalletSetCtrl {
                 !Schema.sObjectType.Wallet_Set__c.fields.Seed_Phrase__c.isCreateable()) {
                 throw new AuraHandledException('Insufficient permissions to create wallet set');
             }
-            
+
             Wallet_Set__c walletSet = new Wallet_Set__c();
             walletSet.Wallet_Name__c = walletName;
             walletSet.Seed_Phrase__c = DataEncryptor.encryptHmac(seedPhrase);
