@@ -1,13 +1,19 @@
 {
-  "orgName": "Salesforce Cardano Wallets",
+  "orgName": "ADA Wallet SO",
   "edition": "Developer",
-  "features": ["EnableSetPasswordInApi"],
+  "features": [
+    "SLACK"
+  ],
   "settings": {
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true
     },
     "mobileSettings": {
       "enableS1EncryptedStoragePref2": false
+    },
+    "languageSettings": {
+      "enableTranslationWorkbench": true
     }
   }
 }
+

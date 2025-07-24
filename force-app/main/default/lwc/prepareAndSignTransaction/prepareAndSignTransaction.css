@@ -105,16 +105,6 @@
     background: transparent;
 }
 
-.slds-box.slds-theme_error {
-    background-color: #fef7f7;
-    border-color: #ea001e;
-}
-
-.slds-box.slds-theme_default {
-    background-color: #f8f9fa;
-    border-color: #dddbda;
-}
-
 .cbor-display {
     background-color: #f3f2f2;
     border: 1px solid #dddbda;
@@ -136,4 +126,124 @@
     padding: 0;
     font-size: inherit;
     color: inherit;
-} 
+}
+
+.instructions {
+    max-width: 700px; 
+    margin: 0 auto;
+}
+
+.sent-transaction-box {
+    /* No background, no border-radius, no max-width */
+    padding: 0;
+    margin: 0;
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.sent-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2e844a;
+}
+
+.sent-hash {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 1rem;
+    color: #2e844a;
+    background: #f3f2f2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+    word-break: break-all;
+}
+
+.sent-hash-link {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 1.1rem;
+    word-break: break-all;
+    margin: 0.5rem 0 0.5rem 0;
+    vertical-align: middle;
+}
+
+.slds-text-link.sent-hash-link {
+    color: #0070d2;
+    text-decoration: underline;
+}
+
+.slds-text-link.sent-hash-link:hover {
+    color: #005fb2;
+    text-decoration: underline;
+}
+
+.sent-scan-btn {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(80,80,80,0.08);
+    padding: 0.75rem 2rem;
+    background: #2e844a;
+    color: #fff;
+    transition: background 0.15s;
+}
+.sent-scan-btn:hover {
+    background: #1b5e20;
+    color: #fff;
+}
+
+/* Reduce heading and body font weights */
+.ps-heading, .sent-title, .slds-text-heading_large, .slds-text-heading_small {
+    font-weight: 400 !important;
+}
+
+.slds-text-body_regular, .slds-text-body_small {
+    font-weight: 300 !important;
+}
+
+/* Subtle error message styling */
+.slds-form-element__help, .error-message {
+    color: #c23934 !important;
+    font-size: 0.95rem;
+    font-weight: 400;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    background: none;
+    border: none;
+}
+
+/* Improve input appearance */
+input, textarea, .slds-input {
+    border-radius: 6px !important;
+    border: 1px solid #d8dde6 !important;
+    font-weight: 400 !important;
+    font-size: 1rem !important;
+    padding: 0.6rem 1rem !important;
+}
+
+/* Card and modal improvements */
+.slds-card, .slds-modal__container, .ps-card {
+    border-radius: 14px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10) !important;
+}
+
+.slds-p-around_medium, .ps-content {
+    padding: 2rem 2.5rem 2rem 2.5rem !important;
+}
+
+.slds-m-bottom_small, .slds-m-bottom_medium, .slds-m-bottom_large {
+    margin-bottom: 1rem !important;
+}
+
+.slds-m-top_medium, .slds-m-top_large {
+    margin-top: 1.5rem !important;
+}
+
+/* Button improvements */
+.slds-button, .ps-action-button {
+    border-radius: 8px !important;
+    font-weight: 400 !important;
+    font-size: 1.05rem !important;
+    padding: 0.7rem 1.5rem !important;
+}

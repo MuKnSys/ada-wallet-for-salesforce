@@ -148,12 +148,33 @@
 
 .asset-icon {
     margin-right: 1rem;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.asset-img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    display: block;
 }
 
 .asset-icon-img {
     background: #e0e0e0;
     border-radius: 50%;
     padding: 0.25rem;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .asset-details {
@@ -162,14 +183,17 @@
 }
 
 .asset-name {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #333;
+    font-size: 0.92rem;
+    color: #666;
+    font-weight: 400;
+    margin-top: 0.05rem;
 }
 
 .asset-symbol {
-    font-size: 0.85rem;
-    color: #666;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 0.15rem;
 }
 
 .asset-amount {
@@ -350,7 +374,154 @@
     color: #ffffff;
     font-size: 1.25rem;
     font-weight: 600;
+    margin-bottom: 1rem;
 }
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+    padding: 0 1rem;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Active step */
+.step.active .step-number {
+    background: #2e7d32;
+    color: white;
+}
+
+.step.active .step-label {
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+/* Completed step */
+.step.completed .step-number {
+    background: #4caf50;
+    color: white;
+}
+
+.step.completed .step-label {
+    color: #4caf50;
+    font-weight: 600;
+}
+
+.step-connector {
+    width: 60px;
+    height: 2px;
+    background: #e0e0e0;
+    margin: 0 1rem;
+    margin-top: -1rem;
+    transition: background-color 0.3s ease;
+}
+
+.step.completed + .step-connector,
+.step-connector + .step.completed {
+    background: #4caf50;
+}
+
+/* Step Content */
+.step-content {
+    padding: 1rem 0;
+}
+
+.step-description {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.step-description p {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.step-description strong {
+    color: #333;
+    font-weight: 600;
+}
+
+/* Footer buttons for multi-step */
+.footer-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.footer-button {
+    min-width: 100px;
+}
+
+/* Asset dropdown styling */
+.asset-dropdown {
+    width: 100%;
+}
+
+/* Success message styling */
+.success-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* Recipient info styling */
+.recipient-info {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #2e7d32;
+}
+
+.recipient-label {
+    font-weight: 600;
+    color: #333;
+    margin-right: 0.5rem;
+}
+
+.recipient-address {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #666;
+    word-break: break-all;
+}
+
+
 
 .send-content {
     padding: 1.5rem;
@@ -466,4 +637,483 @@
 
 .fee-info p {
     margin: 0;
+}
+
+.transaction-section {
+    margin-bottom: 2rem;
+}
+.transaction-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+}
+.transaction-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: #f8f8f8;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: none;
+}
+.transaction-name {
+    font-weight: 500;
+    min-width: 90px;
+    margin-right: 1rem;
+    color: #2e7d32;
+}
+.transaction-hash, .transaction-status, .transaction-date {
+    font-weight: 400;
+    color: #555;
+    margin-right: 0;
+    margin-bottom: 0.1rem;
+    text-align: left;
+    padding-left: 0;
+}
+.transaction-type {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+.transaction-type.inbound {
+    color: #388e3c;
+}
+.transaction-type.outbound {
+    color: #d32f2f;
+}
+.transaction-amount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+.transaction-date {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 0.1rem;
+}
+.transaction-hash {
+    font-size: 0.8rem;
+    color: #aaa;
+    word-break: break-all;
+}
+.transaction-hash a {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.transaction-memo {
+    font-size: 0.88rem;
+    color: #6b6b6b;
+    margin-top: 0.1rem;
+    margin-bottom: 0.1rem;
+    font-style: italic;
+    padding-left: 2px;
+}
+.memo-info-icon {
+    --slds-c-icon-color-foreground-default: #0070d2;
+    margin-bottom: 2px;
+}
+
+.slds-form-element__label, .form-label {
+    color: #1a1a1a !important;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 0.25rem;
+}
+
+.slds-input, .form-input, .form-textarea {
+    color: #222 !important;
+    background: #fff;
+    font-size: 1.08rem;
+    border: 1.5px solid #bdbdbd;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.slds-input:focus, .form-input:focus, .form-textarea:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 2px #c8e6c9;
+}
+
+.slds-m-bottom_medium label, .slds-m-bottom_medium .slds-form-element__label {
+    color: #1a1a1a !important;
+    font-weight: 700;
+    font-size: 1.12rem;
+}
+
+.slds-m-bottom_medium .slds-input {
+    font-size: 1.15rem;
+    color: #222 !important;
+    background: #fff;
+}
+
+.recipient-label {
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 1.01rem;
+}
+
+.recipient-address {
+    color: #2e7d32;
+    font-weight: 600;
+    font-size: 1.01rem;
+    word-break: break-all;
+}
+
+.send-modal .slds-m-bottom_medium {
+    background: #2e7d32;
+    border-radius: 8px;
+    padding: 1rem 1.5rem 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.send-modal .slds-m-bottom_medium label,
+.send-modal .slds-m-bottom_medium .slds-form-element__label {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 1.18rem;
+}
+.send-modal .slds-m-bottom_medium .slds-input {
+    font-size: 1.18rem;
+    color: #fff !important;
+    background: #388e3c;
+    border: 2px solid #fff;
+    border-radius: 6px;
+}
+.send-modal .slds-m-bottom_medium .slds-input::placeholder {
+    color: #e0e0e0;
+    opacity: 1;
+}
+.transaction-amounts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    gap: 0.1rem;
+}
+.tx-ada-amount {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #232533;
+    letter-spacing: 0.01em;
+}
+.tx-ada-amount span {
+    font-variant-numeric: tabular-nums;
+}
+.tx-other-asset-amount {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #232533;
+    margin-top: 0.1rem;
+}
+.transaction-details-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    margin-bottom: 0.2rem;
+    flex: 1 1 auto;
+}
+.transaction-item.inbound {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.06);
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.7rem;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.transaction-item.inbound .transaction-name {
+    color: #006dcc;
+    font-weight: 400;
+    font-size: 1rem;
+    min-width: 70px;
+    margin-right: 1rem;
+    margin-top: 0.1rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.transaction-item.inbound .transaction-name:hover {
+    text-decoration: underline;
+    color: #005fb2;
+}
+.transaction-item.inbound .transaction-details-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    flex: 1 1 auto;
+}
+.transaction-item.inbound .transaction-hash {
+    color: #444;
+    font-size: 0.82rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 400;
+    margin-bottom: 0.05rem;
+    text-align: left;
+    padding-left: 0;
+    /* Remove truncation styles */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    max-width: 100%;
+    word-break: break-all;
+}
+.transaction-item.inbound .transaction-date {
+    color: #888;
+    font-size: 0.78rem;
+    margin-bottom: 0.05rem;
+    text-align: left;
+    padding-left: 0;
+    font-weight: 400;
+}
+.transaction-main-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.7rem;
+}
+.transaction-item.outbound {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.06);
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.7rem;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    font-size: 0.95rem;
+    font-weight: 400;
+}
+.transaction-item.outbound .transaction-name {
+    color: #006dcc;
+    font-weight: 400;
+    font-size: 0.98rem;
+    min-width: 70px;
+    margin-right: 1rem;
+    margin-top: 0.1rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.transaction-item.outbound .transaction-name:hover {
+    text-decoration: underline;
+    color: #005fb2;
+}
+.transaction-item.outbound .transaction-hash {
+    color: #444;
+    font-size: 0.82rem;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 400;
+    margin-bottom: 0.05rem;
+    text-align: left;
+    padding-left: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+    word-break: normal;
+}
+.transaction-item.outbound .transaction-details-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    flex: 1 1 auto;
+}
+.transaction-card-columns {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+}
+.transaction-card-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 2 1 0;
+    min-width: 0;
+}
+.transaction-card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: right;
+}
+.transaction-card-right .transaction-amounts {
+    text-align: right;
+    width: 100%;
+}
+.tx-ada-amount, .tx-other-asset-amount {
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: right;
+}
+.transaction-card-left .transaction-name {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-card-left .transaction-hash {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-card-left .transaction-status {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-item.inbound .transaction-card-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1 1 0;
+    min-width: 0;
+}
+.transaction-item.inbound .transaction-name {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-item.inbound .transaction-hash {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.transaction-item.inbound .transaction-date {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+.token-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.token-select, .token-amount {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.95rem;
+    height: 2.1rem;
+    padding: 0 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #d8dde6;
+    box-sizing: border-box;
+}
+.token-select {
+    max-width: 9.5rem;
+}
+.token-amount {
+    max-width: 8rem;
+}
+.send-max-btn {
+    margin-left: 0.5rem;
+    padding: 0 0.9rem;
+    font-size: 0.95rem;
+    height: 2.1rem;
+    cursor: pointer;
+    background: #e6f7ff;
+    border: 1px solid #b3e0ff;
+    border-radius: 4px;
+    color: #0070d2;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+.send-max-btn:hover {
+    background: #b3e0ff;
+}
+.send-max-btn:disabled {
+    background: #e0e0e0;
+    color: #aaa;
+    border: 1px solid #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.remove-token-btn {
+    margin-left: 0.5rem;
+    background: none;
+    border: none;
+    color: #d9534f;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    height: 2.1rem;
+    display: flex;
+    align-items: center;
+}
+.add-token-btn {
+    margin-top: 0.5rem;
+    width: 100%;
+    background: #f4f6f9;
+    border: 1px solid #d8dde6;
+    border-radius: 4px;
+    padding: 0.4rem 0;
+    color: #0070d2;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.add-token-btn:hover {
+    background: #e6f7ff;
+}
+.add-token-btn:disabled {
+    background: #e0e0e0;
+    color: #aaa;
+    border: 1px solid #ccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.transaction-memo-singleline {
+    text-align: left;
+    margin: 0;
+    padding: 0;
+    font-size: 0.95em;
+    color: #444;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.asset-lines-bottom {
+    width: 100%;
+    align-items: flex-end;
+    margin-top: 8px;
+    padding-left: 0;
+    /* Remove border, background, and extra padding */
+    border-left: none;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+}
+.asset-lines-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+}
+.tx-asset-amount {
+    font-size: 0.93em;
+    font-weight: 380;
+    color: #555;
+    text-align: right;
+    margin: 0;
+    padding: 0 0 0 0;
+}
+.tx-ada-amount {
+    font-size: 1em;
+    font-weight: 500;
+    color: #222;
+    margin-bottom: 2px;
+    letter-spacing: 0.01em;
 }

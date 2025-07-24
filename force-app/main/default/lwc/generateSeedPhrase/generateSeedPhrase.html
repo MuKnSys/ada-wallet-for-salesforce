@@ -1,29 +1,66 @@
 <template>
-    <lightning-card title="Create New Wallet Set" icon-name="standard:account">
+    <lightning-card title={labels.UI.CardTitle} icon-name="standard:account">
         <lightning-spinner lwc:if={isLoading}></lightning-spinner>
         <div class="slds-p-around_medium">
+            
+            <!-- Step 0: Choose Option -->
+            <template lwc:if={step0}>
+                <div class="slds-p-around_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_large">{labels.UI.ChooseMethodHeader}</h3>
+                    <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                        <div class="slds-p-around_medium">                            
+                            <lightning-button 
+                                label={labels.OPTIONS.CreateNew} 
+                                variant="brand" 
+                                onclick={handleCreateNew}
+                                class="slds-m-bottom_x-small">
+                            </lightning-button>
+                            <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                {labels.UI.CreateNewDescription}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-box slds-theme_shade">
+                        <div class="slds-p-around_medium">                            
+                            <lightning-button 
+                                label={labels.OPTIONS.ImportExisting} 
+                                variant="neutral" 
+                                onclick={handleImportExisting}
+                                class="slds-m-bottom_x-small">
+                            </lightning-button>
+                            <div class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                {labels.UI.ImportExistingDescription}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <!-- Step 1: Wallet Name -->
             <template lwc:if={step1}>
+                <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.EnterWalletNameHeader}</h3>
                 <lightning-input 
-                    label="Wallet Name" 
+                    label={labels.UI.WalletNameLabel} 
                     value={walletName} 
                     onchange={handleWalletNameChange}
                     required
-                    class="slds-m-bottom_medium">
+                    class="slds-m-bottom_medium"
+                    message-when-value-missing={labels.UI.WalletNameRequired}>
                 </lightning-input>
                 <lightning-button 
-                    label="Next" 
+                    label={labels.UI.NextButton} 
                     variant="brand" 
                     onclick={handleNextFromStep1}
-                    disabled={isNextDisabled}>
+                    disabled={isNextDisabled}
+                    class="slds-m-bottom_small">
                 </lightning-button>
             </template>
 
-            <!-- Step 2: Seed Phrase Display -->
+            <!-- Step 2: Seed Phrase Display (for new wallet) -->
             <template lwc:if={step2}>
-                <div class="seed-container">
-                    <h2 class="slds-text-heading_small">Your Seed Phrase</h2>
-                    <p class="warning-text">Store this safely - you won't see it again!</p>
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.SeedPhraseHeader}</h3>
+                    <p class="slds-text-color_error slds-text-body_small slds-m-bottom_medium">{labels.UI.SeedPhraseWarning}</p>
                     <div class="seed-grid">
                         <template for:each={seedPhrase} for:item="item">
                             <div key={item.word} class="seed-word">
@@ -32,48 +69,126 @@
                         </template>
                     </div>
                 </div>
-                <div class="button-group">
+                <div class="slds-m-bottom_medium">
                     <lightning-button 
-                        label="Download as Text" 
+                        label={labels.UI.DownloadButton} 
                         variant="neutral" 
-                        onclick={downloadSeedPhrase}>
+                        onclick={downloadSeedPhrase}
+                        class="slds-m-right_small">
                     </lightning-button>                    
                     <lightning-button 
-                        label="Next" 
+                        label={labels.UI.NextButton} 
                         variant="brand" 
                         onclick={handleNextFromStep2}>
                     </lightning-button>
                 </div>
             </template>
 
-            <!-- Step 3: Seed Phrase Verification -->
-            <template lwc:if={step3}>
-                <div class="verification-container">
-                    <h2 class="slds-text-heading_small">Verify Your Seed Phrase</h2>
-                    <div class="input-grid">
-                        <template for:each={verificationInputs} for:item="input" for:index="idx">
-                            <lightning-input 
-                                key={input.label}
-                                label={input.label}
-                                value={input.value}
-                                onchange={handleVerificationChange}
-                                data-index={idx}
-                                class="verification-input">
-                            </lightning-input>
+            <!-- Step 3 Import: Enter Seed Phrase -->
+            <template lwc:if={step3Import}>
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.EnterSeedPhraseImportHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">{labels.UI.EnterSeedPhraseImportDescription}</p>
+                    
+                    <lightning-radio-group 
+                        name="wordCount" 
+                        label={labels.UI.WordCountLabel}
+                        options={wordCountOptions}
+                        value={selectedWordCount}
+                        onchange={handleWordCountChange}
+                        class="slds-m-bottom_medium">
+                    </lightning-radio-group>
+                    
+                    <div class="seed-input-grid">
+                        <template for:each={importInputs} for:item="input" for:index="idx">
+                            <div key={input.label} class="input-container">
+                                <lightning-input 
+                                    label={input.label}
+                                    value={input.value}
+                                    onchange={handleImportInputChange}
+                                    onfocus={handleInputFocus}
+                                    onblur={handleInputBlur}
+                                    data-index={idx}
+                                    class="seed-input-field"
+                                    placeholder={labels.UI.EnterWordPlaceholder}>
+                                </lightning-input>
+                                
+                                <!-- Autocomplete dropdown: only show for focused input -->
+                                <template lwc:if={input.showSuggestions}>
+                                    <div class="suggestions-dropdown">
+                                        <template for:each={suggestions} for:item="suggestion">
+                                            <div 
+                                                key={suggestion}
+                                                class="suggestion-item"
+                                                data-word={suggestion}
+                                                onclick={handleSuggestionClick}>
+                                                {suggestion}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
                     </div>
-                    <template if:true={errorMessage}>
-                        <div class="error-message">{errorMessage}</div>
-                    </template>
-                    <div class="button-group">
-                        <lightning-button 
-                            label="Submit" 
-                            variant="brand" 
-                            onclick={handleSubmit}
-                            disabled={isSubmitDisabled}>
-                    </lightning-button>
-                    </div>                    
                 </div>
+                <template lwc:if={errorMessage}>
+                    <div class="slds-text-color_error slds-m-bottom_small">{errorMessage}</div>
+                </template>
+                <lightning-button 
+                    label={labels.UI.ImportButton} 
+                    variant="brand" 
+                    onclick={handleImportSubmit}
+                    disabled={isImportDisabled}
+                    class="slds-m-bottom_small">
+                </lightning-button>
+            </template>
+
+            <!-- Step 3: Seed Phrase Verification (for new wallet) -->
+            <template lwc:if={step3}>
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.VerifySeedPhraseVerifyHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">{labels.UI.VerifySeedPhraseVerifyDescription}</p>
+                    <div class="seed-input-grid">
+                        <template for:each={verificationInputs} for:item="input" for:index="idx">
+                            <div key={input.label} class="input-container">
+                                <lightning-input 
+                                    label={input.label}
+                                    value={input.value}
+                                    onchange={handleVerificationChange}
+                                    onfocus={handleVerificationInputFocus}
+                                    onblur={handleVerificationInputBlur}
+                                    data-verif-index={idx}
+                                    class="seed-input-field"
+                                    placeholder={labels.UI.EnterWordPlaceholder}>
+                                </lightning-input>
+                                <!-- Autocomplete dropdown: only show for focused verification input -->
+                                <template lwc:if={input.showSuggestions}>
+                                    <div class="suggestions-dropdown">
+                                        <template for:each={suggestions} for:item="suggestion">
+                                            <div 
+                                                key={suggestion}
+                                                class="suggestion-item"
+                                                data-word={suggestion}
+                                                onclick={handleVerificationSuggestionClick}>
+                                                {suggestion}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <template lwc:if={errorMessage}>
+                    <div class="slds-text-color_error slds-m-bottom_small">{errorMessage}</div>
+                </template>
+                <lightning-button 
+                    label={labels.UI.SubmitButton} 
+                    variant="brand" 
+                    onclick={handleSubmit}
+                    disabled={isSubmitDisabled}
+                    class="slds-m-bottom_small">
+                </lightning-button>
             </template>
         </div>
     </lightning-card>

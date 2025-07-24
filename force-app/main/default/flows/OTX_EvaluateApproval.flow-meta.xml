@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <areMetricsLoggedToDataCloud>false</areMetricsLoggedToDataCloud>
+    <choices>
+        <description>Approve the request</description>
+        <name>ApproveChoice</name>
+        <choiceText>Approve</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Approve</stringValue>
+        </value>
+    </choices>
+    <choices>
+        <description>Reject the request</description>
+        <name>RejectChoice</name>
+        <choiceText>Reject</choiceText>
+        <dataType>String</dataType>
+        <value>
+            <stringValue>Reject</stringValue>
+        </value>
+    </choices>
+    <customProperties>
+        <name>ScreenProgressIndicator</name>
+        <value>
+            <stringValue>{&quot;location&quot;:&quot;top&quot;,&quot;type&quot;:&quot;simple&quot;}</stringValue>
+        </value>
+    </customProperties>
+    <description>Evaluate advanced approval requests to approve or deny them while optionally leaving comments.</description>
+    <environments>Default</environments>
+    <interviewLabel>Approval Workflows: {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Approvals Workflow: Evaluate Approval Requests</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <screens>
+        <description>Allows the flow user to approve or reject an approval request, and add comments to the decision.</description>
+        <name>ScreenEvaluateApproval</name>
+        <label>Evaluate Approval Request</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>ApprovalDecisionRadioButtons</name>
+            <choiceReferences>ApproveChoice</choiceReferences>
+            <choiceReferences>RejectChoice</choiceReferences>
+            <dataType>String</dataType>
+            <fieldText>Approval Decision</fieldText>
+            <fieldType>RadioButtons</fieldType>
+            <helpText>&lt;p&gt;Displays radio buttons to approve or reject a request. You can also add comments for your decision.&amp;nbsp;&lt;/p&gt;</helpText>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>ApprovalDecisionComments</name>
+            <fieldText>Decision Comments</fieldText>
+            <fieldType>LargeTextArea</fieldType>
+            <helpText>&lt;p&gt;&lt;span style=&quot;font-family: Arial; font-size: 10pt; color: rgb(0, 0, 0);&quot;&gt;Optionally enter comments on the approval request&lt;/span&gt;&lt;/p&gt;</helpText>
+            <inputsOnNextNavToAssocScrn>UseStoredValues</inputsOnNextNavToAssocScrn>
+            <isRequired>false</isRequired>
+        </fields>
+        <showFooter>true</showFooter>
+        <showHeader>false</showHeader>
+    </screens>
+    <sourceTemplate>standard_approvals__EvaluateApproval</sourceTemplate>
+    <start>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>ScreenEvaluateApproval</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <variables>
+        <description>$Label.EvaluateApprovalRequestFlow.OutputCommentDescription</description>
+        <name>approvalComments</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <value>
+            <elementReference>ApprovalDecisionComments</elementReference>
+        </value>
+    </variables>
+    <variables>
+        <description>$Label.EvaluateApprovalRequestFlow.OutputDecisionDescription</description>
+        <name>approvalDecision</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <value>
+            <elementReference>ApprovalDecisionRadioButtons</elementReference>
+        </value>
+    </variables>
+</Flow>

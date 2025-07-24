@@ -1,11 +1,11 @@
 <template>
-    <lightning-card title="Create New Wallet" icon-name="standard:account">
+    <lightning-card title={labels.UI.CardTitle} icon-name="standard:account">
         <lightning-spinner lwc:if={isLoading}></lightning-spinner>
         <div class="slds-p-around_medium">
             <lightning-record-picker
-                label="Wallet Set"
-                placeholder="Select a Wallet Set"
-                object-api-name="Wallet_Set__c"
+                label={labels.UI.WalletSetLabel}
+                placeholder={labels.UI.SelectWalletSetPlaceholder}
+                object-api-name={walletSetObjectApiName}
                 value={selectedWalletSetId}
                 onchange={handleWalletSetChange}
                 required
@@ -13,35 +13,98 @@
                 error-message={pickerErrorMessage}
             ></lightning-record-picker>
             <lightning-input
-                label="Wallet Name"
+                label={labels.UI.WalletNameLabel}
                 value={walletName}
                 onchange={handleWalletNameChange}
                 required
                 class="slds-m-bottom_small"
-                message-when-value-missing="Wallet Name is required"
+                message-when-value-missing={labels.UI.WalletNameRequired}
             ></lightning-input>
             <lightning-input
-                label="Account Index"
+                label={labels.UI.AccountIndexLabel}
                 type="number"
                 value={accountIndex}
                 onchange={handleAccountIndexChange}
                 min="0"
                 required
                 class="slds-m-bottom_small"
-                message-when-value-missing="Account Index is required"
-                message-when-type-mismatch="Account Index must be a number"
-                message-when-range-underflow="Account Index must be non-negative"
+                message-when-value-missing={labels.UI.AccountIndexRequired}
+                message-when-type-mismatch={labels.UI.AccountIndexMustBeNumber}
+                message-when-range-underflow={labels.UI.AccountIndexNonNegative}
                 error-message={accountIndexErrorMessage}
             ></lightning-input>
             
+            <!-- Seed Phrase Verification Section -->
+            <template lwc:if={showSeedPhraseVerification}>
+                <div class="slds-box slds-theme_shade slds-m-bottom_medium">
+                    <h3 class="slds-text-heading_small slds-m-bottom_small">{labels.UI.SeedPhraseVerificationHeader}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_medium">
+                        {labels.UI.SeedPhraseVerificationDescription}
+                    </p>
+                    
+                    <!-- Word Count Selection -->
+                    <div class="slds-m-bottom_medium">
+                        <fieldset class="slds-form-element">
+                            <legend class="slds-form-element__legend slds-form-element__label">
+                                {labels.UI.SeedPhraseLengthLabel}
+                            </legend>
+                            <div class="slds-form-element__control">
+                                <lightning-radio-group
+                                    name="wordCount"
+                                    label=""
+                                    options={wordCountOptions}
+                                    value={selectedWordCount}
+                                    onchange={handleSeedPhraseWordCountChange}
+                                    type="radio">
+                                </lightning-radio-group>
+                            </div>
+                        </fieldset>
+                    </div>
+                    
+                    <div class="seed-input-grid">
+                        <template for:each={seedPhraseInputs} for:item="input" for:index="idx">
+                            <div key={input.label} class="seed-input-container">
+                                <lightning-input 
+                                    label={input.label}
+                                    value={input.value}
+                                    onchange={handleSeedPhraseChange}
+                                    onfocus={handleSeedPhraseFocus}
+                                    onblur={handleSeedPhraseBlur}
+                                    data-index={idx}
+                                    class="seed-input-field"
+                                    placeholder={labels.UI.EnterWordPlaceholder}>
+                                </lightning-input>
+                                <!-- Suggestions dropdown -->
+                                <template lwc:if={input.showSuggestions}>
+                                    <div class="suggestions-dropdown">
+                                        <template for:each={suggestions} for:item="suggestion">
+                                            <div 
+                                                key={suggestion}
+                                                class="suggestion-item"
+                                                data-word={suggestion}
+                                                onclick={handleSuggestionClick}>
+                                                {suggestion}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <template lwc:if={seedPhraseErrorMessage}>
+                        <div class="slds-text-color_error slds-m-top_small">{seedPhraseErrorMessage}</div>
+                    </template>
+                </div>
+            </template>
+            
             <!-- Progress Display -->
-            <template if:true={progressDisplay}>
+            <template lwc:if={progressDisplay}>
                 <div class="slds-box slds-theme_shade slds-m-bottom_small">
                     <div class="slds-text-heading_small slds-m-bottom_xx-small">
                         <lightning-icon icon-name="utility:sync" size="x-small" class="slds-m-right_x-small"></lightning-icon>
                         {progressDisplay}
                     </div>
-                    <template if:true={progressMessage}>
+                    <template lwc:if={progressMessage}>
                         <div class="slds-text-body_small slds-text-color_weak">
                             {progressMessage}
                         </div>
@@ -56,7 +119,7 @@
                 disabled={isCreateDisabled}
                 class="slds-m-bottom_small"
             ></lightning-button>
-            <template if:true={errorMessage}>
+            <template lwc:if={errorMessage}>
                 <div class="slds-text-color_error slds-m-top_small">{errorMessage}</div>
             </template>
         </div>

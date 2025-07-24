@@ -1,7 +1,6 @@
 public with sharing class BlockfrostEndpoint {
     public static final String mainnetEndpointUrl = 'https://cardano-mainnet.blockfrost.io/api';
     public static final String apiVersion = 'v0';
-    public static final String endpointFix = 'w3s';
 
     public HttpRequest request;
     public HTTPResponse response;
@@ -28,7 +27,6 @@ public with sharing class BlockfrostEndpoint {
     }    
 
     public BlockfrostEndpoint send() {
-        System.debug('Blockfrost request endpoint: ' + request.getEndpoint());
         Http http = new Http();
         response = http.send(request);
         return this;

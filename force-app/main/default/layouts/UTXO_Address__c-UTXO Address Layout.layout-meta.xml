@@ -36,11 +36,15 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
-                <field>Staking_Key_Hash__c</field>
+                <field>Payment_Key_Hash__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Private_Key__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Is_Used__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns/>

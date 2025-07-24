@@ -1,58 +1,76 @@
 <template>
     <lightning-card icon-name="custom:custom63" title="Transaction Builder">
         <div class="slds-p-around_medium">
-            <!-- Main Action Buttons -->
-            <div class="slds-align_absolute-center slds-m-bottom_large">
-                <lightning-button 
-                    label="Build and Sign Transaction" 
-                    onclick={buildAndSignTransaction} 
-                    variant="brand" 
-                    disabled={isLoading}
-                    class="slds-m-right_small slds-p-around_medium slds-text-heading_medium">
-                </lightning-button>
-                
-                <!-- Clear CBOR Button (only show if CBOR exists) -->
-                <template lwc:if={showCborDisplay}>
-                    <lightning-button 
-                        label="Clear CBOR & Rebuild" 
-                        onclick={clearTransactionCbor}
-                        variant="destructive"
-                        disabled={isLoading}>
-                    </lightning-button>
-                </template>
-            </div>
-
-            <!-- Loading Spinner -->
-            <template lwc:if={isLoading}>
-                <div class="slds-align_absolute-center slds-m-bottom_medium">
-                    <lightning-spinner alternative-text="Building transaction..." size="medium"></lightning-spinner>
-                </div>
-            </template>
-
-            <!-- Signed Transaction CBOR Display -->
-            <template lwc:if={showCborDisplay}>
-                <div class="slds-m-top_large slds-p-around_medium slds-theme_success slds-box slds-box_xx-small">
-                    <h3 class="slds-text-heading_small slds-m-bottom_small">
-                        <lightning-icon icon-name="utility:success" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                        Transaction Built and Signed Successfully
-                    </h3>
+            <!-- Sent Transaction UI -->
+            <template lwc:if={isSent}>
+                <div class="slds-p-around_large slds-text-align_center">
                     <div class="slds-m-bottom_small">
-                        <strong>Signed Transaction CBOR:</strong>
+                        <lightning-icon icon-name="utility:success" size="large"></lightning-icon>
                     </div>
-                    <div class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
-                        <strong>CBOR Length:</strong> {cborLength} bytes<br>
-                        <strong>Status:</strong> CBOR has been saved to the transaction record. The transaction will be automatically sent to the blockchain when the status is set to "Ready to Send" and the record is approved.
+                    <div class="slds-text-heading_large slds-m-bottom_small">
+                        Transaction Sent
+                    </div>
+                    <div class="slds-m-bottom_small">
+                        <a href={cardanoScanUrl} target="_blank" rel="noopener" class="slds-text-link sent-hash-link">
+                            {transactionHash}
+                        </a>
                     </div>
                 </div>
             </template>
 
-            <!-- Instructions -->
-            <div class="slds-m-top_medium slds-p-around_medium slds-theme_shade slds-box slds-box_xx-small slds-align_absolute-center" style="max-width: 700px; margin: 0 auto;">
-                <p class="slds-text-body_regular">
-                    <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
-                    <strong>Instructions:</strong> Click <b>Build and Sign Transaction</b> to query UTXOs and prepare the transaction. The signed transaction CBOR will be displayed above and saved to the transaction record. If you need to rebuild the transaction (e.g., for fee updates), use <b>Clear CBOR & Rebuild</b> to reset and start fresh. The transaction will be automatically sent to the blockchain when the status is set to <b>Ready to Send</b> and the record is approved.
-                </p>
-            </div>
+            <!-- Main Action Buttons and Builder UI -->
+            <template lwc:if={notSent}>
+                <!-- Main Action Buttons -->
+                <div class="slds-align_absolute-center slds-m-bottom_large">
+                    <lightning-button 
+                        label="Build and Sign Transaction" 
+                        onclick={buildAndSignTransaction} 
+                        variant="brand" 
+                        disabled={isLoading}
+                        class="slds-m-right_small slds-p-around_medium slds-text-heading_medium">
+                    </lightning-button>
+                    <template lwc:if={showCborDisplay}>
+                        <lightning-button 
+                            label="Clear CBOR & Rebuild" 
+                            onclick={clearTransactionCbor}
+                            variant="destructive"
+                            disabled={isLoading}>
+                        </lightning-button>
+                    </template>
+                </div>
+
+                <!-- Loading Spinner -->
+                <template lwc:if={isLoading}>
+                    <div class="slds-align_absolute-center slds-m-bottom_medium">
+                        <lightning-spinner alternative-text="Building transaction..." size="medium"></lightning-spinner>
+                    </div>
+                </template>
+
+                <!-- Signed Transaction CBOR Display -->
+                <template lwc:if={showCborDisplay}>
+                    <div class="slds-m-top_large slds-p-around_medium slds-theme_success slds-box slds-box_xx-small">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">
+                            <lightning-icon icon-name="utility:success" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            Transaction Built and Signed Successfully
+                        </h3>
+                        <div class="slds-m-bottom_small">
+                            <strong>Signed Transaction CBOR:</strong>
+                        </div>
+                        <div class="slds-text-body_small slds-text-color_weak slds-m-bottom_medium">
+                            <strong>CBOR Length:</strong> {cborLength} bytes<br>
+                            <strong>Status:</strong> CBOR has been saved to the transaction record. The transaction will be automatically sent to the blockchain when the status is set to "Ready to Send" and the record is approved.
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Instructions -->
+                <div class="slds-m-top_medium slds-p-around_medium slds-theme_shade slds-box slds-box_xx-small slds-align_absolute-center instructions">
+                    <p class="slds-text-body_regular">
+                        <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                        <strong>Instructions:</strong> Click <b>Build and Sign Transaction</b> to query UTXOs and prepare the transaction. The signed transaction CBOR will be displayed above and saved to the transaction record. If you need to rebuild the transaction (e.g., for fee updates), use <b>Clear CBOR & Rebuild</b> to reset and start fresh. The transaction will be automatically sent to the blockchain when the status is set to <b>Ready to Send</b> and the record is approved.
+                    </p>
+                </div>
+            </template>
         </div>
     </lightning-card>
 </template> 

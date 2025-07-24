@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pending_Approval</fullName>
+    <columns>NAME</columns>
+    <columns>Wallet__c</columns>
+    <columns>Transaction_Status__c</columns>
+    <columns>Approved__c</columns>
+    <columns>Memo__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Approved__c</field>
+        <operation>equals</operation>
+        <value>Approval Requested</value>
+    </filters>
+    <filters>
+        <field>Transaction_Status__c</field>
+        <operation>equals</operation>
+        <value>Ready to Sign</value>
+    </filters>
+    <label>Pending Approval</label>
+</ListView>

@@ -230,7 +230,7 @@
     <textTemplates>
         <name>EmailBody</name>
         <isViewedAsPlainText>false</isViewedAsPlainText>
-        <text>&lt;p&gt;Outbound transaction with {!$Record.Amount__c} amount was sent.&lt;/p&gt;</text>
+        <text>&lt;p&gt;Outbound transaction was sent.&lt;/p&gt;</text>
     </textTemplates>
     <textTemplates>
         <name>EmailSubject</name>
@@ -240,7 +240,7 @@
     <textTemplates>
         <name>SendingTransactionNotification</name>
         <isViewedAsPlainText>true</isViewedAsPlainText>
-        <text>Transaction {!$Record.Id} with {!$Record.Amount__c} amount was sent.</text>
+        <text>Transaction {!$Record.Id} was sent.</text>
     </textTemplates>
     <variables>
         <name>WalletOwnerEmail</name>

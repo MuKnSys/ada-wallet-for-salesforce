@@ -3,7 +3,25 @@
     <actionOverrides>
         <actionName>View</actionName>
         <comment>Action override created by Lightning App Builder during activation.</comment>
-        <content>Outbound_Transaction_Record_Page2</content>
+        <content>Inbound_Transaction_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Inbound_Transaction_Record_Page</content>
+        <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Outbound_Transaction_Record_Page</content>
         <formFactor>Large</formFactor>
         <skipRecordTypeSelect>false</skipRecordTypeSelect>
         <type>Flexipage</type>
@@ -12,11 +30,29 @@
     <actionOverrides>
         <actionName>View</actionName>
         <comment>Action override created by Lightning App Builder during activation.</comment>
-        <content>Outbound_Transaction_Record_Page2</content>
+        <content>Outbound_Transaction_Record_Page</content>
         <formFactor>Small</formFactor>
         <skipRecordTypeSelect>false</skipRecordTypeSelect>
         <type>Flexipage</type>
         <pageOrSobjectType>Outbound_Transaction__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>UTXO_Address_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>UTXO_Address_Record_Page</content>
+        <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
     </actionOverrides>
     <actionOverrides>
         <actionName>View</actionName>
@@ -35,6 +71,24 @@
         <skipRecordTypeSelect>false</skipRecordTypeSelect>
         <type>Flexipage</type>
         <pageOrSobjectType>UTXO_Asset__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Wallet_Set_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Wallet_Set__c</pageOrSobjectType>
+    </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Action override created by Lightning App Builder during activation.</comment>
+        <content>Wallet_Set_Record_Page</content>
+        <formFactor>Small</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Wallet_Set__c</pageOrSobjectType>
     </actionOverrides>
     <brand>
         <headerColor>#0070D2</headerColor>
@@ -51,7 +105,7 @@
     <navType>Standard</navType>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>UTXO_Address_Record_Page3</content>
+        <content>UTXO_Address_Record_Page</content>
         <formFactor>Small</formFactor>
         <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -59,7 +113,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>UTXO_Address_Record_Page3</content>
+        <content>UTXO_Address_Record_Page</content>
         <formFactor>Large</formFactor>
         <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -67,7 +121,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>UTXO_Address_Record_Page3</content>
+        <content>UTXO_Address_Record_Page</content>
         <formFactor>Small</formFactor>
         <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -75,7 +129,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>UTXO_Address_Record_Page3</content>
+        <content>UTXO_Address_Record_Page</content>
         <formFactor>Large</formFactor>
         <pageOrSobjectType>UTXO_Address__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -83,7 +137,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>Inbound_Transaction_Record_Page1</content>
+        <content>Inbound_Transaction_Record_Page</content>
         <formFactor>Small</formFactor>
         <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -91,7 +145,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>Inbound_Transaction_Record_Page1</content>
+        <content>Inbound_Transaction_Record_Page</content>
         <formFactor>Large</formFactor>
         <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -99,7 +153,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>Inbound_Transaction_Record_Page1</content>
+        <content>Inbound_Transaction_Record_Page</content>
         <formFactor>Small</formFactor>
         <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
         <type>Flexipage</type>
@@ -107,7 +161,7 @@
     </profileActionOverrides>
     <profileActionOverrides>
         <actionName>View</actionName>
-        <content>Inbound_Transaction_Record_Page1</content>
+        <content>Inbound_Transaction_Record_Page</content>
         <formFactor>Large</formFactor>
         <pageOrSobjectType>Inbound_Transaction__c</pageOrSobjectType>
         <type>Flexipage</type>

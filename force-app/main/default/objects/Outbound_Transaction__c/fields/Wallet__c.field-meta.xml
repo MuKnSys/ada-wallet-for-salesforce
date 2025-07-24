@@ -2,11 +2,12 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Wallet__c</fullName>
     <label>Wallet</label>
-    <type>MasterDetail</type>
     <referenceTo>Wallet__c</referenceTo>
     <relationshipLabel>Outbound Transactions</relationshipLabel>
     <relationshipName>Outbound_Transactions</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
     <reparentableMasterDetail>true</reparentableMasterDetail>
-    <writeRequiresMasterRead>false</writeRequiresMasterRead>
     <trackTrending>false</trackTrending>
-</CustomField> 
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

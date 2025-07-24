@@ -1,21 +1,35 @@
 import { LightningElement, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import { loadScript } from 'lightning/platformResourceLoader';
+
+import { labels } from './labels';
+import { showToast } from 'c/utils';
+
 import bipLibrary from '@salesforce/resourceUrl/bip39';
+
 import createWalletSet from '@salesforce/apex/WalletSetCtrl.createWalletSet';
 
 export default class GenerateSeedPhrase extends NavigationMixin(LightningElement) {
-    @track step1 = true;
+    labels = labels;
+    @track step0 = true;
+    @track step1 = false;
     @track step2 = false;
+    @track step3Import = false;
     @track step3 = false;
     @track walletName = '';
     @track seedPhrase = [];
+    @track importInputs = [];
     @track verificationInputs = [];
     @track errorMessage = '';
     @track isLibraryLoaded = false;
     @track isLoading = false;
-    @track originalSeedPhrase = []; // Store original seed phrase for verification
+    @track originalSeedPhrase = [];
+    @track isCreatingNew = false;
+    @track selectedWordCount = '24';
+    @track bip39WordList = [];
+    @track suggestions = [];
+    @track activeInputIndex = -1;
+    @track activeVerificationInputIndex = -1;
 
     get isNextDisabled() {
         return !this.walletName.trim();
@@ -25,15 +39,36 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         return this.verificationInputs.some(input => !input.value || !input.value.trim());
     }
 
+    get isImportDisabled() {
+        return this.importInputs.some(input => !input.value || !input.value.trim());
+    }
+
     connectedCallback() {
         this.walletName = '';
         this.seedPhrase = [];
+        this.importInputs = [];
         this.verificationInputs = [];
         this.originalSeedPhrase = [];
         this.errorMessage = '';
-        this.step1 = true;
+        this.step0 = true;
+        this.step1 = false;
         this.step2 = false;
-        this.step3 = false;        
+        this.step3Import = false;
+        this.step3 = false;
+        this.isCreatingNew = false;
+        this.selectedWordCount = '24';
+        this.bip39WordList = [];
+        this.suggestions = [];
+        this.activeInputIndex = -1;
+        this.activeVerificationInputIndex = -1;
+        
+        // Initialize word count options
+        this.wordCountOptions = [
+            { label: this.labels.WORD_COUNT.Option15, value: '15' },
+            { label: this.labels.WORD_COUNT.Option24, value: '24' }
+        ];
+        
+        this.initializeImportInputs();
     }
 
     renderedCallback() {
@@ -49,11 +84,27 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                     throw new Error('bip39 not found on window object after loading.');
                 }
 
-                this.isLibraryLoaded = true;                
+                this.isLibraryLoaded = true;
+                
+                // Store BIP39 word list for autocomplete
+                this.bip39WordList = window.bip39.wordlists.english;
+                
             })
             .catch(error => {                
-                this.showToast('Error', 'Failed to load Bip library: ' + error.message, 'error');
+                showToast(this, 'Error', this.labels.ERROR.BipLibrary + ' ' + error.message, 'error');
             });
+    }
+
+    handleCreateNew() {
+        this.isCreatingNew = true;
+        this.step0 = false;
+        this.step1 = true;
+    }
+
+    handleImportExisting() {
+        this.isCreatingNew = false;
+        this.step0 = false;
+        this.step1 = true;
     }
 
     handleWalletNameChange(event) {
@@ -62,36 +113,175 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
 
     handleNextFromStep1() {
         if (this.walletName) {
-            if (!this.isLibraryLoaded || !window.bip39) {
-                this.showToast('Error', 'Cardano library not loaded yet. Please try again.', 'error');
+            if (this.isCreatingNew) {
+                if (!this.isLibraryLoaded || !window.bip39) {
+                    showToast(this, 'Error', this.labels.ERROR.Library, 'error');
+                    return;
+                }
+
+                try {
+                    const mnemonic = window.bip39.generateMnemonic(256);
+
+                    if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
+                        throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
+                    }
+
+                    this.seedPhrase = mnemonic.split(' ').map((word, index) => {
+                        const item = {
+                            word: word,
+                            displayIndex: index + 1
+                        };
+                        return item;
+                    });
+
+                    this.originalSeedPhrase = mnemonic.split(' ');
+
+                    this.step1 = false;
+                    this.step2 = true;
+                } catch (error) {
+                    showToast(this, 'Error', this.labels.ERROR.Generate + ' ' + error.message, 'error');
+                }
+            } else {
+                this.step1 = false;
+                this.step3Import = true;
+                this.initializeImportInputs();
+            }
+        }
+    }
+
+    handleWordCountChange(event) {
+        this.selectedWordCount = event.detail.value;
+        this.initializeImportInputs();
+    }
+
+    initializeImportInputs() {
+        const wordCount = parseInt(this.selectedWordCount);
+        this.importInputs = Array.from({ length: wordCount }, (_, i) => ({
+            label: `${this.labels?.UI?.WordLabel || 'Word'} ${i + 1}`,
+            value: ''
+        }));
+        this.suggestions = [];
+        this.activeInputIndex = -1;
+    }
+
+    updateSuggestions(value, array, index) {
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word =>
+                word.toLowerCase().startsWith(value)
+            ).slice(0, 5);
+            array.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            array.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    clearSuggestions(array, activeIndexProp) {
+        this.suggestions = [];
+        array.forEach(input => input.showSuggestions = false);
+        this[activeIndexProp] = -1;
+    }
+
+    focusNextInputBySelector(selector, index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[${selector}="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, 100);
+    }
+
+    handleImportInputChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const value = event.target.value ? event.target.value.toLowerCase().trim() : '';
+        
+        if (index >= 0 && index < this.importInputs.length) {
+            this.importInputs[index].value = value;
+            this.importInputs = [...this.importInputs];
+            this.activeInputIndex = index;
+            this.updateSuggestions(value, this.importInputs, index);
+        }
+    }
+
+    handleSuggestionClick(event) {
+        const selectedWord = event.currentTarget.dataset.word;
+        const index = this.activeInputIndex;
+        
+        if (index >= 0 && index < this.importInputs.length) {
+            this.importInputs[index].value = selectedWord;
+            this.importInputs = [...this.importInputs];
+            this.clearSuggestions(this.importInputs, 'activeInputIndex');
+            if (index < this.importInputs.length - 1) {
+                this.focusNextInputBySelector('data-index', index + 1);
+            }
+        }
+    }
+
+    handleInputFocus(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.activeInputIndex = index;
+        if (index >= 0 && index < this.importInputs.length) {
+            const value = this.importInputs[index].value ? this.importInputs[index].value.toLowerCase().trim() : '';
+            this.updateSuggestions(value, this.importInputs, index);
+        }
+    }
+
+    handleInputBlur() {
+        setTimeout(() => {
+            this.clearSuggestions(this.importInputs, 'activeInputIndex');
+        }, 200);
+    }
+
+    async handleImportSubmit() {
+        try {
+            const enteredWords = this.importInputs
+                .map(input => input.value.trim())
+                .filter(word => word !== '');
+
+            const expectedLength = parseInt(this.selectedWordCount);
+            if (enteredWords.length !== expectedLength) {
+                this.errorMessage = `${this.labels.ERROR.WordCount} ${expectedLength} words.`;
+                showToast(this, 'Error', this.errorMessage, 'error');
                 return;
             }
 
-            try {
-                // Generate a new 24-word mnemonic using bip39
-                const mnemonic = window.bip39.generateMnemonic(256);
+            await this.processImport(enteredWords);
+        } catch (error) {
+            this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message);
+            showToast(this, 'Error', this.errorMessage, 'error');
+        }
+    }
 
-                if (!mnemonic || mnemonic.trim() === '' || mnemonic.split(' ').length !== 24) {
-                    throw new Error('Generated mnemonic is empty, invalid, or does not contain 24 words.');
+    async processImport(enteredWords) {
+        const seedPhraseString = enteredWords.join(' ');
+        if (!window.bip39.validateMnemonic(seedPhraseString)) {
+            showToast(this, 'Error', this.labels.ERROR.Invalid, 'error');
+            return;
+        }
+        
+        this.isLoading = true;
+
+        try {
+            const recordId = await createWalletSet({
+                walletName: this.walletName,
+                seedPhrase: seedPhraseString
+            });            
+
+            this[NavigationMixin.Navigate]({
+                type: 'standard__recordPage',
+                attributes: {
+                    recordId: recordId,
+                    objectApiName: 'Wallet_Set__c',
+                    actionName: 'view'
                 }
+            }, true);
+            showToast(this, 'Success', this.labels.SUCCESS.Import, 'success');
 
-                // Transform the seed phrase into an array of objects with displayIndex
-                this.seedPhrase = mnemonic.split(' ').map((word, index) => {
-                    const item = {
-                        word: word,
-                        displayIndex: index + 1 // Start numbering from 1
-                    };
-                    return item;
-                });
-
-                // Store original seed phrase words for verification
-                this.originalSeedPhrase = mnemonic.split(' ');
-
-                this.step1 = false;
-                this.step2 = true;
-            } catch (error) {
-                this.showToast('Error', 'Failed to generate seed phrase: ' + error.message, 'error');
-            }
+        } catch (error) {
+            this.errorMessage = this.labels.ERROR.Import + ' ' + (error.body?.message || error.message || this.labels.ERROR.Unknown);
+            showToast(this, 'Error', this.errorMessage, 'error');
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -99,62 +289,93 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
         const phraseText = this.seedPhrase.map(item => item.word).join(' ');
         const element = document.createElement('a');
         const file = new Blob([phraseText], { type: 'text/plain' });
-        element.href = URL.createObjectURL(file);
+        const url = URL.createObjectURL(file);
+        element.href = url;
         element.download = `${this.walletName}_seed.txt`;
-        document.body.appendChild(element);
         element.click();
-        document.body.removeChild(element);
+        URL.revokeObjectURL(url);
     }    
 
     handleNextFromStep2() {
         this.verificationInputs = this.seedPhrase.map((item, i) => {
             return {
-                label: `Word ${i + 1}`,
-                value: '' // Do not autofill; user must enter manually
+                label: `${this.labels?.UI?.WordLabel || 'Word'} ${i + 1}`,
+                value: ''
             };
         });
 
         this.step2 = false;
         this.step3 = true;
-        // Clear seed phrase from memory but keep originalSeedPhrase for verification
         this.seedPhrase = [];
     }
 
     handleVerificationChange(event) {
-        const index = parseInt(event.target.dataset.index);
-        this.verificationInputs[index].value = event.target.value.toLowerCase();        
-        this.verificationInputs = [...this.verificationInputs];
+        const index = parseInt(event.target.dataset.verifIndex);
+        const value = event.target.value ? event.target.value.toLowerCase().trim() : '';
+        if (index >= 0 && index < this.verificationInputs.length) {
+            this.verificationInputs[index].value = value;
+            this.verificationInputs = [...this.verificationInputs];
+            this.activeVerificationInputIndex = index;
+            this.updateSuggestions(value, this.verificationInputs, index);
+        }
+    }
+
+    handleVerificationSuggestionClick(event) {
+        const selectedWord = event.currentTarget.dataset.word;
+        const index = this.activeVerificationInputIndex;
+        if (index >= 0 && index < this.verificationInputs.length) {
+            this.verificationInputs[index].value = selectedWord;
+            this.verificationInputs = [...this.verificationInputs];
+            this.clearSuggestions(this.verificationInputs, 'activeVerificationInputIndex');
+            if (index < this.verificationInputs.length - 1) {
+                this.focusNextInputBySelector('data-verif-index', index + 1);
+            }
+        }
+    }
+
+    focusNextVerificationInput(index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[data-verif-index="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, 100);
+    }
+
+    handleVerificationInputFocus(event) {
+        const index = parseInt(event.target.dataset.verifIndex);
+        this.activeVerificationInputIndex = index;
+        if (index >= 0 && index < this.verificationInputs.length) {
+            const value = this.verificationInputs[index].value ? this.verificationInputs[index].value.toLowerCase().trim() : '';
+            this.updateSuggestions(value, this.verificationInputs, index);
+        }
+    }
+
+    handleVerificationInputBlur() {
+        setTimeout(() => {
+            this.clearSuggestions(this.verificationInputs, 'activeVerificationInputIndex');
+        }, 200);
     }
 
     async handleSubmit() {
         const enteredPhrase = this.verificationInputs.map(input => input.value.trim());
-        const originalPhrase = this.originalSeedPhrase; // Use stored original phrase
+        const originalPhrase = this.originalSeedPhrase;
         const isValid = enteredPhrase.every((word, i) => word === originalPhrase[i]);
 
         if (isValid) {
-            // Prepare the seed phrase as a string
             const seedPhraseString = enteredPhrase.join(' ');
 
             try {
                 this.isLoading = true;
-                // Create WalletSet object after verification
                 const WalletSet = {};
 
-                // Set mnemonic
                 WalletSet.mnemonic = seedPhraseString;
 
-                // Call Apex to create the Wallet_Set__c record
                 const recordId = await createWalletSet({
                     walletName: this.walletName,
                     seedPhrase: seedPhraseString
                 });
 
-                // Validate the recordId
-                if (!recordId || typeof recordId !== 'string' || !recordId.startsWith('a')) {
-                    throw new Error('Invalid record ID returned from Apex: ' + recordId);
-                }
-
-                // Navigate directly to the newly created Wallet_Set__c record detail page                
                 this[NavigationMixin.Navigate]({
                     type: 'standard__recordPage',
                     attributes: {
@@ -163,27 +384,18 @@ export default class GenerateSeedPhrase extends NavigationMixin(LightningElement
                         actionName: 'view'
                     }
                 }, true);
-                this.showToast('Success', `Wallet Set created successfully`, 'success');
+                showToast(this, 'Success', this.labels.SUCCESS.Create, 'success');
             } catch (error) {
-                this.errorMessage = 'Error creating Wallet Set or navigating: ' + (error.body?.message || error.message);
-                this.showToast('Error', this.errorMessage, 'error');
+                this.errorMessage = this.labels.ERROR.Create + ' ' + (error.body?.message || error.message);
+                showToast(this, 'Error', this.errorMessage, 'error');
             } finally {
                 this.isLoading = false;
             }
         } else {
-            this.errorMessage = 'Invalid seed phrase. Please check your entries.';
-            this.showToast('Error', this.errorMessage, 'error');
+            this.errorMessage = this.labels.ERROR.Verification;
+            showToast(this, 'Error', this.errorMessage, 'error');
         }
     }
 
-    showToast(title, message, variant, options = {}) {
-        const event = new ShowToastEvent({
-            title,
-            message,
-            variant,
-            messageData: options.url ? [{url: options.url, label: options.label}] : [],
-            mode: 'sticky'
-        });
-        this.dispatchEvent(event);
-    }
+
 }

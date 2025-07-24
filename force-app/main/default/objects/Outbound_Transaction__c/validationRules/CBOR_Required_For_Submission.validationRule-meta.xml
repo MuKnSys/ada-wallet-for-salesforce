@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CBOR_Required_For_Submission</fullName>
+    <active>true</active>
+    <description>Ensures that signed transaction CBOR is available when transaction is ready to send and approved</description>
+    <errorConditionFormula>AND(
+    ISPICKVAL(Transaction_Status__c, &apos;Ready to send&apos;),
+    ISPICKVAL(Approved__c, &apos;Approved&apos;),
+    ISBLANK(Signed_Transaction_CBOR__c)
+)</errorConditionFormula>
+    <errorDisplayField>Transaction_Status__c</errorDisplayField>
+    <errorMessage>Transaction submission requires signed CBOR. Please rebuild and sign the transaction first.</errorMessage>
+</ValidationRule>

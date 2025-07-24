@@ -1,50 +1,3 @@
-.slds-card {
-    border: 1px solid #dddbda;
-    border-radius: 0.25rem;
-}
-
-.slds-text-heading_small {
-    font-weight: 700;
-}
-
-.slds-grid_align-spread {
-    align-items: center;
-}
-
-.slds-datatable .slds-cell-wrap {
-    white-space: normal;
-    word-break: break-all;
-}
-
-.slds-text-link {
-    text-decoration: underline !important;
-    color: #006dcc !important;
-}
-
-.slds-tabs_default__nav {
-    border-bottom: 1px solid #dddbda;
-}
-
-.slds-tabs_default__item.slds-is-active {
-    border-bottom: 2px solid #0176d3;
-}
-
-.slds-tabs_default__item:hover {
-    background-color: #f3f2f2;
-}
-
-.slds-table_header-fixed_container {
-    padding: 0 !important;
-}
-
-.slds-table th {
-    background-color: #f3f2f2 !important;
-    border-bottom: 1px solid #dddbda;
-}
-
-.slds-table th, .slds-table td {
-    padding: 0.5rem;
-}
 
 .address-link {
     color: #006dcc;
@@ -53,4 +6,21 @@
 
 .address-link:hover {
     text-decoration: underline;
+}
+
+.slds-button.slds-button_neutral {
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: unset;
+    color: unset;
+    border: unset;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.slds-button.slds-button_neutral:hover {
+    background: unset;
+    color: unset;
+    box-shadow: unset;
 }

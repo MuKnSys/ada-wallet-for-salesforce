@@ -1,21 +1,41 @@
 import { LightningElement, track } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { loadScript } from 'lightning/platformResourceLoader';
 import { NavigationMixin } from 'lightning/navigation';
+import WALLET_SET_OBJECT from '@salesforce/schema/Wallet_Set__c';
+
+import { labels } from './labels';
+import { showToast, BIP32_PURPOSE, BIP32_COIN_TYPE, DERIVATION_PATHS, harden } from 'c/utils';
 
 import cardanoLibrary from '@salesforce/resourceUrl/cardanoSerialization';
 import bip39Library from '@salesforce/resourceUrl/bip39';
 
 import checkAddressUsageOnly from '@salesforce/apex/CreateNewWalletCtrl.checkAddressUsageOnly';
 import createUTXOAddressesBulk from '@salesforce/apex/CreateNewWalletCtrl.createUTXOAddressesBulk';
-import getDecryptedSeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.getDecryptedSeedPhrase';
 import createWallet from '@salesforce/apex/CreateNewWalletCtrl.createWallet';
 import getNextAccountIndex from '@salesforce/apex/CreateNewWalletCtrl.getNextAccountIndex';
 import isIndexValid from '@salesforce/apex/CreateNewWalletCtrl.isIndexValid';
-import checkIsAddressUsed from '@salesforce/apex/CreateNewWalletCtrl.checkIsAddressUsed';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
+import verifySeedPhrase from '@salesforce/apex/CreateNewWalletCtrl.verifySeedPhrase';
+
+const TARGET_CONSECUTIVE_ADDRESSES = 20;
+
+// BIP32 derivation path constants for Cardano
+const BIP32_ACCOUNT_PATH = 0; // Account path
+const BIP32_STAKE_PATH = 2;   // Stake path
+
+// UI constants
+const SUGGESTIONS_LIMIT = 5;
+const FOCUS_DELAY = 100;
+const BLUR_DELAY = 200;
+const RETRY_DELAY = 2000;
+
 
 export default class CreateNewWallet extends NavigationMixin(LightningElement) {
+    labels = labels;
+    walletSetObjectApiName = (typeof WALLET_SET_OBJECT === 'object' && WALLET_SET_OBJECT.objectApiName)
+        ? WALLET_SET_OBJECT.objectApiName
+        : WALLET_SET_OBJECT;
+
+    cardano;
     @track librariesLoaded = false;
     @track selectedWalletSetId = '';
     @track walletName = '';
@@ -26,8 +46,21 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     @track isLoading = false;
     @track currentStep = '';
     @track progressMessage = '';
+    @track showSeedPhraseVerification = false;
+    @track seedPhraseInputs = [];
+    @track seedPhraseErrorMessage = '';
+    @track seedPhraseWordCount = 24;    
+    @track bip39WordList = [];
+    @track suggestions = [];
+    @track activeInputIndex = -1;
 
     get isCreateDisabled() {
+        const isSeedPhraseValid = !this.showSeedPhraseVerification ||
+            (
+                this.seedPhraseInputs.length === this.seedPhraseWordCount &&
+                this.seedPhraseInputs.every(input => input.value && input.value.trim().length > 0)
+            );
+
         return !(
             this.selectedWalletSetId &&
             this.walletName.trim() &&
@@ -35,12 +68,13 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             !isNaN(this.accountIndex) &&
             !this.accountIndexErrorMessage &&
             this.librariesLoaded &&
-            !this.isLoading
+            !this.isLoading &&
+            isSeedPhraseValid
         );
     }
 
     get buttonLabel() {
-        return this.isLoading ? 'Creating...' : 'Create Wallet';
+        return this.isLoading ? this.labels.UI.ButtonLabelCreating : this.labels.UI.ButtonLabel;
     }
 
     get progressDisplay() {
@@ -48,6 +82,21 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
             return `${this.currentStep}${this.progressMessage ? ': ' + this.progressMessage : ''}`;
         }
         return '';
+    }
+
+    get selectedWordCount() {
+        return this.seedPhraseWordCount.toString();
+    }
+
+    get wordCountOptions() {
+        return [
+            { label: this.labels.WORD_COUNT.Option15, value: '15' },
+            { label: this.labels.WORD_COUNT.Option24, value: '24' }
+        ];
+    }
+
+    get showSuggestions() {
+        return this.suggestions.length > 0 && this.activeInputIndex >= 0;
     }
 
     renderedCallback() {
@@ -78,43 +127,62 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
 
             const failed = loadResults.filter(r => !r.loaded);
             if (failed.length) {
-                throw new Error('Failed to load: ' + failed.map(f => f.name).join(', '));
+                throw new Error(this.labels.ERROR.LibraryLoading + ': ' + failed.map(f => f.name).join(', '));
             }
 
             this.librariesLoaded = true;
+            
+            // Initialize Cardano library reference
+            this.cardano = window.cardanoSerialization;
+            
+            // Store BIP39 word list for autocomplete
+            if (window.bip39 && window.bip39.wordlists && window.bip39.wordlists.english) {
+                this.bip39WordList = window.bip39.wordlists.english;
+            }
 
         } catch (error) {
-            this.errorMessage = 'Library loading failed: ' + (error.message || error);
-            this.showToast('Error', this.errorMessage, 'error');
-            setTimeout(() => this.loadLibraries(), 2000);
+            this.errorMessage = this.labels.ERROR.LibraryLoading + ': ' + (error.message || error);
+            showToast(this, 'Error', this.errorMessage, 'error');
+            setTimeout(() => this.loadLibraries(), RETRY_DELAY);
         }
     }
 
     async handleWalletSetChange(event) {
         const newWalletSetId = event.detail.recordId || '';
+        const validation = this.validateWalletSetId(newWalletSetId);
         
-        if (newWalletSetId && !/^[a-zA-Z0-9]{15,18}$/.test(newWalletSetId)) {
-            this.pickerErrorMessage = 'Invalid Wallet Set ID selected';
+        if (!validation.isValid) {
+            this.pickerErrorMessage = validation.error;
             this.selectedWalletSetId = '';
             this.accountIndex = '0';
             this.accountIndexErrorMessage = '';
-        } else {
-            this.selectedWalletSetId = newWalletSetId;
-            this.pickerErrorMessage = newWalletSetId ? '' : 'Please select a Wallet Set';
-            if (newWalletSetId) {
-                try {
-                    const nextIndex = await getNextAccountIndex({ walletSetId: newWalletSetId });
-                    this.accountIndex = String(nextIndex);
-                    this.accountIndexErrorMessage = '';
-                } catch (error) {
-                    this.errorMessage = 'Failed to fetch next account index: ' + (error.body?.message || error.message);
-                    this.showToast('Error', this.errorMessage, 'error');
-                    this.accountIndex = '0';
-                }
-            } else {
-                this.accountIndex = '0';
+            this.showSeedPhraseVerification = false;
+            this.seedPhraseInputs = [];
+            this.seedPhraseErrorMessage = '';
+            return;
+        }
+        
+        this.selectedWalletSetId = newWalletSetId;
+        this.pickerErrorMessage = '';
+        
+        if (newWalletSetId) {
+            try {
+                const nextIndex = await getNextAccountIndex({ walletSetId: newWalletSetId });
+                this.accountIndex = String(nextIndex);
                 this.accountIndexErrorMessage = '';
+                
+                // Initialize seed phrase verification
+                await this.initializeSeedPhraseVerification();
+            } catch (error) {
+                this.handleError(error, this.labels.ERROR.FetchNextIndex);
+                this.accountIndex = '0';
             }
+        } else {
+            this.accountIndex = '0';
+            this.accountIndexErrorMessage = '';
+            this.showSeedPhraseVerification = false;
+            this.seedPhraseInputs = [];
+            this.seedPhraseErrorMessage = '';
         }
     }
 
@@ -125,18 +193,25 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     async handleAccountIndexChange(event) {
         const newIndex = event.target.value || '0';
         this.accountIndex = newIndex;
+        
+        // Client-side validation first
+        const validation = this.validateAccountIndex(newIndex);
+        if (!validation.isValid) {
+            this.accountIndexErrorMessage = validation.error;
+            return;
+        }
+        
         this.accountIndexErrorMessage = '';
 
-        if (this.selectedWalletSetId && !isNaN(newIndex)) {
+        if (this.selectedWalletSetId) {
             try {
                 const errorMessage = await isIndexValid({ walletSetId: this.selectedWalletSetId, accountIndex: parseInt(newIndex) });
                 if (errorMessage) {
                     this.accountIndexErrorMessage = errorMessage;
-                    this.showToast('Error', errorMessage, 'error');
+                    showToast(this, 'Error', errorMessage, 'error');
                 }
             } catch (error) {
-                this.accountIndexErrorMessage = 'Failed to validate account index: ' + (error.body?.message || error.message);
-                this.showToast('Error', this.accountIndexErrorMessage, 'error');
+                this.handleError(error, this.labels.ERROR.AccountIndexValidation);
             }
         }
     }
@@ -144,23 +219,63 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
     async handleCreate() {
         this.errorMessage = '';
         this.isLoading = true;
-        this.currentStep = 'Initializing';
+        this.currentStep = this.labels.PROGRESS.Initializing;
         this.progressMessage = '';
 
         if (!this.librariesLoaded) {
-            this.errorMessage = 'Libraries not loaded. Please try again.';
-            this.showToast('Error', this.errorMessage, 'error');
+            this.errorMessage = this.labels.ERROR.LibrariesNotLoaded;
+            showToast(this, 'Error', this.errorMessage, 'error');
             this.isLoading = false;
             return;
         }
 
+        if (!this.selectedWalletSetId) {
+            this.pickerErrorMessage = this.labels.VALIDATION.PleaseSelectWalletSet;
+            showToast(this, 'Error', this.pickerErrorMessage, 'error');
+            this.isLoading = false;
+            return;
+        }
+        
+        if (this.showSeedPhraseVerification) {
+            const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim()).join(' ');
+            const wordCount = enteredPhrase.split(' ').length;
+            if (!enteredPhrase || wordCount !== this.seedPhraseWordCount) {
+                this.seedPhraseErrorMessage = `Please enter all ${this.seedPhraseWordCount} words correctly.`;
+                showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
+                this.isLoading = false;
+                return;
+            }
+
+            try {
+                this.currentStep = this.labels.PROGRESS.VerifyingSeedPhrase;
+                this.progressMessage = this.labels.PROGRESS.CheckingServer;
+
+                const isValid = await verifySeedPhrase({
+                    walletSetId: this.selectedWalletSetId,
+                    userSeedPhrase: enteredPhrase
+                });
+
+                if (!isValid) {
+                    this.seedPhraseErrorMessage = this.labels.ERROR.SeedPhraseIncorrect;
+                    showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
+                    this.isLoading = false;
+                    return;
+                }
+            } catch (error) {
+                this.seedPhraseErrorMessage = error.body?.message || error.message;
+                showToast(this, 'Error', this.seedPhraseErrorMessage, 'error');
+                this.isLoading = false;
+                return;
+            }
+        }
+
         try {
             await this.createWallet();
-            this.showToast('Success', `Wallet "${this.walletName}" created successfully`, 'success');
+            showToast(this, 'Success', this.labels.SUCCESS.WalletCreated.replace('{0}', this.walletName), 'success');
             this.resetForm();
         } catch (error) {
-            this.errorMessage = 'Wallet creation failed: ' + (error.message || error);
-            this.showToast('Error', this.errorMessage, 'error');
+            this.errorMessage = this.labels.ERROR.WalletCreation + ': ' + (error.message || error);
+            showToast(this, 'Error', this.errorMessage, 'error');
         } finally {
             this.isLoading = false;
             this.currentStep = '';
@@ -168,13 +283,133 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         }
     }
 
+    // Seed phrase verification methods
+    async initializeSeedPhraseVerification() {
+        if (!this.selectedWalletSetId) return;
+
+        try {
+            // Create input fields based on selected word count
+            this.seedPhraseInputs = Array.from({ length: this.seedPhraseWordCount }, (_, index) => {
+                return {
+                    label: `Word ${index + 1}`,
+                    value: '', // Empty input field - user must enter seed phrase
+                    showSuggestions: false
+                };
+            });
+
+            this.showSeedPhraseVerification = true;
+            this.seedPhraseErrorMessage = '';
+            this.suggestions = [];
+            this.activeInputIndex = -1;
+        } catch (error) {
+            this.errorMessage = 'Failed to initialize seed phrase verification: ' + (error.message || error);
+            showToast(this, 'Error', this.errorMessage, 'error');
+        }
+    }
+
+    handleSeedPhraseWordCountChange(event) {
+        this.seedPhraseWordCount = parseInt(event.target.value);
+        
+        // Reinitialize seed phrase inputs if verification is already shown
+        if (this.showSeedPhraseVerification) {
+            this.seedPhraseInputs = Array.from({ length: this.seedPhraseWordCount }, (_, index) => {
+                return {
+                    label: `Word ${index + 1}`,
+                    value: '',
+                    showSuggestions: false
+                };
+            });
+            this.seedPhraseErrorMessage = '';
+            this.suggestions = [];
+            this.activeInputIndex = -1;
+        }
+    }
+
+    handleSeedPhraseChange(event) {
+        const index = parseInt(event.target.dataset.index);
+        const value = event.target.value.toLowerCase().trim();
+        
+        this.seedPhraseInputs[index].value = value;
+        this.seedPhraseInputs = [...this.seedPhraseInputs];
+        this.activeInputIndex = index;
+        this.seedPhraseErrorMessage = '';
+        
+        // Generate suggestions based on input
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, SUGGESTIONS_LIMIT);
+            this.seedPhraseInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    // Method to handle suggestion selection
+    handleSuggestionClick(event) {
+        const selectedWord = event.currentTarget.dataset.word;
+        const index = this.activeInputIndex;
+        
+        if (index >= 0 && index < this.seedPhraseInputs.length) {
+            this.seedPhraseInputs[index].value = selectedWord;
+            this.seedPhraseInputs = [...this.seedPhraseInputs];
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+            this.activeInputIndex = -1;
+            
+            // Focus on next input if available
+            if (index < this.seedPhraseInputs.length - 1) {
+                this.focusNextInput(index + 1);
+            }
+        }
+    }
+
+    // Method to focus on next input
+    focusNextInput(index) {
+        setTimeout(() => {
+            const nextInput = this.template.querySelector(`[data-index="${index}"]`);
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }, FOCUS_DELAY);
+    }
+
+    // Method to handle input focus
+    handleSeedPhraseFocus(event) {
+        const index = parseInt(event.target.dataset.index);
+        this.activeInputIndex = index;
+        
+        // Show suggestions if there's a value
+        const value = this.seedPhraseInputs[index].value.toLowerCase().trim();
+        if (value.length > 0 && this.bip39WordList.length > 0) {
+            this.suggestions = this.bip39WordList.filter(word => 
+                word.toLowerCase().startsWith(value)
+            ).slice(0, SUGGESTIONS_LIMIT);
+            this.seedPhraseInputs.forEach((input, i) => input.showSuggestions = (i === index));
+        } else {
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+        }
+    }
+
+    // Method to handle input blur
+    handleSeedPhraseBlur() {
+        // Delay hiding suggestions to allow for clicks
+        setTimeout(() => {
+            this.suggestions = [];
+            this.seedPhraseInputs.forEach(input => input.showSuggestions = false);
+            this.activeInputIndex = -1;
+        }, BLUR_DELAY);
+    }
+
     // Helper to verify private key matches address payment key hash
-    verifyKeyMatch(CardanoWasm, utxoPrivateKey, addressBech32) {
+    verifyKeyMatch(utxoPrivateKey, addressBech32) {
         const derivedPubKeyHash = utxoPrivateKey.to_public().to_raw_key().hash().to_hex();
-        const addressObj = CardanoWasm.Address.from_bech32(addressBech32);
+        const addressObj = this.cardano.Address.from_bech32(addressBech32);
         const addressKeyHash =
-            CardanoWasm.BaseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex() ||
-            CardanoWasm.EnterpriseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex();
+            this.cardano.BaseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex() ||
+            this.cardano.EnterpriseAddress.from_address(addressObj)?.payment_cred().to_keyhash()?.to_hex();
         return derivedPubKeyHash === addressKeyHash;
     }
 
@@ -185,228 +420,134 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
      * Phase 2: Create all UTXO records in bulk (DML only)
      * Phase 3: Sync assets and transactions for each address (callouts + DML per address)
      */
-    async generateAddressesUntilUnused(accountKey, derivationPath, accountIndexNum, stakeCred, network, stakeKeyHash, walletId) {
-        const targetConsecutive = 20;
-        const typeLabel = derivationPath === 0 ? 'receiving' : 'change';
+    async generateAddressesUntilUnused(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, walletId) {
+        const targetConsecutive = TARGET_CONSECUTIVE_ADDRESSES;
+        const typeLabel = derivationPath === DERIVATION_PATHS.RECEIVING ? 'receiving' : 'change';
 
-        this.currentStep = `Generating ${typeLabel} addresses`;
-        this.progressMessage = `Finding ${targetConsecutive} consecutive unused addresses...`;
+        this.updateProgress(`Generating ${typeLabel} addresses`, `Finding ${targetConsecutive} consecutive unused addresses...`);
 
-        console.log(`[CreateNewWallet] 🚀 Starting three-phase ${typeLabel} address generation`);
-        console.log(`[CreateNewWallet] Target: ${targetConsecutive} consecutive unused addresses`);
+        // Phase 1: Generate and check addresses
+        const addresses = await this.generateAndCheckAddresses(
+            accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, typeLabel, targetConsecutive
+        );
 
-        // PHASE 1: Derive addresses and check usage (CALLOUTS ONLY)
-        console.log(`[CreateNewWallet] 📡 Phase 1: Deriving addresses and checking usage (callouts only)`);
-        
+        // Phase 2: Create UTXO records
+        await this.createUTXORecords(addresses, typeLabel, walletId);
+
+        return addresses;
+    }
+
+    async generateAndCheckAddresses(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, typeLabel, targetConsecutive) {
         const addresses = [];
         let consecutiveUnused = 0;
         let index = 0;
 
         while (consecutiveUnused < targetConsecutive) {
-            // Update progress
-            this.progressMessage = `Phase 1 - Deriving address #${index}, ${consecutiveUnused}/${targetConsecutive} consecutive unused found`;
+            this.updateProgress(`Checking ${typeLabel} address #${index}`, 
+                `Phase 1 - ${consecutiveUnused}/${targetConsecutive} consecutive unused found`);
 
-            // Derive the address
-            const privateKey = accountKey
-                .derive(derivationPath)
-                .derive(index);
-            const publicKey = privateKey.to_public();
-            const keyHash = publicKey.to_raw_key().hash();
-            const cred = window.cardanoSerialization.Credential.from_keyhash(keyHash);
-
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                cred,
-                stakeCred
+            const addressData = await this.deriveAndVerifyAddress(
+                accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, index, typeLabel
             );
-            const bech32Address = baseAddress.to_address().to_bech32();
 
-            // Key verification
-            const keyMatch = this.verifyKeyMatch(window.cardanoSerialization, privateKey, bech32Address);
-            if (!keyMatch) {
-                throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${index}`);
-            }
-
-            const fullPath = `m/1852'/1815'/${accountIndexNum}'/${derivationPath}/${index}`;
-            const addressData = {
-                index: index,
-                publicKey: publicKey.to_bech32(),
-                privateKey: privateKey.to_bech32(),
-                address: bech32Address,
-                stakingKeyHash: stakeKeyHash.to_hex(),
-                path: fullPath
-            };
-
-            console.log(`[CreateNewWallet] 🔍 Phase 1 - Generated ${typeLabel} address #${index}: ${bech32Address}`);
-
-            // Check usage via callouts only (no DML)
-            try {
-                this.currentStep = `Checking ${typeLabel} address #${index}`;
-                this.progressMessage = 'Checking blockchain for address usage...';
-
-                const usageResult = await checkAddressUsageOnly({ address: bech32Address });
-                
-                console.log(`[CreateNewWallet] 📊 Usage check result for ${typeLabel} address #${index}:`, JSON.stringify(usageResult, null, 2));
-
-                const isUsed = usageResult.isUsed || false;
-                
-                if (isUsed) {
-                    consecutiveUnused = 0;
-                    console.log(`[CreateNewWallet] 🔴 ${typeLabel} address #${index} is USED (${bech32Address}). Resetting consecutive count to 0.`);
-                    console.log(`[CreateNewWallet] 🔴   Usage details:`, usageResult);
-                } else {
-                    consecutiveUnused++;
-                    console.log(`[CreateNewWallet] 🟢 ${typeLabel} address #${index} is UNUSED (${bech32Address}). Consecutive unused: ${consecutiveUnused}/${targetConsecutive}`);
-                }
-
-                // Store the address with usage information
-                addresses.push({
-                    ...addressData,
-                    isUsed: isUsed,
-                    usageResult: usageResult
-                });
-
-                // Update progress message with usage info
-                this.progressMessage = `Address #${index} ${isUsed ? 'USED' : 'UNUSED'} - ${consecutiveUnused}/${targetConsecutive} consecutive unused`;
-
-            } catch (usageError) {
-                console.error(`[CreateNewWallet] ❌ Usage check failed for ${typeLabel} address #${index} (${bech32Address}):`, usageError);
-                
-                // Update progress message with error info
-                this.progressMessage = `Usage check failed: ${usageError.message} - assuming unused`;
-                
-                // If usage check fails, assume address is unused and continue
+            const usageResult = await this.checkAddressUsage(addressData.address, index, typeLabel);
+            
+            if (usageResult.isUsed) {
+                consecutiveUnused = 0;
+            } else {
                 consecutiveUnused++;
-                console.log(`[CreateNewWallet] ⚠️ Assuming ${typeLabel} address #${index} is UNUSED due to check failure. Consecutive unused: ${consecutiveUnused}/${targetConsecutive}`);
-                
-                addresses.push({
-                    ...addressData,
-                    isUsed: false,
-                    usageError: usageError.message,
-                    usageResult: null
-                });
             }
 
+            addresses.push({
+                ...addressData,
+                isUsed: usageResult.isUsed,
+                usageResult: usageResult.result,
+                usageError: usageResult.error
+            });
+
+            this.updateProgress(`Address #${index} ${usageResult.isUsed ? 'USED' : 'UNUSED'}`, 
+                `${consecutiveUnused}/${targetConsecutive} consecutive unused`);
+            
             index++;
         }
 
-        console.log(`[CreateNewWallet] ✅ Phase 1 complete for ${typeLabel} addresses!`);
-        console.log(`[CreateNewWallet] Generated ${addresses.length} ${typeLabel} addresses with ${targetConsecutive} consecutive unused addresses`);
-        console.log(`[CreateNewWallet] Usage summary:`, {
-            total: addresses.length,
-            used: addresses.filter(a => a.isUsed).length,
-            unused: addresses.filter(a => !a.isUsed).length,
-            lastConsecutiveUnused: consecutiveUnused
-        });
+        return addresses;
+    }
 
-        // PHASE 2: Create all UTXO records in bulk (DML ONLY)
-        console.log(`[CreateNewWallet] 💾 Phase 2: Creating ${addresses.length} ${typeLabel} UTXO records in bulk`);
+    async deriveAndVerifyAddress(accountKey, derivationPath, accountIndexNum, stakeCred, network, paymentKeyHash, index, typeLabel) {
+        const privateKey = accountKey.derive(derivationPath).derive(index);
+        const publicKey = privateKey.to_public();
+        const keyHash = publicKey.to_raw_key().hash();
+        const cred = this.cardano.Credential.from_keyhash(keyHash);
+
+        const baseAddress = this.cardano.BaseAddress.new(
+            network.network_id(),
+            cred,
+            stakeCred
+        );
+        const bech32Address = baseAddress.to_address().to_bech32();
+
+        // Verify key match
+        const keyMatch = this.verifyKeyMatch(privateKey, bech32Address);
+        if (!keyMatch) {
+            throw new Error(`Derived private key does not match address payment key hash for ${typeLabel} address #${index}`);
+        }
+
+        const fullPath = `m/${BIP32_PURPOSE}'/${BIP32_COIN_TYPE}'/${accountIndexNum}'/${derivationPath}/${index}`;
         
-        this.currentStep = `Creating ${typeLabel} UTXO records`;
-        this.progressMessage = `Creating ${addresses.length} ${typeLabel} addresses in Salesforce...`;
+        return {
+            index: index,
+            publicKey: privateKey.to_public().to_bech32(), // xpub
+            privateKey: privateKey.to_bech32(),            // xprv
+            address: bech32Address,
+            paymentKeyHash: publicKey.to_raw_key().hash().to_hex(),
+            path: fullPath
+        };
+    }
+
+    async checkAddressUsage(address, index, typeLabel) {
+        try {
+            this.updateProgress(`Checking ${typeLabel} address #${index}`, 'Checking blockchain for address usage...');
+            
+            const usageResult = await checkAddressUsageOnly({ address });
+            const isUsed = usageResult.isUsed || false;
+            
+            return { isUsed, result: usageResult, error: null };
+        } catch (error) {
+            this.updateProgress(`Usage check failed for ${typeLabel} address #${index}`, 
+                `Assuming unused due to error: ${error.message}`);
+            
+            return { isUsed: false, result: null, error: error.message };
+        }
+    }
+
+    async createUTXORecords(addresses, typeLabel, walletId) {
+        this.updateProgress(`Creating ${typeLabel} UTXO records`, 
+            `Creating ${addresses.length} ${typeLabel} addresses in Salesforce...`);
 
         try {
             const createResult = await createUTXOAddressesBulk({
                 walletId: walletId,
-                receivingAddresses: derivationPath === 0 ? addresses : [],
-                changeAddresses: derivationPath === 1 ? addresses : []
+                receivingAddresses: typeLabel === 'receiving' ? addresses : [],
+                changeAddresses: typeLabel === 'change' ? addresses : []
             });
 
-            console.log(`[CreateNewWallet] ✅ Phase 2 complete - Created ${typeLabel} UTXO records:`, createResult);
-
-            // Merge the creation results with the usage data
-            const addressResults = derivationPath === 0 ? 
+            const addressResults = typeLabel === 'receiving' ? 
                 createResult.receivingAddresses : 
                 createResult.changeAddresses;
 
+            // Merge creation results with address data
             for (let i = 0; i < addresses.length && i < addressResults.length; i++) {
                 addresses[i].utxoAddressId = addressResults[i].utxoAddressId;
                 addresses[i].createResult = addressResults[i];
             }
 
-            this.progressMessage = `Successfully created ${addresses.length} ${typeLabel} addresses`;
-
-        } catch (createError) {
-            console.error(`[CreateNewWallet] ❌ Phase 2 failed - Error creating ${typeLabel} UTXO records:`, createError);
-            this.progressMessage = `Failed to create ${typeLabel} records: ${createError.message}`;
-            throw new Error(`Failed to create ${typeLabel} UTXO records: ${createError.message}`);
+            this.updateProgress(`Successfully created ${addresses.length} ${typeLabel} addresses`);
+        } catch (error) {
+            throw new Error(`Failed to create ${typeLabel} UTXO records: ${error.message}`);
         }
-
-        // PHASE 3: Sync assets and transactions for all created addresses
-        console.log(`[CreateNewWallet] 🔄 Phase 3: Syncing assets and transactions for ${addresses.length} ${typeLabel} addresses`);
-        
-        this.currentStep = `Syncing ${typeLabel} assets & transactions`;
-        this.progressMessage = `Syncing blockchain data for ${addresses.length} addresses...`;
-
-        let syncedCount = 0;
-        let totalUsedAddresses = 0;
-
-        for (let i = 0; i < addresses.length; i++) {
-            const address = addresses[i];
-            
-            if (!address.utxoAddressId) {
-                console.warn(`[CreateNewWallet] ⚠️ Skipping sync for ${typeLabel} address #${address.index} - no UTXO address ID`);
-                continue;
-            }
-
-            this.progressMessage = `Syncing ${typeLabel} address #${address.index} (${i + 1}/${addresses.length})...`;
-            
-            try {
-                console.log(`[CreateNewWallet] 🔄 Syncing ${typeLabel} address #${address.index} (ID: ${address.utxoAddressId})`);
-                
-                const syncResult = await syncAssetsAndTransactions({ utxoAddressId: address.utxoAddressId });
-                
-                console.log(`[CreateNewWallet] ✅ Sync completed for ${typeLabel} address #${address.index}:`, syncResult);
-                
-                // Store sync results
-                address.syncResult = syncResult;
-                address.syncSuccess = syncResult.success;
-                
-                // Determine if address is actually used based on sync results
-                if (syncResult.success && syncResult.statistics) {
-                    const stats = syncResult.statistics;
-                    const assetsInserted = stats.assetsInserted || 0;
-                    const assetsUpdated = stats.assetsUpdated || 0;
-                    const transactionsInserted = stats.transactionsInserted || 0;
-                    const transactionsUpdated = stats.transactionsUpdated || 0;
-                    
-                    const actuallyUsed = assetsInserted > 0 || assetsUpdated > 0 || transactionsInserted > 0 || transactionsUpdated > 0;
-                    address.actuallyUsed = actuallyUsed;
-                    
-                    if (actuallyUsed) {
-                        totalUsedAddresses++;
-                        console.log(`[CreateNewWallet] 🎯 ${typeLabel} address #${address.index} IS ACTUALLY USED - Assets: ${assetsInserted + assetsUpdated}, Transactions: ${transactionsInserted + transactionsUpdated}`);
-                    } else {
-                        console.log(`[CreateNewWallet] 🎯 ${typeLabel} address #${address.index} is actually unused after sync`);
-                    }
-                }
-                
-                syncedCount++;
-                
-            } catch (syncError) {
-                console.error(`[CreateNewWallet] ❌ Sync failed for ${typeLabel} address #${address.index}:`, syncError);
-                address.syncError = syncError.message;
-                address.syncSuccess = false;
-                
-                // Continue syncing other addresses even if one fails
-                this.progressMessage = `Sync failed for address #${address.index}: ${syncError.message}`;
-            }
-        }
-
-        console.log(`[CreateNewWallet] ✅ Phase 3 complete for ${typeLabel} addresses!`);
-        console.log(`[CreateNewWallet] Sync summary:`, {
-            total: addresses.length,
-            synced: syncedCount,
-            failed: addresses.length - syncedCount,
-            actuallyUsed: totalUsedAddresses,
-            actuallyUnused: addresses.length - totalUsedAddresses
-        });
-
-        this.progressMessage = `Synced ${syncedCount}/${addresses.length} ${typeLabel} addresses (${totalUsedAddresses} actually used)`;
-
-        console.log(`[CreateNewWallet] 🎉 Three-phase ${typeLabel} address generation completed successfully!`);
-        return addresses;
     }
+
 
     async createWallet() {
         // Validate account index before proceeding
@@ -417,130 +558,101 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
                 throw new Error(errorMessage);
             }
         } catch (error) {
-            throw new Error('Failed to validate account index: ' + (error.body?.message || error.message));
+            throw new Error(this.labels.ERROR.AccountIndexValidation + ': ' + (error.body?.message || error.message));
         }
 
-        this.currentStep = 'Retrieving seed phrase';
-        let mnemonic;
-        try {
-            mnemonic = await getDecryptedSeedPhrase({ walletSetId: this.selectedWalletSetId });            
-            console.log(`[CreateNewWallet] Retrieved mnemonic successfully`);
-            if (!mnemonic) {
-                throw new Error('Seed phrase is empty or null');
-            }
-            if (!window.bip39.validateMnemonic(mnemonic)) {
-                throw new Error('Decrypted mnemonic is invalid');
-            }
-        } catch (error) {
-            throw new Error('Failed to retrieve seed phrase: ' + (error.body?.message || error.message));
+        // Use the seed phrase entered by user (already verified on server)
+        const enteredPhrase = this.seedPhraseInputs.map(input => input.value.trim());
+        let mnemonic = enteredPhrase.join(' ');
+        
+        if (!mnemonic) {
+            throw new Error(this.labels.ERROR.SeedPhraseEmpty);
+        }
+        if (!window.bip39.validateMnemonic(mnemonic)) {
+            throw new Error(this.labels.ERROR.InvalidMnemonic);
         }
 
-        this.currentStep = 'Deriving cryptographic keys';
+        this.currentStep = this.labels.PROGRESS.DerivingKeys;
         const entropy = window.bip39.mnemonicToEntropy(mnemonic);
         const seed = Buffer.from(entropy, 'hex');
+        const rootKey = this.cardano.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
 
-        let rootKey;
-        try {
-            rootKey = window.cardanoSerialization.Bip32PrivateKey.from_bip39_entropy(seed, Buffer.from(''));
-            console.log(`[CreateNewWallet] Root key derived successfully`);
-        } catch (error) {
-            throw new Error('Failed to derive root key: ' + error.message);
-        }
-
-        const harden = (num) => 0x80000000 + num;
-
-        if (accountIndexNum < 0) {
-            throw new Error('Account Index must be non-negative');
-        }
         const accountKey = rootKey
-            .derive(harden(1852))
-            .derive(harden(1815))
+            .derive(harden(BIP32_PURPOSE))
+            .derive(harden(BIP32_COIN_TYPE))
             .derive(harden(accountIndexNum));
 
         const paymentPrivateKey = accountKey
-            .derive(0)
-            .derive(0);
+            .derive(BIP32_ACCOUNT_PATH)
+            .derive(BIP32_ACCOUNT_PATH);
         const paymentPublicKey = paymentPrivateKey.to_public();
 
         const stakePrivateKey = accountKey
-            .derive(2)
-            .derive(0)
+            .derive(BIP32_STAKE_PATH)
+            .derive(BIP32_ACCOUNT_PATH)
             .to_raw_key();
         const stakePublicKey = stakePrivateKey.to_public();
         const stakeKeyHash = stakePublicKey.hash();
-        const stakeCred = window.cardanoSerialization.Credential.from_keyhash(stakeKeyHash);
+        const stakeCred = this.cardano.Credential.from_keyhash(stakeKeyHash);
 
-        const network = window.cardanoSerialization.NetworkInfo.mainnet();
+        const network = this.cardano.NetworkInfo.mainnet();
 
-        this.currentStep = 'Creating wallet record';
-        let recordId;
-        try {
-            const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
-            const paymentCred = window.cardanoSerialization.Credential.from_keyhash(paymentKeyHash);
+        this.currentStep = this.labels.PROGRESS.CreatingWallet;
+        const paymentKeyHash = paymentPublicKey.to_raw_key().hash();
+        const paymentCred = this.cardano.Credential.from_keyhash(paymentKeyHash);
 
-            const baseAddress = window.cardanoSerialization.BaseAddress.new(
-                network.network_id(),
-                paymentCred,
-                stakeCred
-            );
-            const bech32Address = baseAddress.to_address().to_bech32();
+        const baseAddress = this.cardano.BaseAddress.new(
+            network.network_id(),
+            paymentCred,
+            stakeCred
+        );
+        const bech32Address = baseAddress.to_address().to_bech32();
 
-            recordId = await createWallet({
-                walletSetId: this.selectedWalletSetId,
-                walletName: this.walletName,
-                address: bech32Address,
-                accountPrivateKey: paymentPrivateKey.to_bech32(),
-                accountPublicKey: paymentPublicKey.to_bech32(),
-                accountIndex: accountIndexNum
-            });
+        // Derive the bech32 stake address
+        const stakeBaseAddress = this.cardano.RewardAddress.new(
+            network.network_id(),
+            stakeCred
+        );
+        const bech32StakeAddress = stakeBaseAddress.to_address().to_bech32();
 
-            if (!recordId) {
-                throw new Error('Error creating wallet record');
-            }
-            console.log(`[CreateNewWallet] Wallet record created: ${recordId}`);
-        } catch (error) {
-            throw new Error('Failed to save wallet: ' + (error.body?.message || error.message));
+        const recordId = await createWallet({
+            walletSetId: this.selectedWalletSetId,
+            walletName: this.walletName,
+            address: bech32Address,
+            accountPrivateKey: paymentPrivateKey.to_bech32(),
+            accountPublicKey: paymentPublicKey.to_bech32(),
+            accountIndex: accountIndexNum,
+            stakeAddress: bech32StakeAddress
+        });
+
+        if (!recordId) {
+            throw new Error(this.labels.ERROR.WalletRecordCreation);
         }
 
         // Generate receiving addresses with full syncing (usage check, creation, and asset/transaction sync)
-        console.log(`[CreateNewWallet] 🚀 Starting receiving address generation with full sync...`);
         const receivingAddresses = await this.generateAddressesUntilUnused(
             accountKey,
-            0, // derivation path for receiving addresses
+            DERIVATION_PATHS.RECEIVING, // derivation path for receiving addresses
             accountIndexNum,
             stakeCred,
             network,
-            stakeKeyHash,
+            paymentKeyHash,
             recordId
         );
 
         // Generate change addresses with full syncing (usage check, creation, and asset/transaction sync)
-        console.log(`[CreateNewWallet] 🚀 Starting change address generation with full sync...`);
         const changeAddresses = await this.generateAddressesUntilUnused(
             accountKey,
-            1, // derivation path for change addresses
+            DERIVATION_PATHS.CHANGE, // derivation path for change addresses
             accountIndexNum,
             stakeCred,
             network,
-            stakeKeyHash,
+            paymentKeyHash,
             recordId
         );
 
-        this.currentStep = 'Finalizing wallet creation';
-        this.progressMessage = 'Preparing to navigate to wallet...';
-
-        console.log(`[CreateNewWallet] ✅ Wallet creation completed successfully!`);
-        console.log(`[CreateNewWallet] Final summary:`, {
-            walletId: recordId,
-            receivingAddressesGenerated: receivingAddresses.length,
-            changeAddressesGenerated: changeAddresses.length,
-            receivingAddressesPreCheckUsed: receivingAddresses.filter(a => a.isUsed).length,
-            changeAddressesPreCheckUsed: changeAddresses.filter(a => a.isUsed).length,
-            receivingAddressesActuallyUsed: receivingAddresses.filter(a => a.actuallyUsed).length,
-            changeAddressesActuallyUsed: changeAddresses.filter(a => a.actuallyUsed).length,
-            receivingAddressesSynced: receivingAddresses.filter(a => a.syncSuccess).length,
-            changeAddressesSynced: changeAddresses.filter(a => a.syncSuccess).length
-        });
+        this.currentStep = this.labels.PROGRESS.Finalizing;
+        this.progressMessage = this.labels.PROGRESS.PreparingNavigation;
 
         // Navigate to the wallet record page
         this[NavigationMixin.Navigate]({
@@ -562,11 +674,45 @@ export default class CreateNewWallet extends NavigationMixin(LightningElement) {
         this.accountIndexErrorMessage = '';
         this.currentStep = '';
         this.progressMessage = '';
+        this.showSeedPhraseVerification = false;
+        this.seedPhraseInputs = [];
+        this.seedPhraseErrorMessage = '';
+        this.seedPhraseWordCount = 24;
     }
 
-    showToast(title, message, variant) {
-        this.dispatchEvent(
-            new ShowToastEvent({ title, message, variant })
-        );
+
+
+    // Validation helper methods
+    validateWalletSetId(walletSetId) {
+        if (!walletSetId) return { isValid: false, error: this.labels.VALIDATION.PleaseSelectWalletSet };
+        if (!/^[a-zA-Z0-9]{15,18}$/.test(walletSetId)) {
+            return { isValid: false, error: this.labels.VALIDATION.InvalidWalletSetId };
+        }
+        return { isValid: true, error: '' };
+    }
+
+    validateAccountIndex(accountIndex) {
+        if (!accountIndex || isNaN(accountIndex)) {
+            return { isValid: false, error: this.labels.UI.AccountIndexMustBeNumber };
+        }
+        if (parseInt(accountIndex) < 0) {
+            return { isValid: false, error: this.labels.UI.AccountIndexNonNegative };
+        }
+        return { isValid: true, error: '' };
+    }
+
+    // Error handling helper
+    handleError(error, context = '') {
+        const message = error.body?.message || error.message || this.labels.ERROR.Unknown;
+        const fullMessage = context ? `${context}: ${message}` : message;
+        this.errorMessage = fullMessage;
+        showToast(this, 'Error', fullMessage, 'error');
+        return fullMessage;
+    }
+
+    // Progress update helper
+    updateProgress(step, message = '') {
+        this.currentStep = step;
+        this.progressMessage = message;
     }
 }

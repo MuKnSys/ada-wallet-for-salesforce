@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
     <labels>
+        <fullName>AdaWalletsSetup_BlockfrostGetConfigAPIError</fullName>
+        <categories>apex, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup EntityPublicKey API Error</shortDescription>
+        <value>Error retrieveing the Blockfrost configuration.</value>
+    </labels>
+    <labels>
         <fullName>AdaWalletsSetup_BlockfrostHeader</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
@@ -31,7 +39,15 @@
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Blockfrost Project Id Input Header</shortDescription>
         <value>Blockfrost Project ID</value>
-    </labels>    
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_BlockfrostRemoveConfiguration</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Blockfrost Remove Configuration</shortDescription>
+        <value>Remove</value>
+    </labels>
     <labels>
         <fullName>AdaWalletsSetup_BlockfrostSaveConfiguration</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
@@ -41,12 +57,12 @@
         <value>Save Configuration</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_BlockfrostRemoveConfiguration</fullName>
+        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationButtonLabel</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Blockfrost Remove Configuration</shortDescription>
-        <value>Remove</value>
+        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Button Label</shortDescription>
+        <value>Test Configuration</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_BlockfrostTestConfigurationHeader</fullName>
@@ -65,14 +81,6 @@
         <value>Test your Blockfrost configuration:</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_BlockfrostTestConfigurationButtonLabel</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Blockfrost Test Configuration Button Label</shortDescription>
-        <value>Test Configuration</value>
-    </labels>
-    <labels>
         <fullName>AdaWalletsSetup_BlockfrostTestConfigurationResult</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
@@ -81,12 +89,36 @@
         <value>Test Result:</value>
     </labels>
     <labels>
-        <fullName>AdaWalletsSetup_BlockfrostGetConfigAPIError</fullName>
-        <categories>apex, AdaWalletsSetup</categories>
+        <fullName>AdaWalletsSetup_Config_Header</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
-        <shortDescription>AdaWalletsSetup EntityPublicKey API Error</shortDescription>
-        <value>Error retrieveing the Blockfrost configuration.</value>
+        <shortDescription>AdaWalletsSetup Config Header</shortDescription>
+        <value>Ada Wallets Setup</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Container</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Container</shortDescription>
+        <value>Container</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Header_1</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Header 1</shortDescription>
+        <value>Ada Wallets</value>
+    </labels>
+    <labels>
+        <fullName>AdaWalletsSetup_Header_1_Info</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Header 1 Info</shortDescription>
+        <value>Welcome to Ada Wallets! This powerful tool helps you manage your Cardano wallets with ease. Let&apos;s get started by setting up your environment.</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_LoggingDisableLogging</fullName>
@@ -145,68 +177,36 @@
         <value>Setup Logging</value>
     </labels>
     <labels>
+        <fullName>AdaWalletsSetup_PrivateKey_Button</fullName>
+        <categories>lwc, AdaWalletsSetup</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>AdaWalletsSetup Private Key Button</shortDescription>
+        <value>Generate Private Key &amp; HMAC Key</value>
+    </labels>
+    <labels>
         <fullName>AdaWalletsSetup_PrivateKey_Info</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Private Key Info</shortDescription>
-        <value>A private key is your ultimate security ally! It ensures your Seed phrase stays protected by encrypting it. In this step, we&apos;ll retrieve the private key and securely store it, locking in your data&apos;s safety with precision. Let&apos;s get started!</value>
-    </labels>    
+        <value>A private key and HMAC key are your ultimate security allies! They ensure your Seed phrase stays protected by encrypting it. In this step, we&apos;ll retrieve both the private key and HMAC key and securely store them, locking in your data&apos;s safety with precision. Let&apos;s get started!</value>
+    </labels>
     <labels>
         <fullName>AdaWalletsSetup_PrivateKey_Sub_Header</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Private Key Sub Header</shortDescription>
-        <value>Private Key</value>
+        <value>Private Key and HMAC Key</value>
     </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_PrivateKey_Button</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Private Key Button</shortDescription>
-        <value>Generate Private Key</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_Config_Header</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Config Header</shortDescription>
-        <value>Ada Wallets Setup</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_Container</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Container</shortDescription>
-        <value>Container</value>
-    </labels>    
-    <labels>
-        <fullName>AdaWalletsSetup_Header_1</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Header 1</shortDescription>
-        <value>Ada Wallets</value>
-    </labels>
-    <labels>
-        <fullName>AdaWalletsSetup_Header_1_Info</fullName>
-        <categories>lwc, AdaWalletsSetup</categories>
-        <language>en_US</language>
-        <protected>true</protected>
-        <shortDescription>AdaWalletsSetup Header 1 Info</shortDescription>
-        <value>Welcome to Web3! Whether you&apos;re a blockchain pro or new to decentralization, Circle&apos;s Web3 Services Console empowers you to build seamless, secure experiences with Developer-Controlled Wallets. Enjoy advanced security through MPC technology, effortless integration of digital currencies and NFTs, and cross-chain compatibility with Ethereum, Polygon, and Avalanche. Built-in transaction logs, user monitoring, and error reporting ensure reliable operations, while pay-as-you-go pricing lets you start instantly with no upfront costs. Embrace the future of Web3 with unmatched control, security, and simplicity!</value>
-    </labels>    
     <labels>
         <fullName>AdaWalletsSetup_Success</fullName>
         <categories>lwc, AdaWalletsSetup</categories>
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Success</shortDescription>
-        <value>Success</value>
+        <value>Success!</value>
     </labels>
     <labels>
         <fullName>AdaWalletsSetup_Success_Info</fullName>
@@ -214,6 +214,1463 @@
         <language>en_US</language>
         <protected>true</protected>
         <shortDescription>AdaWalletsSetup Success Info</shortDescription>
-        <value>Saved Ada Wallets settings</value>
-    </labels>   
+        <value>Your Ada Wallets setup is complete! You can now create and manage your Cardano wallets.</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_CardTitle</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Card Title</shortDescription>
+        <value>UTXO Assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_DefaultError</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Default Error</shortDescription>
+        <value>Failed to fetch assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_ErrorPrefix</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Error Prefix</shortDescription>
+        <value>Error fetching assets:</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_LoadingText</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Loading Text</shortDescription>
+        <value>Syncing assets...</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_SuccessMessage</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Success Message</shortDescription>
+        <value>Assets synced successfully</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_SyncButton</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Sync Button</shortDescription>
+        <value>Sync Assets</value>
+    </labels>
+    <labels>
+        <fullName>GetUTXOAddressAssets_UnknownError</fullName>
+        <categories>lwc, GetUTXOAddressAssets</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GetUTXOAddressAssets Unknown Error</shortDescription>
+        <value>An error occurred</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_CardTitle</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Card Title</shortDescription>
+        <value>Create New Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ChooseMethodHeader</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Choose Method Header</shortDescription>
+        <value>Choose Wallet Set Creation Method</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_CreateNew</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Create New Option</shortDescription>
+        <value>Create New Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_CreateNewDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Create New Description</shortDescription>
+        <value>Generate a new 24-word seed phrase for a fresh wallet set.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Label</shortDescription>
+        <value>Account Index</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexRequired</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Required</shortDescription>
+        <value>Account Index is required</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexMustBeNumber</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Must Be Number</shortDescription>
+        <value>Account Index must be a number</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_AccountIndexNonNegative</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Account Index Non Negative</shortDescription>
+        <value>Account Index must be non-negative</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ButtonLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Button Label</shortDescription>
+        <value>Create Wallet</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ButtonLabelCreating</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Button Label Creating</shortDescription>
+        <value>Creating...</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_CardTitle</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Card Title</shortDescription>
+        <value>Create New Wallet</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_EnterWordPlaceholder</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Enter Word Placeholder</shortDescription>
+        <value>Enter word</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorAccountIndexValidation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Account Index Validation</shortDescription>
+        <value>Failed to validate account index</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorFetchNextIndex</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Fetch Next Index</shortDescription>
+        <value>Failed to fetch next account index</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorInvalidBip32Key</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Invalid Bip32 Key</shortDescription>
+        <value>Invalid BIP32 private key provided</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorInvalidMnemonic</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Invalid Mnemonic</shortDescription>
+        <value>Decrypted mnemonic is invalid</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorLibrariesNotLoaded</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Libraries Not Loaded</shortDescription>
+        <value>Libraries not loaded. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorRawKeyExtraction</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Raw Key Extraction</shortDescription>
+        <value>Failed to extract raw key from BIP32 private key</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorRawKeyInvalid</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Raw Key Invalid</shortDescription>
+        <value>Raw key bytes are invalid or too short</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorSeedPhraseEmpty</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Seed Phrase Empty</shortDescription>
+        <value>Seed phrase is empty or null</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorSeedPhraseIncorrect</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Seed Phrase Incorrect</shortDescription>
+        <value>Seed phrase is incorrect. Please check your entries.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorUnknown</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Unknown</shortDescription>
+        <value>Unknown error</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorWalletCreation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Wallet Creation</shortDescription>
+        <value>Wallet creation failed</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ErrorWalletRecordCreation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Error Wallet Record Creation</shortDescription>
+        <value>Error creating wallet record</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_InvalidWalletSetId</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Invalid Wallet Set Id</shortDescription>
+        <value>Invalid Wallet Set ID selected</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_LibraryLoadingFailed</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Library Loading Failed</shortDescription>
+        <value>Library loading failed</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressDerivingKeys</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Deriving Keys</shortDescription>
+        <value>Deriving cryptographic keys</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressFinalizing</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Finalizing</shortDescription>
+        <value>Finalizing wallet creation</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressInitializing</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Initializing</shortDescription>
+        <value>Initializing</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressPreparingNavigation</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Preparing Navigation</shortDescription>
+        <value>Preparing to navigate to wallet...</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressVerifyingSeedPhrase</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Verifying Seed Phrase</shortDescription>
+        <value>Verifying seed phrase</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressCheckingServer</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Checking Server</shortDescription>
+        <value>Checking seed phrase on server...</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ProgressCreatingWallet</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Progress Creating Wallet</shortDescription>
+        <value>Creating wallet record</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SeedPhraseLengthLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Seed Phrase Length Label</shortDescription>
+        <value>Seed Phrase Length</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SeedPhraseVerificationDescription</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Seed Phrase Verification Description</shortDescription>
+        <value>Please enter your seed phrase to verify wallet ownership.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SeedPhraseVerificationHeader</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Seed Phrase Verification Header</shortDescription>
+        <value>Verify Your Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SelectWalletSetPlaceholder</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Select Wallet Set Placeholder</shortDescription>
+        <value>Select a Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_SuccessWalletCreated</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Success Wallet Created</shortDescription>
+        <value>Wallet "{0}" created successfully</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_ValidationPleaseSelectWalletSet</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Validation Please Select Wallet Set</shortDescription>
+        <value>Please select a Wallet Set.</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletNameLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Name Label</shortDescription>
+        <value>Wallet Name</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletNameRequired</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Name Required</shortDescription>
+        <value>Wallet Name is required</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletNameTooLong</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Name Too Long</shortDescription>
+        <value>Wallet Name must be 255 characters or less</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WalletSetLabel</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Wallet Set Label</shortDescription>
+        <value>Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WordCount15</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Word Count 15</shortDescription>
+        <value>15 words</value>
+    </labels>
+    <labels>
+        <fullName>CreateNewWallet_WordCount24</fullName>
+        <categories>lwc, CreateNewWallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>CreateNewWallet Word Count 24</shortDescription>
+        <value>24 words</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_DownloadButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Download Button</shortDescription>
+        <value>Download Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterSeedPhraseImportDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Enter Seed Phrase Import Description</shortDescription>
+        <value>Enter your seed phrase to import your existing wallet set.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterSeedPhraseImportHeader</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Enter Seed Phrase Import Header</shortDescription>
+        <value>Enter Your Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterWalletNameHeader</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Header for entering wallet name</shortDescription>
+        <value>Enter Wallet Name</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorBipLibrary</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Bip Library Error</shortDescription>
+        <value>Failed to load Bip library:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorCreate</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Create Error</shortDescription>
+        <value>Error creating Wallet Set or navigating:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorGenerate</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Generate Error</shortDescription>
+        <value>Failed to generate seed phrase:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorImport</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Error</shortDescription>
+        <value>Error importing Wallet Set:</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorInvalid</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Invalid Error</shortDescription>
+        <value>Seed phrase is invalid</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorLibrary</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Library Error</shortDescription>
+        <value>Cardano library not loaded yet. Please try again.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorVerification</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Verification Error</shortDescription>
+        <value>Invalid seed phrase. Please check your entries.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ErrorWordCount</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count Error</shortDescription>
+        <value>Seed phrase must contain exactly</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_EnterWordPlaceholder</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Enter Word Placeholder</shortDescription>
+        <value>Enter word</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ImportButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Button</shortDescription>
+        <value>Import</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ImportExisting</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Existing Option</shortDescription>
+        <value>Import Existing Wallet Set</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_ImportExistingDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Import Existing Description</shortDescription>
+        <value>Import your existing 15 or 24-word seed phrase to restore your wallet set.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_NextButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Next Button</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SeedPhraseHeader</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Header for seed phrase display</shortDescription>
+        <value>Your Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SeedPhraseWarning</fullName>
+        <categories>lwc, generateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Warning about seed phrase security</shortDescription>
+        <value>Never share your seed phrase with anyone. Store it securely and offline.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SubmitButton</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Submit Button</shortDescription>
+        <value>Submit</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SuccessCreate</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Success Create Message</shortDescription>
+        <value>Wallet Set created successfully</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_SuccessImport</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Success Import Message</shortDescription>
+        <value>Wallet Set imported successfully</value>
+    </labels>
+
+    <labels>
+        <fullName>GenerateSeedPhrase_UnknownError</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Unknown Error</shortDescription>
+        <value>Unknown error</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WalletNameRequired</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Wallet Name Required</shortDescription>
+        <value>Wallet Name is required</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_VerifySeedPhraseVerifyDescription</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Verify Seed Phrase Verify Description</shortDescription>
+        <value>Please enter your seed phrase to verify wallet ownership.</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_VerifySeedPhraseVerifyHeader</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Verify Seed Phrase Verify Header</shortDescription>
+        <value>Verify Your Seed Phrase</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WalletNameLabel</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Wallet Name Label</shortDescription>
+        <value>Wallet Set Name</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordCount15</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count 15 Option</shortDescription>
+        <value>15 Words</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordCount24</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count 24 Option</shortDescription>
+        <value>24 Words</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordCountLabel</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Count Label</shortDescription>
+        <value>Word Count</value>
+    </labels>
+    <labels>
+        <fullName>GenerateSeedPhrase_WordLabel</fullName>
+        <categories>lwc, GenerateSeedPhrase</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>GenerateSeedPhrase Word Label</shortDescription>
+        <value>Word</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_CardanoScanTooltip</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses CardanoScan Tooltip</shortDescription>
+        <value>Go to CardanoScan explorer</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnAddress</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Address</shortDescription>
+        <value>Address</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnName</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Name</shortDescription>
+        <value>UTXO Address Name</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnPath</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Path</shortDescription>
+        <value>Path</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ColumnPaymentKeyHash</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Column Payment Key Hash</shortDescription>
+        <value>Payment Key Hash</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ErrorTitle</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Error Title</shortDescription>
+        <value>Error</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_FilterLabel</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Filter Label</shortDescription>
+        <value>Filter Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_FilterPlaceholder</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Filter Placeholder</shortDescription>
+        <value>Filter by Name, Path, or Address...</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_GenerateError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Generate Error</shortDescription>
+        <value>Failed to generate address: {error}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_GenerateNewAddress</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Generate New Address</shortDescription>
+        <value>Generate New Address</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_GenerateSuccess</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Generate Success</shortDescription>
+        <value>New {typeLabel} Address Generated</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_KeyMismatch</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Key Mismatch</shortDescription>
+        <value>Derived private key does not match address payment key hash for {typeLabel} address #{index}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryInitError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Init Error</shortDescription>
+        <value>Required libraries (cardanoSerialization or bip39) not properly initialized</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryLoadError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Load Error</shortDescription>
+        <value>Library loading failed: {error}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryLoadFailed</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Load Failed</shortDescription>
+        <value>Failed to load: {libraries}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LibraryNotLoaded</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Library Not Loaded</shortDescription>
+        <value>Cardano libraries not loaded yet. Please wait and try again.</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_LoadErrorTitle</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Load Error Title</shortDescription>
+        <value>Error Loading Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Loading</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Loading</shortDescription>
+        <value>Loading addresses...</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_RefreshError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Refresh Error</shortDescription>
+        <value>UTXO refresh failed: {error}</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_RefreshSuccess</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Refresh Success</shortDescription>
+        <value>UTXO refresh completed.</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_RefreshUTXOs</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Refresh UTXOs</shortDescription>
+        <value>Refresh UTXOs</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Subtitle</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Subtitle</shortDescription>
+        <value>UTXO Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_TabExternal</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Tab External</shortDescription>
+        <value>External</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_TabInternal</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Tab Internal</shortDescription>
+        <value>Internal</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Title</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Title</shortDescription>
+        <value>UTXO Addresses</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_UnknownError</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Unknown Error</shortDescription>
+        <value>Unknown error</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_Unused</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Unused</shortDescription>
+        <value>Unused</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ViewAll</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses View All</shortDescription>
+        <value>View All</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_ViewLess</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses View Less</shortDescription>
+        <value>View Less</value>
+    </labels>
+    <labels>
+        <fullName>UTXOAddresses_WalletNotFound</fullName>
+        <categories>lwc, UTXOAddresses</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>UTXOAddresses Wallet Not Found</shortDescription>
+        <value>Wallet record or Account Private Key not found</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_AddToken</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Add Token</shortDescription>
+        <value>Add Token</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_AmountADA</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Amount ADA</shortDescription>
+        <value>Amount (ADA)</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_AmountRequired</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Amount Required</shortDescription>
+        <value>Amount is required</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Assets</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Assets</shortDescription>
+        <value>Assets</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Available</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Available</shortDescription>
+        <value>Available</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Back</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Back</shortDescription>
+        <value>Back</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Balance</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Balance</shortDescription>
+        <value>Balance</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Cancel</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Cancel</shortDescription>
+        <value>Cancel</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Close</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Close</shortDescription>
+        <value>Close</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_CopyAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Copy Address</shortDescription>
+        <value>Copy Address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_CreateTransaction</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Create Transaction</shortDescription>
+        <value>Create Transaction</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Currency</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Currency</shortDescription>
+        <value>ADA</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_DownloadQRCode</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Download QR Code</shortDescription>
+        <value>Download QR Code</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_EnterAmountInADA</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Enter Amount In ADA</shortDescription>
+        <value>Enter amount in ADA</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_EnterCardanoAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Enter Cardano Address</shortDescription>
+        <value>Enter Cardano address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_EnterMemo</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Enter Memo</shortDescription>
+        <value>Enter memo</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Hash</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Hash</shortDescription>
+        <value>Hash</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_HowMuchWouldYouLikeToSend</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet How Much Would You Like To Send</shortDescription>
+        <value>How much would you like to send?</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Inbound</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Inbound</shortDescription>
+        <value>Inbound</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_InboundTransactions</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Inbound Transactions</shortDescription>
+        <value>Inbound Transactions</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_LoadingPaymentAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Loading Payment Address</shortDescription>
+        <value>Loading payment address...</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_LoadingWalletData</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Loading Wallet Data</shortDescription>
+        <value>Loading wallet data...</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_MemoOptional</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Memo Optional</shortDescription>
+        <value>Memo (optional)</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Next</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Next</shortDescription>
+        <value>Next</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_NoAssetsAvailable</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet No Assets Available</shortDescription>
+        <value>No assets available</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_NoInboundTransactions</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet No Inbound Transactions</shortDescription>
+        <value>No inbound transactions</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_NoOutboundTransactions</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet No Outbound Transactions</shortDescription>
+        <value>No outbound transactions</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_NoUnusedAddressAvailable</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet No Unused Address Available</shortDescription>
+        <value>No unused address available</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_NotAvailable</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Not Available</shortDescription>
+        <value>Not available</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Outbound</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Outbound</shortDescription>
+        <value>Outbound</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_OutboundTransactions</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Outbound Transactions</shortDescription>
+        <value>Outbound Transactions</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_PaymentAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Payment Address</shortDescription>
+        <value>Payment Address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_PleaseEnterValidAmountGreaterThanZero</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Please Enter Valid Amount Greater Than Zero</shortDescription>
+        <value>Please enter a valid amount greater than 0</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_PleaseEnterValidCardanoAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Please Enter Valid Cardano Address</shortDescription>
+        <value>Please enter a valid Cardano address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Receive</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Receive</shortDescription>
+        <value>Receive</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_ReceiveADA</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Receive ADA</shortDescription>
+        <value>Receive ADA</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_RecipientAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Recipient Address</shortDescription>
+        <value>Recipient Address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_RecipientAddressRequired</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Recipient Address Required</shortDescription>
+        <value>Recipient address is required</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Remove</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Remove</shortDescription>
+        <value>Remove</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_SendMax</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Send Max</shortDescription>
+        <value>Send Max</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_SendTransaction</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Send Transaction</shortDescription>
+        <value>Send Transaction</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Step1Recipient</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Step1 Recipient</shortDescription>
+        <value>Recipient</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Step2Amount</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Step2 Amount</shortDescription>
+        <value>Amount</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Status</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Status</shortDescription>
+        <value>Status</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Title</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Title</shortDescription>
+        <value>ADA Wallet</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Token</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Token</shortDescription>
+        <value>Token</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Tokens</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Tokens</shortDescription>
+        <value>Tokens</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_To</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet To</shortDescription>
+        <value>To</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_Transactions</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Transactions</shortDescription>
+        <value>Transactions</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_UnableToGenerateQR</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Unable To Generate QR</shortDescription>
+        <value>Unable to generate QR code.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_UnknownError</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Unknown Error</shortDescription>
+        <value>Unknown error</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_ValidCardanoAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Valid Cardano Address</shortDescription>
+        <value>Valid Cardano address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_ViewAll</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet View All</shortDescription>
+        <value>View All</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_WhoWouldYouLikeToSendTo</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Who Would You Like To Send To</shortDescription>
+        <value>Who would you like to send to?</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_YourPaymentAddress</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Your Payment Address</shortDescription>
+        <value>Your Payment Address</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_AllTokensAlreadyAdded</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet All Tokens Already Added</shortDescription>
+        <value>All tokens already added.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_AddressCopiedToClipboard</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Address Copied To Clipboard</shortDescription>
+        <value>Address copied to clipboard!</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_CannotGenerateQRCode</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Cannot Generate QR Code</shortDescription>
+        <value>Cannot generate QR code: Invalid address or library not loaded.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_CannotOpenReceiveModal</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Cannot Open Receive Modal</shortDescription>
+        <value>Cannot open Receive modal: No valid payment address available.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_ExceedsAvailable</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Exceeds Available</shortDescription>
+        <value>Exceeds available: {available}</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_FailedToCopyAddressToClipboard</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Failed To Copy Address To Clipboard</shortDescription>
+        <value>Failed to copy address to clipboard.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_FailedToGenerateQRCode</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Failed To Generate QR Code</shortDescription>
+        <value>Failed to generate QR code.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_FailedToLoadQRCodeLibrary</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Failed To Load QR Code Library</shortDescription>
+        <value>Failed to load QR Code library.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_InsufficientBalance</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Insufficient Balance</shortDescription>
+        <value>Insufficient balance. Available: {availableBalance} {currency}</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_MethodNotYetImplemented</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Method Not Yet Implemented</shortDescription>
+        <value>Method not yet implemented</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_MultiAssetTransactionCreatedSuccessfully</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Multi Asset Transaction Created Successfully</shortDescription>
+        <value>Multi-asset transaction created successfully!</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_NoValidAssetsToSend</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet No Valid Assets To Send</shortDescription>
+        <value>No valid assets to send.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_QRCodeDownloadNotImplemented</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet QR Code Download Not Implemented</shortDescription>
+        <value>QR Code download functionality not implemented yet.</value>
+    </labels>
+    <labels>
+        <fullName>Wallet_TransactionCreatedSuccessfully</fullName>
+        <categories>lwc, Wallet</categories>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>Wallet Transaction Created Successfully</shortDescription>
+        <value>Transaction created successfully!</value>
+    </labels>    
 </CustomLabels>

@@ -1,22 +1,31 @@
-import { LightningElement, track, api, wire } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { LightningElement, track, api } from 'lwc';
 import { loadScript } from 'lightning/platformResourceLoader';
-import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
-import getUTXOAddresses from '@salesforce/apex/UTXOController.getUTXOAddresses';
-import getWalletAssetSummary from '@salesforce/apex/UTXOAssetController.getWalletAssetSummary';
-import getFirstUnusedReceivingAddress from '@salesforce/apex/UTXOController.getFirstUnusedReceivingAddress';
-import { subscribe, unsubscribe, MessageContext, APPLICATION_SCOPE } from 'lightning/messageService';
-import WALLET_SYNC_CHANNEL from '@salesforce/messageChannel/WalletSyncChannel__c';
-import createOutboundTransaction from '@salesforce/apex/UTXOController.createOutboundTransaction';
-import syncAssetsAndTransactions from '@salesforce/apex/UTXOAssetController.syncAssetsAndTransactions';
+import { subscribe, unsubscribe } from 'lightning/empApi';
 
-/* eslint-disable no-console */
-const DEBUG = true;
+import { showToast } from 'c/utils';
+import { labels } from './labels';
+
+import qrcodeLibrary from '@salesforce/resourceUrl/qrcode';
+
+import getWalletAssetSummary from '@salesforce/apex/WalletController.getWalletAssetSummary';
+import getFirstUnusedReceivingAddress from '@salesforce/apex/WalletController.getFirstUnusedReceivingAddress';
+import createOutboundTransaction from '@salesforce/apex/WalletController.createOutboundTransaction';
+import createMultiAssetOutboundTransaction from '@salesforce/apex/WalletController.createMultiAssetOutboundTransaction';
+import fetchWalletTransactions from '@salesforce/apex/WalletController.fetchWalletTransactions';
+import getAllWalletAddresses from '@salesforce/apex/WalletController.getAllWalletAddresses';
+import syncAssetsAndTransactions from '@salesforce/apex/WalletController.syncAssetsAndTransactions';
+
 
 export default class Wallet extends LightningElement {
+    CHANNEL_NAME = '/event/WalletSyncEvent__e';
+    labels = labels;
     _recordId;
+    _inboundTransactions = [];
+    _outboundTransactions = [];
+    eventSubscription = null;
+
     @track balance = '0';
-    @track paymentAddress = 'Loading payment address...';
+    @track paymentAddress = labels.UI.LOADING_PAYMENT_ADDRESS;
     @track showReceive = false;
     @track showSend = false;
     @track isLoading = false;
@@ -25,12 +34,25 @@ export default class Wallet extends LightningElement {
     @track qrCodeError = false;
     @track assets = [];
     @track hasAssets = false;
-    @wire(MessageContext) messageContext;
-    subscription = null;
+    @track transactions = [];
     @track sendAmount = '';
     @track sendRecipient = '';
     @track errorMessage = '';
     @track isSendButtonDisabled = true;
+    @track currentStep = 1;
+    @track selectedAsset = labels.UI.CURRENCY;
+    @track assetOptions = [];
+    @track addressError = '';
+    @track addressValid = false;
+    @track amountError = '';
+    @track adaAmount = '';
+    @track tokens = [];
+    @track tokenOptions = [];
+    @track selectedTransactionType = 'inbound';
+    @track sendMemo = '';
+    @track showAllInbound = false;
+    @track showAllOutbound = false;
+    @track tokenRowErrors = [];    
 
     @api
     get recordId() {
@@ -47,6 +69,192 @@ export default class Wallet extends LightningElement {
         }
     }
 
+    get isStep1() {
+        return this.currentStep === 1;
+    }
+
+    get isStep2() {
+        return this.currentStep === 2;
+    }
+
+    get isNextButtonDisabled() {
+        // Disable Next unless the address is valid
+        return !this.addressValid;
+    }
+
+    get step1Class() {
+        if (this.currentStep === 1) {
+            return 'step active';
+        } else if (this.currentStep === 2) {
+            return 'step completed';
+        }
+        return 'step';
+    }
+
+    get step2Class() {
+        if (this.currentStep === 2) {
+            return 'step active';
+        }
+        return 'step';
+    }
+
+    get step1ConnectorClass() {
+        if (this.currentStep === 2) {
+            return 'step-connector completed';
+        }
+        return 'step-connector';
+    }
+
+    get memoCharCount() {
+        return this.sendMemo ? this.sendMemo.length : 0;
+    }
+
+    get isInboundSelected() {
+        return this.selectedTransactionType === 'inbound';
+    }
+
+
+    get isOutboundSelected() {
+        return this.selectedTransactionType === 'outbound';
+    }
+
+    handleShowInbound() {
+        this.selectedTransactionType = 'inbound';
+    }
+
+    handleShowOutbound() {
+        this.selectedTransactionType = 'outbound';
+    }
+
+    get safeTokens() {
+        return Array.isArray(this.tokens) ? this.tokens : [];
+    }
+
+    get sortedInboundTransactions() {
+        return [...this.inboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    }
+
+    get sortedOutboundTransactions() {
+        return [...this.outboundTransactions].sort((a, b) => new Date(b.CreatedDate) - new Date(a.CreatedDate));
+    }
+
+    get visibleInboundTransactions() {
+        return this.showAllInbound ? this.sortedInboundTransactions : this.sortedInboundTransactions.slice(0, 3);
+    }
+
+    get visibleOutboundTransactions() {
+        return Array.isArray(this.outboundTransactions) ? (this.showAllOutbound ? this.outboundTransactions : this.outboundTransactions.slice(0, 3)) : [];
+    }
+
+    get outboundTransactionsForDisplay() {
+        return (this.visibleOutboundTransactions || []).map(tx => {
+            const hash = tx.Transaction_Hash__c;
+            let cardanoScanUrl = '';
+            if (hash && typeof hash === 'string' && hash.length > 0) {
+                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
+            }
+            // Group lines by asset, summing amounts for duplicates
+            let adaLine = null;
+            let assetMap = {};
+            if (Array.isArray(tx.lines)) {
+                tx.lines.forEach(line => {
+                    if (!line.Asset__c) return;
+                    if (!assetMap[line.Asset__c]) {
+                        assetMap[line.Asset__c] = { ...line };
+                    } else {
+                        // Sum the amounts for duplicate assets
+                        assetMap[line.Asset__c].Amount__c =
+                            (parseFloat(assetMap[line.Asset__c].Amount__c) || 0) + (parseFloat(line.Amount__c) || 0);
+                    }
+                });
+            }
+            // Build adaLine and otherAssetLines, ADA always first
+            let otherAssetLines = [];
+            Object.keys(assetMap).forEach(asset => {
+                if (asset === 'ADA') {
+                    adaLine = assetMap[asset];
+                } else {
+                    otherAssetLines.push(assetMap[asset]);
+                }
+            });
+            // Sort otherAssetLines alphabetically by asset
+            otherAssetLines.sort((a, b) => a.Asset__c.localeCompare(b.Asset__c));
+            // Add recordUrl for navigation
+            const recordUrl = tx.Id ? `/${tx.Id}` : '';
+            return {
+                ...tx,
+                Transaction_Hash__c: hash,
+                Transaction_Status__c: tx.Transaction_Status__c || '',
+                cardanoScanUrl,
+                adaLine,
+                otherAssetLines,
+                recordUrl
+            };
+        });
+    }
+
+    set inboundTransactions(value) {
+        this._inboundTransactions = (value || []).map(tx => {
+            const hash = tx.Transaction_Hash__c;
+            let splitHash = hash;
+            if (hash && typeof hash === 'string' && hash.length > 20) {
+                const front = 24;
+                const back = 24;
+                splitHash = `${hash.slice(0, front)}...${hash.slice(-back)}`;
+            }
+            let cardanoScanUrl = '';
+            if (hash && typeof hash === 'string' && hash.length > 0) {
+                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
+            }
+            // Add recordUrl for navigation
+            const recordUrl = tx.Id ? `/${tx.Id}` : '';
+            return {
+                ...tx,
+                splitHash,
+                cardanoScanUrl,
+                formattedDate: this.formatDate(tx.CreatedDate),
+                recordUrl
+            };
+        });
+    }
+
+    get inboundTransactions() {
+        return this._inboundTransactions || [];
+    }
+
+    set outboundTransactions(value) {
+        this._outboundTransactions = (value || []).map(tx => {
+            const hash = tx.Transaction_Hash__c;
+            let cardanoScanUrl = '';
+            if (hash && typeof hash === 'string' && hash.length > 0) {
+                cardanoScanUrl = `https://cardanoscan.io/transaction/${hash}`;
+            }
+            return {
+                ...tx,
+                Transaction_Hash__c: hash,
+                Transaction_Status__c: tx.Transaction_Status__c || '',
+                cardanoScanUrl,
+                formattedDate: this.formatDate(tx.CreatedDate)
+            };
+        });
+    }
+
+    get outboundTransactions() {
+        return this._outboundTransactions || [];
+    }
+    
+    connectedCallback() {
+        this.subscribeToWalletSyncEvent();
+        if (this.recordId) {
+            this.isLoading = true;
+            this.fetchUtxoCounts();
+        }
+    }
+
+    disconnectedCallback() {
+        this.unsubscribeFromWalletSyncEvent();
+    }
+
     async renderedCallback() {
         if (!this.isQrCodeLibraryLoaded) {            
             await this.loadQrCodeLibrary();
@@ -56,113 +264,175 @@ export default class Wallet extends LightningElement {
             this.generateQrCode();
         }
     }
+    
+    subscribeToWalletSyncEvent() {
+        if (!this.eventSubscription) {
+            const replayId = -1; // -1 for all retained events
+            
+            this.eventSubscription = subscribe(this.CHANNEL_NAME, replayId, (event) => {
+                this.handleWalletSyncEvent(event);
+            });
+        }
+    }
 
+    unsubscribeFromWalletSyncEvent() {
+        if (this.eventSubscription) {
+            unsubscribe(this.eventSubscription);
+            this.eventSubscription = null;
+        }
+    }
+
+    handleWalletSyncEvent(event) {
+        const { WalletId__c } = event.data.payload;
+        if (WalletId__c === this.recordId) {
+            this.fetchUtxoCounts();
+        }
+    }
+    
     async loadQrCodeLibrary() {
         try {
             await loadScript(this, qrcodeLibrary);
             this.isQrCodeLibraryLoaded = true;
         } catch (error) {
-            this.showToast('Error', 'Failed to load QR Code library.', 'error');
+            showToast(this, 'Error', labels.ERROR.FAILED_TO_LOAD_QR_CODE_LIBRARY, 'error');
         }
-    }    
-
-    // Lightweight initialization
-    async initializeWallet() {
-        this.balance = '0';
-        this.paymentAddress = 'Loading payment address...';
-        this.isLoading = false;
     }
-
+    
     async fetchUtxoCounts() {
-        if (DEBUG) console.log('[Wallet] fetchUtxoCounts start for', this.recordId);
         try {
-            // Get UTXO address counts for debugging
-            const data = await getUTXOAddresses({ walletId: this.recordId });
-            const external = data.filter(addr => addr.Type__c === '0').length;
-            const internal = data.filter(addr => addr.Type__c === '1').length;
-            
-            // Get asset summary using new method that properly handles ADA conversion
             const summary = await getWalletAssetSummary({ walletId: this.recordId });
-            if (DEBUG) console.log('[Wallet] Asset summary', summary);
             
             if (summary.success) {
                 const tokens = summary.tokens || [];
                 const adaBalance = summary.adaBalance || 0;
                 
-                // Log counts for debugging
-                console.log(`UTXO summary - Receiving: ${external}, Change: ${internal}, ADA: ${adaBalance}, Tokens: ${tokens.length}`);
-                
-                // Set ADA balance (already converted from lovelace using Value__c field)
-                this.balance = this.formatNumber(adaBalance, 6); // ADA uses 6 decimal places
+                this.balance = this.formatNumber(adaBalance, 6);
 
-                // Build assets list for tokens (non-ADA assets)
                 const assetRows = [];
                 tokens.forEach(token => {
-                    // Use the actual decimals from the asset metadata, fallback to 0 if not available
                     const assetDecimals = token.decimals !== null && token.decimals !== undefined ? token.decimals : 0;
-                    
+
+                    let imgUrl = null;
+                    if (token.icon) {
+                        if (token.icon.startsWith('data:image/')) {
+                            imgUrl = token.icon;
+                        } else if (/^[A-Za-z0-9+/=]+$/.test(token.icon) && token.icon.length > 100) {
+                            imgUrl = `data:image/png;base64,${token.icon}`;
+                        }
+                    }
+
                     assetRows.push({
                         id: token.unit || token.symbol,
                         name: token.name || token.symbol,
                         symbol: token.symbol || token.unit,
-                        amount: this.formatNumber(token.amount, assetDecimals), // Use actual asset decimals
-                        rawAmount: token.rawAmount, // Keep raw amount for reference
+                        amount: Number(token.amount), // always a number for validation
+                        displayAmount: this.formatNumber(token.amount, assetDecimals), // for UI
+                        rawAmount: token.rawAmount,
                         decimals: token.decimals,
                         policyId: token.policyId,
                         fingerprint: token.fingerprint,
-                        imgUrl: token.icon || null,
-                        icon: 'utility:apps'
+                        imgUrl: imgUrl,
+                        icon: token.icon,
+                        iconIsImage: token.icon && (token.icon.startsWith('data:image') || token.icon.length > 100)
                     });
-                    
-                    if (DEBUG) {
-                        console.log(`[Wallet] Token ${token.symbol}: amount=${token.amount}, decimals=${assetDecimals}, formatted=${this.formatNumber(token.amount, assetDecimals)}`);
-                    }
                 });
                 
                 this.assets = assetRows;
                 this.hasAssets = assetRows.length > 0;
-                
-                if (DEBUG) {
-                    console.log('[Wallet] ADA Balance:', adaBalance, '(formatted:', this.balance, ')');
-                    console.log('[Wallet] Tokens found:', tokens.length);
-                    tokens.forEach(token => {
-                        console.log(`[Wallet] Token ${token.symbol}: ${token.amount} (from ${token.rawAmount} raw)`);
-                    });
-                }
             } else {
-                console.error('[Wallet] Asset summary failed:', summary.message);
-                this.balance = '0';
-                this.assets = [];
-                this.hasAssets = false;
-            }
+                            this.balance = '0';
+            this.assets = [];
+            this.hasAssets = false;
+        }
 
-            // Fetch payment address
-            const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
-            this.paymentAddress = payAddr ? payAddr : 'No unused address available';
+        const payAddr = await getFirstUnusedReceivingAddress({ walletId: this.recordId });
+        this.paymentAddress = payAddr ? payAddr : labels.UI.NO_UNUSED_ADDRESS_AVAILABLE;
             this.isAddressInvalid = !payAddr;
-            if (DEBUG) console.log('[Wallet] fetchUtxoCounts done');
+            // --- BEGIN: Sync all UTXO addresses for this wallet ---
+            let utxoAddresses;
+            try {
+                utxoAddresses = await getAllWalletAddresses(this.recordId);
+            } catch (e) {
+                utxoAddresses = [];
+            }
+            if (Array.isArray(utxoAddresses)) {
+                for (const addr of utxoAddresses) {
+                    try {
+                        await syncAssetsAndTransactions({ utxoAddressId: addr.Id });
+                    } catch (e) {
+                        // Optionally log error
+                    }
+                }
+            }
+            // --- END: Sync all UTXO addresses for this wallet ---
         } catch (error) {
-            const message = error.body?.message || error.message || 'Unknown error';
-            this.showToast('Error', message, 'error');
-            console.error('[Wallet] Error in fetchUtxoCounts:', error);
+            const message = error.body?.message || error.message || labels.ERROR.UNKNOWN_ERROR;
+            showToast(this, 'Error', message, 'error');
         } finally {
             this.isLoading = false;
+            await this.fetchWalletTransactions();
         }
     }
 
+    async fetchWalletTransactions() {
+        try {
+            if (!this.recordId) {
+                showToast(this, 'Error', 'No walletId provided for transaction query.', 'error');
+                return;
+            }
+            const result = await fetchWalletTransactions({ walletId: this.recordId });
+            if (result.success) {
+                this.inboundTransactions = result.inbound || [];
+                this.outboundTransactions = result.outbound || [];
+            } else {
+                this.inboundTransactions = [];
+                this.outboundTransactions = [];
+                showToast(this, 'Info', 'No transactions found for this wallet.', 'info');
+            }
+        } catch (error) {
+            this.inboundTransactions = [];
+            this.outboundTransactions = [];
+            showToast(this, 'Error', error.body?.message || error.message || 'Unknown error fetching transactions', 'error');
+        }
+    }
+
+    buildAssetRows(tokens) {
+        return tokens.map(token => ({
+            id: token.unit || token.symbol,
+            name: token.name || token.symbol,
+            symbol: token.symbol || token.unit,
+            amount: Number(token.amount), // always a number for validation
+            displayAmount: this.formatNumber(token.amount, token.decimals || 0), // for UI
+            rawAmount: token.rawAmount,
+            decimals: token.decimals,
+            policyId: token.policyId,
+            fingerprint: token.fingerprint,
+            imgUrl: token.icon || null,
+            icon: 'utility:apps'
+        }));
+    }
+
+    resetWalletData() {
+        this.balance = '0';
+        this.assets = [];
+        this.hasAssets = false;
+        this.transactions = [];
+    }
+    
     generateQrCode() {
         if (!this.isQrCodeLibraryLoaded || !this.paymentAddress || this.isAddressInvalid) {
             this.qrCodeError = true;
-            this.showToast('Error', 'Cannot generate QR code: Invalid address or library not loaded.', 'error');
+            showToast(this, 'Error', labels.ERROR.CANNOT_GENERATE_QR_CODE, 'error');
             return;
         }
 
         try {
             const qrCodeElement = this.template.querySelector('.qr-code-canvas');
             if (qrCodeElement) {
-                // Clear previous QR code
-                qrCodeElement.innerHTML = '';
-                // Generate new QR code
+                while (qrCodeElement.firstChild) {
+                    qrCodeElement.removeChild(qrCodeElement.firstChild);
+                }
+                
                 new QRCode(qrCodeElement, {
                     text: this.paymentAddress,
                     width: 200,
@@ -175,13 +445,13 @@ export default class Wallet extends LightningElement {
             }
         } catch (error) {
             this.qrCodeError = true;
-            this.showToast('Error', 'Failed to generate QR code.', 'error');
+            showToast(this, 'Error', labels.ERROR.FAILED_TO_GENERATE_QR_CODE, 'error');
         }
     }
-
+    
     openReceiveModal() {
         if (this.isAddressInvalid) {
-            this.showToast('Error', 'Cannot open Receive modal: No valid payment address available.', 'error');
+            showToast(this, 'Error', labels.ERROR.CANNOT_OPEN_RECEIVE_MODAL, 'error');
         } else {
             this.showReceive = true;
         }
@@ -192,215 +462,492 @@ export default class Wallet extends LightningElement {
     }
 
     openSendModal() {
-        if (DEBUG) console.log('[Send] openSendModal called');
         this.sendAmount = '';
+        this.adaAmount = '';
+        this.tokens = [];
+        this.tokenOptions = this.getTokenOptions();
         this.sendRecipient = '';
         this.errorMessage = '';
+        this.addressError = '';
+        this.addressValid = false;
+        this.amountError = '';
         this.isSendButtonDisabled = true;
-        
-        if (DEBUG) console.log('[Send] Modal state reset:', {
-            sendAmount: this.sendAmount,
-            sendRecipient: this.sendRecipient,
-            errorMessage: this.errorMessage,
-            isSendButtonDisabled: this.isSendButtonDisabled
-        });
-        
+        this.currentStep = 1;
+        this.selectedAsset = labels.UI.CURRENCY;
+        this.initializeAssetOptions();
         this.showSend = true;
     }
 
     closeSendModal() {
         this.showSend = false;
     }
-
+    
     copyToClipboard() {
         if (navigator.clipboard && this.paymentAddress) {
             navigator.clipboard.writeText(this.paymentAddress).then(() => {
-                this.showToast('Success', 'Address copied to clipboard!', 'success');
+                showToast(this, 'Success', labels.SUCCESS.ADDRESS_COPIED_TO_CLIPBOARD, 'success');
             }).catch(() => {
-                this.showToast('Error', 'Failed to copy address to clipboard.', 'error');
+                showToast(this, 'Error', labels.ERROR.FAILED_TO_COPY_ADDRESS_TO_CLIPBOARD, 'error');
             });
         } else {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = this.paymentAddress;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                this.showToast('Success', 'Address copied to clipboard!', 'success');
-            } catch (err) {
-                this.showToast('Error', 'Failed to copy address to clipboard.', 'error');
-            }
-            document.body.removeChild(textArea);
+            showToast(this, 'Error', labels.ERROR.FAILED_TO_COPY_ADDRESS_TO_CLIPBOARD, 'error');
         }
     }
 
     shareLink() {
-        this.showToast('Info', 'QR Code download functionality not implemented yet.', 'info');
+        showToast(this, 'Info', labels.INFO.QR_CODE_DOWNLOAD_NOT_IMPLEMENTED, 'info');
+    }
+    
+    handleShowInbound() {
+        this.selectedTransactionType = 'inbound';
+    }
+    
+    handleShowOutbound() {
+        this.selectedTransactionType = 'outbound';
     }
 
-    showToast(title, message, variant) {
-        const evt = new ShowToastEvent({
-            title: title,
-            message: message,
-            variant: variant,
-        });
-        this.dispatchEvent(evt);
+    handleTransactionTabChange(event) {
+        this.selectedTransactionType = event.target.value;
     }
 
-    connectedCallback() {
-        this.subscribeToMessageChannel();
+    handleViewAllInbound() {
+        this.showAllInbound = true;
     }
 
-    disconnectedCallback() {
-        this.unsubscribeToMessageChannel();
+    handleViewAllOutbound() {
+        this.showAllOutbound = true;
     }
-
-    subscribeToMessageChannel() {
-        if (!this.subscription) {
-            this.subscription = subscribe(
-                this.messageContext,
-                WALLET_SYNC_CHANNEL,
-                (message) => this.handleMessage(message),
-                { scope: APPLICATION_SCOPE }
-            );
-        }
-    }
-
-    unsubscribeToMessageChannel() {
-        unsubscribe(this.subscription);
-        this.subscription = null;
-    }
-
-    handleMessage(message) {
-        if (message.recordId === this.recordId) {
-            this.fetchUtxoCounts();
-        }
-    }
-
+    
     handleAmountChange(event) {
-        if (DEBUG) console.log('[Send] handleAmountChange called with event:', event);
         const newAmount = event.target.value;
-        if (DEBUG) console.log('[Send] New amount value:', newAmount, 'Type:', typeof newAmount);
         this.sendAmount = newAmount;
-        if (DEBUG) console.log('[Send] Updated sendAmount:', this.sendAmount);
         this.updateSendState();
     }
 
     handleAddressChange(event) {
-        if (DEBUG) console.log('[Send] handleAddressChange called with event:', event);
-        const newAddress = event.target.value;
-        if (DEBUG) console.log('[Send] New address value:', newAddress, 'Type:', typeof newAddress);
-        this.sendRecipient = newAddress;
-        if (DEBUG) console.log('[Send] Updated sendRecipient:', this.sendRecipient);
-        this.updateSendState();
+        this.sendRecipient = event.target.value;
+        this.validateAddress(); // Validate on every input
+        this.validateSendForm();
     }
 
     handleMaxAmount() {
-        if (DEBUG) console.log('[Send] handleMaxAmount called');
-        // Set the maximum amount to the current wallet balance
         const maxAmount = parseFloat(this.balance);
-        if (DEBUG) console.log('[Send] Current wallet balance:', this.balance, 'Max amount:', maxAmount);
         
         if (maxAmount > 0) {
             this.sendAmount = maxAmount.toString();
-            if (DEBUG) console.log('[Send] Set sendAmount to max balance:', this.sendAmount);
         } else {
             this.sendAmount = '0';
-            if (DEBUG) console.log('[Send] Wallet has no balance, set to 0');
         }
         this.updateSendState();
     }
 
-    updateSendState() {
-        if (DEBUG) console.log('[Send] updateSendState called with:', JSON.stringify({
-            sendAmount: this.sendAmount,
-            sendRecipient: this.sendRecipient
-        }, null, 2));
+    validateSendForm() {
+        // Address must be valid
+        if (!this.addressValid) {
+            this.isSendButtonDisabled = true;
+            return false;
+        }
+
+        // ADA validation (ADA is always required)
+        const adaAvailable = parseFloat(this.balance);
+        const adaAmountNum = parseFloat(this.adaAmount);
+        const adaValid = !!this.adaAmount && !isNaN(adaAmountNum) && adaAmountNum > 0 && adaAmountNum <= adaAvailable;
+        if (!adaValid) {
+            this.isSendButtonDisabled = true;
+            return false;
+        }
+
+        // Token validation (all added rows must be valid if any token row is present)
+        let tokensValid = true;
+        let tokenWarnings = [];
+        let tokenRowErrors = [];
+        if (this.tokens.length > 0) {
+            tokensValid = this.tokens.every((token, idx) => {
+                const asset = this.assets.find(a => a.symbol === token.asset);
+                if (!token.asset || !token.amount) {
+                    tokenWarnings.push({idx, reason: 'Missing asset or amount'});
+                    tokenRowErrors[idx] = 'Select an asset and enter an amount.';
+                    return false;
+                }
+                if (!asset) {
+                    tokenWarnings.push({idx, reason: 'Asset not found'});
+                    tokenRowErrors[idx] = 'Selected asset not found.';
+                    return false;
+                }
+                const amount = parseFloat(token.amount);
+                if (!(amount > 0 && amount <= asset.amount)) {
+                    tokenWarnings.push({idx, reason: 'Amount invalid or exceeds available'});
+                    tokenRowErrors[idx] = `Amount must be > 0 and ≤ ${asset.displayAmount}`;
+                    return false;
+                }
+                tokenRowErrors[idx] = '';
+                return true;
+            });
+        }
+        this.tokenRowErrors = tokenRowErrors;
+        this.isSendButtonDisabled = !(adaValid && tokensValid);
+        return !this.isSendButtonDisabled;
+    }
+
+    validateAddress() {
+        const address = this.sendRecipient.trim();
         
-        // Basic validation - just enable/disable send button based on input
-        const amount = parseFloat(this.sendAmount);
-        const hasAmount = !isNaN(amount) && amount > 0;
-        const hasRecipient = !!this.sendRecipient && this.sendRecipient.trim() !== '';
+        if (!address) {
+            this.addressError = 'Recipient address is required';
+            this.addressValid = false;
+            return false;
+        }
         
-        if (DEBUG) console.log('[Send] Basic validation:', JSON.stringify({
-            hasAmount: hasAmount,
-            hasRecipient: hasRecipient,
-            amount: amount,
-            recipient: this.sendRecipient
-        }, null, 2));
+        const cardanoAddressPattern = /^addr[1-9][a-z0-9]{98}$/;
+        const testAddressPattern = /^addr_test[1-9][a-z0-9]{98}$/;
         
-        // Enable send button if we have both amount and recipient
-        this.isSendButtonDisabled = !(hasAmount && hasRecipient);
-        this.errorMessage = ''; // Clear any error messages
+        if (!cardanoAddressPattern.test(address) && !testAddressPattern.test(address)) {
+            this.addressError = 'Please enter a valid Cardano address';
+            this.addressValid = false;
+            return false;
+        }
         
-        if (DEBUG) console.log('[Send] Final send state:', JSON.stringify({
-            isSendButtonDisabled: this.isSendButtonDisabled,
-            errorMessage: this.errorMessage
-        }, null, 2));
+        this.addressError = '';
+        this.addressValid = true;
+        return true;
     }
 
     async handleSend() {
-        if (DEBUG) console.log('[Send] handleSend started');
-        
-        // Create the outbound transaction record
+        if (this.isSendButtonDisabled) return;
+        this.isLoading = true;
         try {
-            if (DEBUG) console.log('[Send] Creating outbound transaction with:', {
-                walletId: this.recordId,
-                toAddress: this.sendRecipient,
-                amount: this.sendAmount
+            const assetsArray = [];
+            if (this.adaAmount && parseFloat(this.adaAmount) > 0) {
+                assetsArray.push({ asset: 'ADA', amount: this.adaAmount });
+            }
+            this.tokens.forEach(token => {
+                if (token.asset && token.amount && parseFloat(token.amount) > 0) {
+                    assetsArray.push({ asset: token.asset, amount: token.amount });
+                }
             });
-            
-            const transactionId = await createOutboundTransaction({
-                walletId: this.recordId,
-                toAddress: this.sendRecipient,
-                amount: this.sendAmount
-            });
-            
-            if (DEBUG) console.log('[Send] Outbound transaction created successfully:', transactionId);
-            this.showToast('Success', 'Outbound transaction created successfully.', 'success');
-            
-            // Close the modal after successful creation
-            this.closeSendModal();
-            
+            if (assetsArray.length > 1) {
+                const outboundId = await createMultiAssetOutboundTransaction({
+                    walletId: this.recordId,
+                    toAddress: this.sendRecipient,
+                    assets: assetsArray,
+                    memo: this.sendMemo
+                });
+                showToast(this, 'Success', labels.SUCCESS.MULTI_ASSET_TRANSACTION_CREATED_SUCCESSFULLY, 'success');
+            } else if (assetsArray.length === 1) {
+                const outboundId = await createOutboundTransaction({
+                    walletId: this.recordId,
+                    toAddress: this.sendRecipient,
+                    amount: assetsArray[0].amount,
+                    asset: assetsArray[0].asset,
+                    memo: this.sendMemo
+                });
+                showToast(this, 'Success', labels.SUCCESS.TRANSACTION_CREATED_SUCCESSFULLY, 'success');
+            } else {
+                showToast(this, 'Error', labels.ERROR.NO_VALID_ASSETS_TO_SEND, 'error');
+                return;
+            }
+            this.showSend = false;
+            this.fetchUtxoCounts();
         } catch (error) {
-            if (DEBUG) console.error('[Send] Error creating outbound transaction:', error);
-            this.showToast('Error', `Failed to create outbound transaction: ${error.body?.message || error.message}`, 'error');
+            showToast(this, 'Error', error.body?.message || error.message || labels.ERROR.UNKNOWN_ERROR, 'error');
+        } finally {
+            this.isLoading = false;
         }
+    }
+
+    // Step Navigation Methods
+    nextStep() {
+        if (this.validateAddress()) {
+            this.currentStep = 2;
+            this.errorMessage = '';
+        }
+    }
+
+    previousStep() {
+        this.currentStep = 1;
+        this.errorMessage = '';
+    }
+
+    // Asset Methods
+    initializeAssetOptions() {
+        const options = [
+            { label: labels.UI.CURRENCY, value: labels.UI.CURRENCY }
+        ];
+        
+        if (this.assets && this.assets.length > 0) {
+            this.assets.forEach(asset => {
+                options.push({
+                    label: `${asset.symbol} (${asset.name})`,
+                    value: asset.symbol
+                });
+            });
+        }
+        
+        this.assetOptions = options;
+    }
+
+    handleAssetChange(event) {
+        this.selectedAsset = event.detail.value;
+        this.updateSendState();
+    }
+
+    handleAssetImgError(event) {
+        const symbol = event.target.alt;
+        this.assets = this.assets.map(asset => {
+            if (asset.symbol === symbol) {
+                return { ...asset, showFallbackIcon: true, icon: 'utility:money', imgUrl: null, iconIsImage: false };
+            }
+            return asset;
+        });
+    }
+    
+    getTokenOptions(currentIndex = null) {
+        // Exclude assets already selected in other token rows
+        const usedAssets = this.tokens
+            .map((t, i) => (currentIndex === null || i !== currentIndex) ? t.asset : null)
+            .filter(Boolean);
+        return this.assets
+            .filter(asset => asset.symbol !== this.labels.UI.CURRENCY && !usedAssets.includes(asset.symbol))
+            .map(asset => ({
+                label: `${asset.symbol} (${asset.name})`,
+                value: asset.symbol
+            }));
+    }
+
+    getTokenAvailableAmount(tokenSymbol) {
+        const asset = this.assets.find(a => a.symbol === tokenSymbol);
+        return asset ? parseFloat(asset.amount) : 0;
+    }
+
+    getTokenDecimals(tokenSymbol) {
+        const asset = this.assets.find(a => a.symbol === tokenSymbol);
+        return asset && asset.decimals !== undefined ? asset.decimals : 0;
+    }
+
+    getTokenAmountWarning(token) {
+        if (!token.asset || !token.amount) return '';
+        const available = this.getTokenAvailableAmount(token.asset);
+        const entered = parseFloat(token.amount);
+        if (entered > available) {
+            return `Exceeds available: ${this.formatNumber(available, this.getTokenDecimals(token.asset))}`;
+        }
+        return '';
+    }
+
+    handleAdaAmountChange(event) {
+        this.adaAmount = event.target.value;
+        this.validateAdaAmount();
+        this.validateSendForm();
+    }
+
+    validateAdaAmount() {
+        const amount = parseFloat(this.adaAmount);
+        const adaAvailable = parseFloat(this.balance);
+        if (!this.adaAmount || isNaN(amount) || amount <= 0 || amount > adaAvailable) {
+            this.amountError = 'Please enter a valid ADA amount.';
+            return false;
+        } else {
+            this.amountError = '';
+            return true;
+        }
+    }
+
+    addToken() {
+        const usedTickers = this.tokens.map(t => t.asset).filter(Boolean);
+        const availableOptions = this.tokenOptions.filter(opt => !usedTickers.includes(opt.value));
+        if (availableOptions.length === 0) {
+            showToast(this, 'Info', labels.INFO.ALL_TOKENS_ALREADY_ADDED, 'info');
+            return;
+        }
+        // Generate a unique id for each token row
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        this.tokens = [
+            ...this.tokens,
+            { id: uniqueId, asset: '', amount: '', available: '', warning: '', placeholder: '', sendMaxDisabled: true }
+        ];
+        this.updateTokenComputedFields();
+    }
+
+    removeToken(event) {
+        const index = parseInt(event.target.dataset.index, 10);
+        this.tokens = this.tokens.filter((_, i) => i !== index);
+        this.updateTokenComputedFields();
+        this.validateSendForm();
+    }
+
+    handleTokenChange(event) {
+        const index = parseInt(event.target.dataset.index, 10);
+        const value = String(event.target.value); // Always use string
+        this.tokens = this.tokens.map((token, i) =>
+            i === index ? { ...token, asset: value, id: token.id } : token
+        );
+        this.updateTokenComputedFields();
+    }
+
+    handleTokenAmountChange(event) {
+        const index = parseInt(event.target.dataset.index, 10);
+        const value = event.target.value;
+        this.tokens = this.tokens.map((token, i) =>
+            i === index ? { ...token, amount: value } : token
+        );
+        this.updateTokenComputedFields();
+    }
+
+    updateTokenComputedFields() {
+        this.tokens = this.tokens.map((token, idx, arr) => {
+            let available = '';
+            let warning = '';
+            let placeholder = '';
+            let sendMaxDisabled = !token.asset; // Disable Send Max if no asset selected
+            // Compute options for this row: exclude assets already selected in other rows
+            const usedAssets = arr.map((t, i) => (i !== idx ? t.asset : null)).filter(Boolean);
+            const options = this.assets
+                .filter(asset => asset.symbol !== this.labels.UI.CURRENCY && !usedAssets.includes(asset.symbol))
+                .map(asset => ({
+                    label: `${asset.symbol} (${asset.name})`,
+                    value: asset.symbol
+                }));
+            if (token.asset) {
+                const asset = this.assets.find(a => a.symbol === token.asset);
+                if (asset) {
+                    available = asset.displayAmount;
+                    if (!token.amount) {
+                        placeholder = available;
+                    }
+                    if (token.amount && parseFloat(token.amount) > parseFloat(asset.amount)) {
+                        warning = `Exceeds available: ${available}`;
+                    }
+                } else {
+                    warning = 'Asset not found';
+                }
+            } else if (token.amount) {
+                warning = 'Select an asset';
+            }
+            if (!token.asset && !token.amount) warning = '';
+            return { ...token, available, warning, placeholder, sendMaxDisabled, options };
+        });
+        // Also update tokenRowErrors for UI feedback
+        this.validateSendForm();
+    }
+
+    handleSendMaxToken(event) {
+        const index = parseInt(event.target.dataset.index, 10);
+        const token = this.tokens[index];
+        if (!token || !token.asset) return;
+        const asset = this.assets.find(a => a.symbol === token.asset);
+        if (!asset) return;
+        let available;
+        const decimals = asset.decimals !== undefined ? asset.decimals : 0;
+        if (asset.rawAmount !== undefined && asset.rawAmount !== null) {
+            available = parseFloat(asset.rawAmount) / Math.pow(10, decimals);
+        } else {
+            available = parseFloat(asset.amount);
+        }
+        this.tokens = this.tokens.map((t, i) =>
+            i === index ? { ...t, amount: available.toFixed(decimals).toString() } : t
+        );
+        this.tokens = [...this.tokens]; // Force reactivity/UI update
+        this.updateTokenComputedFields();
+        this.validateSendForm();
     }
 
 
 
-    // Helper method to format numbers with proper decimal places
-    formatNumber(value, decimals = 2) {
-        if (value === null || value === undefined || isNaN(value)) {
-            return '0';
+    handleAssetImgError(event) {
+        const asset = this.assets.find(a => a.id === event.target.dataset.assetId);
+        if (asset) {
+            asset.showFallbackIcon = true;
         }
-        
-        const numValue = parseFloat(value);
-        
-        // If decimals is specified, use that for all values
-        if (decimals !== undefined && decimals !== null) {
-            return numValue.toFixed(decimals);
+    }
+
+    handleMemoChange(event) {
+        this.sendMemo = event.target.value;
+    }
+
+    handleTransactionTabChange(event) {
+        this.selectedTransactionType = event.target.value;
+    }
+
+    handleTransactionClick(event) {
+        const recordId = event.currentTarget.dataset.id;
+        if (recordId) {
+            window.open('/' + recordId, '_blank');
         }
-        
-        // For very small numbers, show more decimal places
-        if (numValue > 0 && numValue < 0.001) {
-            return numValue.toFixed(6);
-        }
-        
-        // For numbers less than 1, show 3 decimal places
-        if (numValue < 1) {
-            return numValue.toFixed(3);
-        }
-        
-        // For larger numbers, show appropriate decimal places
-        if (numValue >= 1000000) {
-            return (numValue / 1000000).toFixed(2) + 'M';
-        } else if (numValue >= 1000) {
-            return (numValue / 1000).toFixed(2) + 'K';
-        } else {
-            return numValue.toFixed(2);
-        }
+    }
+
+    get outboundTransactionsWithUrl() {
+        return (this.outboundTransactions || []).map(tx => ({
+            ...tx,
+            cardanoScanUrl: tx.Transaction_Hash__c ? `https://cardanoscan.io/transaction/${tx.Transaction_Hash__c}` : null
+        }));
+    }
+
+    get visibleInboundTransactions() {
+        return this.showAllInbound ? this.inboundTransactions : this.inboundTransactions.slice(0, 5);
+    }
+
+    get visibleOutboundTransactions() {
+        return this.showAllOutbound ? this.outboundTransactions : this.outboundTransactions.slice(0, 5);
+    }
+
+    get inboundHasMore() {
+        return this.inboundTransactions.length > 5;
+    }
+
+    get outboundHasMore() {
+        return this.outboundTransactions.length > 5;
+    }
+
+    handleViewAllInbound() {
+        this.showAllInbound = true;
+    }
+
+    handleViewAllOutbound() {
+        this.showAllOutbound = true;
+    }
+
+    get computeRecordUrl() {
+        return (id) => `/${id}`;
+    }
+
+    // Helper to format a number with specified decimals
+    formatNumber(value, decimals = 6) {
+        if (isNaN(value)) return '0';
+        return parseFloat(value).toLocaleString(undefined, {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        return date.toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    get isAddTokenDisabled() {
+        if (!this.tokens.length) return false;
+        // All token rows must be valid
+        const allRowsValid = this.tokens.every(token => {
+            if (!token.asset || !token.amount) return false;
+            const asset = this.assets.find(a => a.symbol === token.asset);
+            if (!asset) return false;
+            const amount = parseFloat(token.amount);
+            if (!(amount > 0 && amount <= asset.amount)) return false;
+            return true;
+        });
+        // Disable if all unique non-ADA assets are already added
+        const nonAdaAssets = this.assets.filter(a => a.symbol !== this.labels.UI.CURRENCY);
+        const usedAssets = this.tokens.map(t => t.asset).filter(Boolean);
+        const unusedAssets = nonAdaAssets.filter(a => !usedAssets.includes(a.symbol));
+        const allAssetsAdded = unusedAssets.length === 0;
+        return !allRowsValid || allAssetsAdded;
     }
 }
