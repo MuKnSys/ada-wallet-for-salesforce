@@ -130,26 +130,28 @@ public with sharing class TransactionController {
     private static WalletData processWalletAddresses(List<UTXO_Address__c> utxoAddresses) {
         List<Map<String, Object>> receivingAddresses = new List<Map<String, Object>>();
         List<Map<String, Object>> changeAddresses = new List<Map<String, Object>>();
-        
+
         Decimal totalLovelace = 0;
         Integer addressesWithFunds = 0;
         Map<String, Decimal> assetTotals = new Map<String, Decimal>();
-        
+
+        Boolean hasAccessToDecrypt = EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Payment');
+
         for (UTXO_Address__c addr : utxoAddresses) {
-            Map<String, Object> addressData = processAddress(addr);
-            
+            Map<String, Object> addressData = processAddress(addr, hasAccessToDecrypt);
+
             if (ConstantsAda.ADDRESS_TYPE_RECEIVING.equals(addr.Type__c)) {
                 receivingAddresses.add(addressData);
             } else if (ConstantsAda.ADDRESS_TYPE_CHANGE.equals(addr.Type__c)) {
                 changeAddresses.add(addressData);
             }
-            
+
             updateWalletTotals(addressData, assetTotals, totalLovelace, addressesWithFunds);
         }
-        
+
         return new WalletData(receivingAddresses, changeAddresses, assetTotals, totalLovelace, addressesWithFunds, utxoAddresses.size());
     }
-    
+
     /**
      * Update wallet totals from address data
      */
@@ -187,7 +189,7 @@ public with sharing class TransactionController {
     /**
      * Process individual address and get UTXO data
      */
-    private static Map<String, Object> processAddress(UTXO_Address__c addr) {
+    private static Map<String, Object> processAddress(UTXO_Address__c addr, Boolean hasAccessToDecrypt) {
         Decimal addressLovelace = 0;
         List<Object> addressUtxos = new List<Object>();
 
@@ -206,8 +208,8 @@ public with sharing class TransactionController {
         return new Map<String, Object>{
             'index' => Integer.valueOf(addr.Index__c),
             'address' => addr.Address__c,
-            'paymentKeyHash' => String.isNotBlank(addr.Payment_Key_Hash__c) && EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Payment') ? DataEncryptor.decrypt(addr.Payment_Key_Hash__c) : '',
-            'privateKey' => String.isNotBlank(addr.Private_Key__c) && EncryptedDataService.hasAccessToDecrypt('Ada_Wallet_Payments') ? DataEncryptor.decrypt(addr.Private_Key__c) : '',
+            'paymentKeyHash' => String.isNotBlank(addr.Payment_Key_Hash__c) && hasAccessToDecrypt ? DataEncryptor.decrypt(addr.Payment_Key_Hash__c) : '',
+            'privateKey' => String.isNotBlank(addr.Private_Key__c) && hasAccessToDecrypt ? DataEncryptor.decrypt(addr.Private_Key__c) : '',
             'keyMatch' => true,
             'utxos' => addressUtxos,
             'balance' => new Map<String, Object>{

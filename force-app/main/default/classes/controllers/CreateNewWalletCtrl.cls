@@ -29,10 +29,10 @@ public with sharing class CreateNewWalletCtrl {
                 !Schema.sObjectType.Wallet__c.fields.Stake_Address__c.isCreateable()) {
                 throw new AuraHandledException('Insufficient permissions to create wallet');
             }
-            
+
             Wallet__c newWallet = createWalletRecord(walletSetId, walletName, address, accountPrivateKey, accountPublicKey, accountIndex, stakeAddress);
             insert newWallet;
-            
+
             logWalletCreation(newWallet, walletSetId, accountIndex);
             return newWallet.Id;
         } catch (Exception e) {
@@ -351,11 +351,11 @@ public with sharing class CreateNewWalletCtrl {
             }
 
             insert allAddresses;
-            
+
             updateResultsWithIds(receivingResults, changeResults, allAddresses, receivingCount);
         }
     }
-    
+
     /**
      * Update results with inserted record IDs
      */

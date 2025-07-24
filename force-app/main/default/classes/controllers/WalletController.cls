@@ -439,21 +439,21 @@ public with sharing class WalletController {
             !Schema.sObjectType.Outbound_Transaction__c.fields.Memo__c.isCreateable()) {
             throw new AuraHandledException('Insufficient permissions to create outbound transaction');
         }
-        
+
         insert txRecord;
         return txRecord.Id;
     }
-    
+
     /**
      * Create transaction lines from assets
      */
     private static List<Outbound_Transaction_Line__c> createTransactionLines(List<Map<String, Object>> assets, Id outboundId) {
         List<Outbound_Transaction_Line__c> lines = new List<Outbound_Transaction_Line__c>();
-        
+
         for (Map<String, Object> assetMap : assets) {
             Decimal lineAmount;
             String lineAsset;
-            
+
             try {
                 lineAmount = Decimal.valueOf(String.valueOf(assetMap.get('amount')));
             } catch (Exception e) {
@@ -485,7 +485,7 @@ public with sharing class WalletController {
             Asset__c = asset
         );
     }
-    
+
     /**
      * Insert transaction lines with security
      */
@@ -497,7 +497,7 @@ public with sharing class WalletController {
                 !Schema.sObjectType.Outbound_Transaction_Line__c.fields.Asset__c.isCreateable()) {
                 throw new AuraHandledException('Insufficient permissions to create transaction lines');
             }
-            
+
             insert lines;
         }
     }

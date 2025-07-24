@@ -10,7 +10,7 @@
                             <value>Outbound_Transaction__c.Build_and_Sign</value>
                             <visibilityRule>
                                 <criteria>
-                                    <leftValue>{!$Permission.CustomPermission.See_seed_phrase}</leftValue>
+                                    <leftValue>{!$Permission.CustomPermission.Make_payments}</leftValue>
                                     <operator>EQUAL</operator>
                                     <rightValue>true</rightValue>
                                 </criteria>
