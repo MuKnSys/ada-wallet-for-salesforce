@@ -3,6 +3,8 @@
 ![](documentation-and-images/ADA-Wallet-for-Salesforce-thumbnail.png)
 The public repository for the Cardano Catalyst Fund 13 project
 
+📖 **[User Guide: ADA Wallet for Salesforce Package Installation Guide and User Guide](documentation-and-images/ADA%20Wallet%20for%20Salesforce%20Package%20Installation%20Guide%20and%20User%20Guide.pdf)** - Complete installation and user documentation
+
 ## Installation Instructions
 
 ADA Wallet for Salesforce can be installed using two different methods depending on your needs and environment setup.
@@ -50,6 +52,31 @@ After connecting to your org, complete these essential configuration steps:
    - Visit [Blockfrost.io](https://blockfrost.io) to create a free account
    - Create a new project to get your Project ID
    - In the Ada Wallet Setup app, enter your Blockfrost Project ID to enable blockchain operations
+
+## Development Workflow
+
+To contribute to the ADA Wallet for Salesforce project, follow these steps:
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally
+3. **Check out the develop branch** (or main if develop doesn't exist)
+4. **Create a new feature branch** (e.g., `feature/mukn-123`)
+5. **Make your changes** and test them in a scratch org
+6. **Pull changes from Salesforce** using `sf project retrieve start`
+7. **Commit and push** your changes to your fork
+8. **Create a pull request** to the main repository
+
+### Example Commands:
+```bash
+git checkout develop
+git checkout -b feature/mukn-123
+# Make your changes
+sf project retrieve start
+git add .
+git commit -m "Add feature description"
+git push origin feature/mukn-123
+# Create pull request on GitHub
+```
 
 ## Permission Sets and User Roles
 
