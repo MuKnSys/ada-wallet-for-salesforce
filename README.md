@@ -5,6 +5,33 @@ The public repository for the Cardano Catalyst Fund 13 project
 
 📖 **[User Guide: ADA Wallet for Salesforce Package Installation Guide and User Guide](documentation-and-images/ADA%20Wallet%20for%20Salesforce%20Package%20Installation%20Guide%20and%20User%20Guide.pdf)** - Complete installation and user documentation
 
+## Prerequisites
+
+### Slack Integration Setup (Required for Notifications)
+
+Before installing ADA Wallet for Salesforce, you must set up Slack integration for transaction notifications. Follow these steps:
+
+#### 1. Pre-deployment Checklist
+- Ensure you have administrator access to the org
+- Navigate to **Setup → Slack Apps Setup**
+- Read and accept the Terms & Conditions
+- Toggle "Accepted" to On
+
+#### 2. Enable Core Slack Features
+- In Slack Apps Setup, click **Enable Slack Apps**
+- Toggle **Sales Cloud for Slack** to On
+- Complete the "I'm finished with this step" checklist
+
+#### 3. Grant Required Permission Sets
+- Go to **Setup → Users → [your user] → Permission Set Assignments**
+- Click **Edit Assignments** and add:
+  - ✅ **Sales Cloud for Slack**
+  - ✅ **Slack Sales Home User**
+
+#### 4. Install Salesforce for Slack App
+- Return to **Setup → Slack Apps Setup**
+- Complete step 6: **Install Slack Apps → Install Salesforce for Slack**
+
 ## Installation Instructions
 
 ADA Wallet for Salesforce can be installed using two different methods depending on your needs and environment setup.
@@ -30,6 +57,11 @@ This method is ideal for developers who want to work with the source code direct
 
 This method is ideal for production deployments or when you want to install the managed package directly into your Salesforce environment.
 
+**Demo Sandbox:** You can see the ADA Wallet for Salesforce package already installed and in use at: [https://catalystreview.my.salesforce.com](https://catalystreview.my.salesforce.com)
+
+**Direct Installation Link:** You can install the package directly using this URL: [https://catalystreview.lightning.force.com/packaging/installPackage.apexp?p0=04tTO0000006W3dYAE](https://catalystreview.lightning.force.com/packaging/installPackage.apexp?p0=04tTO0000006W3dYAE)
+
+**Installation Steps:**
 1. Navigate to your Salesforce sandbox or production org
 2. Go to Setup → Package Manager
 3. Click "Install a Package"
