@@ -1,6 +1,6 @@
 # ADA Wallet for Salesforce
 
-![](documentation-and-images/ADA-Wallet-for-Salesforce-thumbnail.png)
+![](documentation-and-images/ADA-wallet-for-Salesforce-thumbnail.png)
 The public repository for the Cardano Catalyst Fund 13 project
 
 📖 **[User Guide: ADA Wallet for Salesforce Package Installation Guide and User Guide](documentation-and-images/ADA%20Wallet%20for%20Salesforce%20Package%20Installation%20Guide%20and%20User%20Guide.pdf)** - Complete installation and user documentation
