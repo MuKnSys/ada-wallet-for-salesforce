@@ -339,7 +339,7 @@ Sends an email notification to the accounting contact configured in the organiza
 Sends notification emails to the Wallet Set Owner associated with the transaction context. The flow includes relevant transaction details and can be configured to trigger on specific events (creation, approval, sending, etc.). This ensures account owners are kept informed of wallet activities related to their accounts.
 
 **Component**: Flow triggered by Outbound Transaction creation or status changes
-- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.
+- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
 **Implementation Notes:**
 - Sends a notification email to the Account Owner linked to the transaction context
 - If no account relationship exists, defaults to emailing the Wallet Owner
