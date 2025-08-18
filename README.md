@@ -330,7 +330,7 @@ Routes approval requests through Slack instead of traditional email notification
 Sends an email notification to the accounting contact configured in the organization's settings when a transaction is successfully sent. The flow includes transaction details such as amounts, fees, recipient information, and timestamps in a formatted email template. This provides accounting teams with immediate notification of financial transactions for record-keeping and reconciliation purposes.
 
 **Component**: Flow triggered by Outbound Transaction status change to "Sent"
-- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.
+- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
 **Implementation Notes:**
 - Sends an email to the accounting contact configured in Setup
 - Simple Flow logic and templated email format
