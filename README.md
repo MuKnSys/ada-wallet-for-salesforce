@@ -61,6 +61,10 @@ This method is ideal for production deployments or when you want to install the 
 
 **Direct Installation Link:** You can install the package directly using this URL: [https://catalystreview.lightning.force.com/packaging/installPackage.apexp?p0=04tTO0000006W3dYAE](https://catalystreview.lightning.force.com/packaging/installPackage.apexp?p0=04tTO0000006W3dYAE)
 
+**Demo Login Credentials:**
+- Username: `spencer@web3enabler.com.catalyst`
+- Password: `Xnz3A6vFDhL^pCCZ`
+
 **Installation Steps:**
 1. Navigate to your Salesforce sandbox or production org
 2. Go to Setup → Package Manager
