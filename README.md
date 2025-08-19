@@ -1,9 +1,9 @@
 # ADA Wallet for Salesforce
 
-![](documentation-and-images/ADA-Wallet-for-Salesforce-thumbnail.png)
+![](documentation-and-images/ADA-wallet-for-Salesforce-thumbnail.png)
 The public repository for the Cardano Catalyst Fund 13 project
 
-📖 **[User Guide: ADA Wallet for Salesforce Package Installation Guide and User Guide](documentation-and-images/ADA%20Wallet%20for%20Salesforce%20Package%20Installation%20Guide%20and%20User%20Guide.pdf)** - Complete installation and user documentation
+📖 **[User Guide: ADA Wallet for Salesforce Package Installation Guide and User Guide](documentation-and-images/ADA%20Wallet%20for%20Salesforce%20Admin%20Guide%2C%20Package%20Installation%20Guide%20and%20User%20Guide.pdf)** - Complete installation and user documentation
 
 ## Prerequisites
 
@@ -334,7 +334,7 @@ Routes approval requests through Slack instead of traditional email notification
 Sends an email notification to the accounting contact configured in the organization's settings when a transaction is successfully sent. The flow includes transaction details such as amounts, fees, recipient information, and timestamps in a formatted email template. This provides accounting teams with immediate notification of financial transactions for record-keeping and reconciliation purposes.
 
 **Component**: Flow triggered by Outbound Transaction status change to "Sent"
-- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.
+- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
 **Implementation Notes:**
 - Sends an email to the accounting contact configured in Setup
 - Simple Flow logic and templated email format
@@ -343,7 +343,7 @@ Sends an email notification to the accounting contact configured in the organiza
 Sends notification emails to the Wallet Set Owner associated with the transaction context. The flow includes relevant transaction details and can be configured to trigger on specific events (creation, approval, sending, etc.). This ensures account owners are kept informed of wallet activities related to their accounts.
 
 **Component**: Flow triggered by Outbound Transaction creation or status changes
-- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.
+- **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
 **Implementation Notes:**
 - Sends a notification email to the Account Owner linked to the transaction context
 - If no account relationship exists, defaults to emailing the Wallet Owner
