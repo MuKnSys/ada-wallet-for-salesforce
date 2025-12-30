@@ -303,51 +303,51 @@ Automatically sends a Slack notification when a new Inbound Transaction record i
 **Component**: Flow triggered by Inbound Transaction creation
 - **Flow**: [Slack notification on receiving transaction](force-app/main/default/flows/Slack_notification_on_receiving_transaction.flow-meta.xml)
 - **Custom Setting**: [Slack Settings](force-app/main/default/objects/Slacksettings__c)
-**Implementation Notes:**
-- Sends a Slack message when an inbound transaction is received
-- Uses a globally configured Channel ID stored in Setup
-- Slack app integration may require selecting which Salesforce-Slack connector is active
-- Note: If the selected Slack app requires it, a Lightning Web Component (LWC) may be needed to complete the handshake or send the message
+- **Implementation Notes:**
+  - Sends a Slack message when an inbound transaction is received
+  - Uses a globally configured Channel ID stored in Setup
+  - Slack app integration may require selecting which Salesforce-Slack connector is active
+  - Note: If the selected Slack app requires it, a Lightning Web Component (LWC) may be needed to complete the handshake or send the message
 
 #### 2. Slack on Sending a Transaction
 Sends a Slack notification when an Outbound Transaction is successfully submitted to the blockchain. The flow uses the same Slack Settings configuration as the receiving flow and posts transaction details including recipient addresses, amounts, and transaction hash. This ensures the team is notified of all outgoing transactions for audit and monitoring purposes.
 
 **Component**: Flow triggered by Outbound Transaction status change to "Sent"
 - **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
-**Implementation Notes:**
-- Sends a Slack message when a transaction is successfully sent
-- Shares infrastructure with the receiving Slack flow
-- Also uses the globally configured Channel ID
-- May require Slack App and LWC support, depending on the version used
+- **Implementation Notes:**
+  - Sends a Slack message when a transaction is successfully sent
+  - Shares infrastructure with the receiving Slack flow
+  - Also uses the globally configured Channel ID
+  - May require Slack App and LWC support, depending on the version used
 
 #### 3. Request Approval via Slack for a Transaction
 Routes approval requests through Slack instead of traditional email notifications. The flow identifies the appropriate approver based on the transaction amount or organizational hierarchy, then sends a direct message or channel notification with transaction details and approval/denial buttons. When the approver responds via Slack, the flow updates the Outbound Transaction's approval status and moves it to the next lifecycle stage.
 
 **Component**: Flow triggered when Outbound Transaction status changes to "Pending Approval"
 - **Flow**: [Transaction approval triggered flow](force-app/main/default/flows/Transaction_approval_triggered_flow.flow-meta.xml)
-**Implementation Notes:**
-- Approval requests are routed through Slack instead of email
-- Sent either as a direct message (DM) to the approver or to a designated Slack Channel, depending on what's easier to implement
-- Uses the same Slack App infrastructure and may rely on an LWC to handle interaction
+- **Implementation Notes:**
+  - Approval requests are routed through Slack instead of email
+  - Sent either as a direct message (DM) to the approver or to a designated Slack Channel, depending on what's easier to implement
+  - Uses the same Slack App infrastructure and may rely on an LWC to handle interaction
 
 #### 4. Email Accounting on Sending a Transaction
 Sends an email notification to the accounting contact configured in the organization's settings when a transaction is successfully sent. The flow includes transaction details such as amounts, fees, recipient information, and timestamps in a formatted email template. This provides accounting teams with immediate notification of financial transactions for record-keeping and reconciliation purposes.
 
 **Component**: Flow triggered by Outbound Transaction status change to "Sent"
 - **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
-**Implementation Notes:**
-- Sends an email to the accounting contact configured in Setup
-- Simple Flow logic and templated email format
+- **Implementation Notes:**
+  - Sends an email to the accounting contact configured in Setup
+  - Simple Flow logic and templated email format
 
 #### 5. Emailing an Account Owner
 Sends notification emails to the Wallet Set Owner associated with the transaction context. The flow includes relevant transaction details and can be configured to trigger on specific events (creation, approval, sending, etc.). This ensures account owners are kept informed of wallet activities related to their accounts.
 
 **Component**: Flow triggered by Outbound Transaction creation or status changes
 - **Flow**: [Slack notification on sending transaction](force-app/main/default/flows/Slack_notification_on_sending_transaction.flow-meta.xml)
-**Implementation Notes:**
-- Sends a notification email to the Account Owner linked to the transaction context
-- If no account relationship exists, defaults to emailing the Wallet Owner
-- Uses a simple, pre-built Flow and email template
+- **Implementation Notes:**
+  - Sends a notification email to the Account Owner linked to the transaction context
+  - If no account relationship exists, defaults to emailing the Wallet Owner
+  - Uses a simple, pre-built Flow and email template
 
 ## Additional resources
 
