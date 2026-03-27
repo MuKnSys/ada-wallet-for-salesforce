@@ -1,6 +1,6 @@
 'use strict';
 
-const Assert = require('@hapi/hoek/lib/assert');
+const { assert } = require('@hapi/hoek');
 
 
 const internals = {};
@@ -16,19 +16,19 @@ exports.Sorter = class {
 
     add(nodes, options) {
 
-        options = options || {};
+        options = options ?? {};
 
         // Validate rules
 
-        const before = [].concat(options.before || []);
-        const after = [].concat(options.after || []);
-        const group = options.group || '?';
-        const sort = options.sort || 0;                   // Used for merging only
+        const before = [].concat(options.before ?? []);
+        const after = [].concat(options.after ?? []);
+        const group = options.group ?? '?';
+        const sort = options.sort ?? 0;                   // Used for merging only
 
-        Assert(!before.includes(group), `Item cannot come before itself: ${group}`);
-        Assert(!before.includes('?'), 'Item cannot come before unassociated items');
-        Assert(!after.includes(group), `Item cannot come after itself: ${group}`);
-        Assert(!after.includes('?'), 'Item cannot come after unassociated items');
+        assert(!before.includes(group), `Item cannot come before itself: ${group}`);
+        assert(!before.includes('?'), 'Item cannot come before unassociated items');
+        assert(!after.includes(group), `Item cannot come after itself: ${group}`);
+        assert(!after.includes('?'), 'Item cannot come after unassociated items');
 
         if (!Array.isArray(nodes)) {
             nodes = [nodes];
@@ -51,7 +51,7 @@ exports.Sorter = class {
 
         if (!options.manual) {
             const valid = this._sort();
-            Assert(valid, 'item', group !== '?' ? `added into group ${group}` : '', 'created a dependencies error');
+            assert(valid, 'item', group !== '?' ? `added into group ${group}` : '', 'created a dependencies error');
         }
 
         return this.nodes;
@@ -79,7 +79,7 @@ exports.Sorter = class {
         }
 
         const valid = this._sort();
-        Assert(valid, 'merge created a dependencies error');
+        assert(valid, 'merge created a dependencies error');
 
         return this.nodes;
     }
@@ -87,7 +87,7 @@ exports.Sorter = class {
     sort() {
 
         const valid = this._sort();
-        Assert(valid, 'sort created a dependencies error');
+        assert(valid, 'sort created a dependencies error');
 
         return this.nodes;
     }
@@ -106,7 +106,7 @@ exports.Sorter = class {
 
             // Determine Groups
 
-            groups[group] = groups[group] || [];
+            groups[group] = groups[group] ?? [];
             groups[group].push(seq);
 
             // Build intermediary graph using 'before'
@@ -116,7 +116,7 @@ exports.Sorter = class {
             // Build second intermediary graph with 'after'
 
             for (const after of item.after) {
-                graphAfters[after] = graphAfters[after] || [];
+                graphAfters[after] = graphAfters[after] ?? [];
                 graphAfters[after].push(seq);
             }
         }
@@ -128,7 +128,7 @@ exports.Sorter = class {
 
             for (const graphNodeItem in graph[node]) {
                 const group = graph[node][graphNodeItem];
-                groups[group] = groups[group] || [];
+                groups[group] = groups[group] ?? [];
                 expandedGroups.push(...groups[group]);
             }
 
@@ -151,7 +151,7 @@ exports.Sorter = class {
         for (const node in graph) {
             const children = graph[node];
             for (const child of children) {
-                ancestors[child] = ancestors[child] || [];
+                ancestors[child] = ancestors[child] ?? [];
                 ancestors[child].push(node);
             }
         }

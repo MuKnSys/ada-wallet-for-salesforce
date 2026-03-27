@@ -9,9 +9,7 @@
 const { version, repository } = require('../../package.json');
 
 function docUrl(ruleName) {
-    // strip ".git" from end of URL
-    const base = repository.url.slice(0, -4);
-    return `${base}/blob/v${version}/docs/rules/${ruleName}.md`;
+    return `${repository.url}/blob/v${version}/docs/rules/${ruleName}.md`;
 }
 
 module.exports = {
