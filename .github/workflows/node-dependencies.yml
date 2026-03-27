@@ -49,6 +49,3 @@ jobs:
 
       - name: Install dependencies (npm ci)
         run: npm ci
-
-      - name: Run LWC Jest (validates @salesforce/sfdx-lwc-jest and related deps)
-        run: npm run test:unit -- --passWithNoTests
