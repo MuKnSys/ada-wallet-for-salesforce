@@ -47,5 +47,5 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Install dependencies (npm ci)
-        run: npm ci
+      - name: Install dependencies (npm install)
+        run: npm install
