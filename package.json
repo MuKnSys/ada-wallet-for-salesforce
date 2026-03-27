@@ -16,12 +16,12 @@
         "precommit": "lint-staged"
     },
     "devDependencies": {
-        "@lwc/eslint-plugin-lwc": "^1.8.2",
+        "@lwc/eslint-plugin-lwc": "^2.0.0",
         "@prettier/plugin-xml": "^3.4.1",
         "@salesforce/eslint-config-lwc": "^3.6.0",
         "@salesforce/eslint-plugin-aura": "^2.1.0",
         "@salesforce/eslint-plugin-lightning": "^1.0.0",
-        "@salesforce/sfdx-lwc-jest": "^2.2.0",
+        "@salesforce/sfdx-lwc-jest": "^7.1.2",
         "eslint": "^8.57.1",
         "eslint-plugin-import": "^2.29.1",
         "eslint-plugin-jest": "^28.8.0",
