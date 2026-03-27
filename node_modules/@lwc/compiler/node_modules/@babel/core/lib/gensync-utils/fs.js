@@ -18,14 +18,16 @@ function _gensync() {
   };
   return data;
 }
-const readFile = exports.readFile = _gensync()({
+const readFile = _gensync()({
   sync: _fs().readFileSync,
   errback: _fs().readFile
 });
-const stat = exports.stat = _gensync()({
+exports.readFile = readFile;
+const stat = _gensync()({
   sync: _fs().statSync,
   errback: _fs().stat
 });
+exports.stat = stat;
 0 && 0;
 
 //# sourceMappingURL=fs.js.map

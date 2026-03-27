@@ -1,4 +1,4 @@
-import debug from 'debug'
+import debugLib from 'debug'
 
 import { execGit } from './execGit.js'
 import {
@@ -9,6 +9,7 @@ import {
 } from './messages.js'
 import { printTaskOutput } from './printTaskOutput.js'
 import { runAll } from './runAll.js'
+import { cleanupSkipped } from './state.js'
 import {
   ApplyEmptyCommitError,
   ConfigNotFoundError,
@@ -16,8 +17,9 @@ import {
   GitError,
 } from './symbols.js'
 import { validateOptions } from './validateOptions.js'
+import { getVersion } from './version.js'
 
-const debugLog = debug('lint-staged')
+const debugLog = debugLib('lint-staged')
 
 /**
  * Get the maximum length of a command-line argument string based on current platform
@@ -60,7 +62,7 @@ const getMaxArgLength = () => {
  * @param {boolean} [options.verbose] - Show task output even when tasks succeed; by default only failed output is shown
  * @param {Logger} [logger]
  *
- * @returns {Promise<boolean>} Promise of whether the linting passed or failed
+ * @returns {Promise<boolean>} Promise of whether the task passed or failed
  */
 const lintStaged = async (
   {
@@ -83,6 +85,18 @@ const lintStaged = async (
   } = {},
   logger = console
 ) => {
+  // Seemingly enable debug twice (also done in bin), so that it also works when using the Node.js API
+  if (debug) {
+    debugLib.enable('lint-staged*')
+
+    debugLog(
+      'Running `lint-staged@%s` on Node.js %s (%s)',
+      await getVersion(),
+      process.version,
+      process.platform
+    )
+  }
+
   const gitVersion = await execGit(['version', '--build-options'], { cwd })
   debugLog('%s', gitVersion)
 
@@ -123,11 +137,14 @@ const lintStaged = async (
         logger.error(NO_CONFIGURATION)
       } else if (ctx.errors.has(ApplyEmptyCommitError)) {
         logger.warn(PREVENTED_EMPTY_COMMIT)
-      } else if (ctx.errors.has(GitError) && !ctx.errors.has(GetBackupStashError)) {
+      } else if (
+        (ctx.errors.has(GitError) || cleanupSkipped(ctx)) &&
+        !ctx.errors.has(GetBackupStashError)
+      ) {
         logger.error(GIT_ERROR)
         if (ctx.shouldBackup) {
           // No sense to show this if the backup stash itself is missing.
-          logger.error(RESTORE_STASH_EXAMPLE)
+          logger.error(RESTORE_STASH_EXAMPLE + '\n')
         }
       }
 
