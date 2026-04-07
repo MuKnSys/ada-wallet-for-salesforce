@@ -42,7 +42,7 @@ This method is ideal for developers who want to work with the source code direct
 
 1. Clone the repository
 2. Check out the main branch
-3. Log into the Dev Hub Org by running the command and entering your username and password
+3. Log into the Dev Hub Org by running the `sf org login web --set-default-dev-hub --alias DevHub --instance-url https://login.salesforce.com` command and entering your username and password
 4. Create a Scratch Org by running the command with the following flags:
    - The `-f` flag is a path to config file (no need to change it)
    - The `-a` flag is an alias of the scratch org, if you create multiple scratch orgs you can give them unique aliases to easier refer to them
