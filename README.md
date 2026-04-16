@@ -50,8 +50,8 @@ This method is ideal for developers who want to work with the source code direct
    - The `-y` flag sets the number of days before the org expires
    - Use the `-h` flag for help
    - For more details: [developer docs scratch orgs create](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_scratch_orgs_create.htm)
-5. Push the code to the Scratch Org
-6. Connect to the Salesforce Scratch Org
+5. Push the code to the Scratch Org. `sf project deploy start`
+6. Connect to the Salesforce Scratch Org. `sf org open`
 
 ### Installation from Salesforce Sandbox
 
