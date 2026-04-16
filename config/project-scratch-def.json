@@ -1,8 +1,8 @@
 {
   "orgName": "ADA Wallet SO",
-  "edition": "Developer",
+  "edition": "developer",
   "features": [
-    "SLACK"
+    "Slack"
   ],
   "settings": {
     "lightningExperienceSettings": {

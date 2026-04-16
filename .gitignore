@@ -43,3 +43,4 @@ $RECYCLE.BIN/
 
 # Ignore profiles directory
 profiles/
+node_modules
