@@ -16,7 +16,7 @@
     }
   ],
   "name": "Ada Wallet for Salesforce",
-  "namespace": "mukn_web3enable",
+  "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "63.0",
   "packageAliases": {
